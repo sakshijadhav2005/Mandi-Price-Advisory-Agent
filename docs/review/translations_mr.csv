@@ -89,6 +89,8 @@ ui:settings.server,App screen text,Server address,सर्व्हर पत�
 ui:settings.account,App screen text,Account,खाते,ok,,
 ui:settings.guest,App screen text,Using without login,लॉग इन न करता वापर,ok,,
 ui:settings.district,App screen text,District,जिल्हा,ok,,
+ui:settings.keepRecordings,App screen text,Let the server keep my voice recordings to improve speech recognition,आवाज ओळख सुधारण्यासाठी माझे आवाजाचे रेकॉर्डिंग सर्व्हरवर ठेवू द्या,ok,,
+ui:settings.keepRecordingsHelp,App screen text,"Off by default. When off, recordings are deleted right after they are turned into text.",सुरुवातीला बंद. बंद असताना रेकॉर्डिंग मजकुरात बदलताच हटवले जाते.,ok,,
 ui:disclaimerTitle,App screen text,Please note,कृपया लक्षात घ्या,ok,,
 ui:offline.banner,App screen text,You are offline. Showing saved prices; answers need internet.,तुम्ही ऑफलाइन आहात. जतन केलेले दर दिसत आहेत; उत्तरासाठी इंटरनेट हवे.,ok,,
 ui:offline.noAnswer,App screen text,You are offline. Connect to the internet to ask a question.,तुम्ही ऑफलाइन आहात. प्रश्न विचारण्यासाठी इंटरनेटशी जोडा.,ok,,

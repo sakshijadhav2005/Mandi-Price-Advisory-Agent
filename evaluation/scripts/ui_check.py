@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -24,7 +25,7 @@ from playwright.sync_api import Page, sync_playwright
 ROOT = Path(__file__).resolve().parents[2]
 SHOTS = ROOT / "docs" / "screenshots"
 DEMO = ROOT / "docs" / "demo"
-WEB = "http://localhost:5173"
+WEB = os.environ.get("UI_CHECK_WEB", "http://localhost:5173")
 VIEWPORT = {"width": 360, "height": 740}
 MIN_TAP_PX = 40
 

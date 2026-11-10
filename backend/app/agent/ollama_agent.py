@@ -12,12 +12,11 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 
 import httpx
 
-from app.agent.llm_agent import LLMResult, LLMUnavailable, build_system_prompt, build_user_turn
-from app.agent.tools import ToolContext, run_tool, tool_schemas
+from app.agent.llm_agent import LLMResult, LLMUnavailable, build_system_prompt, build_user_turn, call_tool_within_budget
+from app.agent.tools import ToolContext, function_tools, run_tool
 from app.config import get_settings
 from app.translation.languages import is_advisory_question
 from app.translation.templates import t
@@ -26,47 +25,9 @@ log = logging.getLogger(__name__)
 
 OPTIONAL_TOOLS = {"search_advisories", "get_mandi_prices", "estimate_transport_cost"}
 
-_available: tuple[float, bool] | None = None
-
-
-def ollama_available() -> bool:
-    """True when the Ollama server is up and the configured model is pulled (cached for 60 s)."""
-    global _available
-    now = time.monotonic()
-    if _available and now - _available[0] < 60:
-        return _available[1]
-    s = get_settings()
-    ok = False
-    try:
-        resp = httpx.get(f"{s.ollama_url}/api/tags", timeout=1.5)
-        names = {m.get("name", "") for m in resp.json().get("models", [])}
-        ok = s.ollama_model in names or f"{s.ollama_model}:latest" in names
-    except (httpx.HTTPError, ValueError):
-        ok = False
-    _available = (now, ok)
-    return ok
-
-
-def _simplify(schema: dict) -> dict:
-    """Plain JSON Schema for small models: no nullable type arrays, optional fields not required."""
-    props = {}
-    for name, p in schema["properties"].items():
-        p = dict(p)
-        if isinstance(p.get("type"), list):
-            p["type"] = next(t for t in p["type"] if t != "null")
-        if "enum" in p:
-            p["enum"] = [v for v in p["enum"] if v is not None]
-        props[name] = p
-    required = [n for n in schema.get("required", []) if not isinstance(schema["properties"][n].get("type"), list)]
-    return {"type": "object", "properties": props, "required": required}
-
 
 def ollama_tools() -> list[dict]:
-    return [
-        {"type": "function", "function": {"name": t["name"], "description": t["description"], "parameters": _simplify(t["input_schema"])}}
-        for t in tool_schemas()
-        if t["name"] in OPTIONAL_TOOLS
-    ]
+    return function_tools(OPTIONAL_TOOLS)
 
 
 def _round(v):
@@ -155,19 +116,9 @@ def run_ollama_agent(ctx: ToolContext, question: str, history: list[dict] | None
                     args = json.loads(args)
                 except json.JSONDecodeError:
                     args = {}
-            if result.tool_calls >= s.tool_budget:
-                result.budget_exhausted = True
-                content = {"error": "Tool budget exhausted. Answer now."}
-            elif name not in OPTIONAL_TOOLS:
-                content = {"error": f"Tool {name!r} is not available. Answer with the facts you have."}
+            if name in OPTIONAL_TOOLS:
+                content, _ = call_tool_within_budget(ctx, result, name, args)
             else:
-                result.tool_calls += 1
-                if name in ("search_advisories",) and "crop" not in args:
-                    args["crop"] = None
-                if name == "get_mandi_prices":
-                    args = {"crop": args.get("crop"), "market": args.get("market"), "days": args.get("days")}
-                if name == "estimate_transport_cost":
-                    args = {"market": args.get("market", ""), "quantity_qtl": args.get("quantity_qtl")}
-                content, _ = run_tool(ctx, name, args)
+                content = {"error": f"Tool {name!r} is not available. Answer with the facts you have."}
             messages.append({"role": "tool", "content": json.dumps(content, ensure_ascii=False, default=str), "tool_name": name})
     raise LLMUnavailable("ollama agent did not finish within the turn limit")

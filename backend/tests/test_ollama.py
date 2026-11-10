@@ -6,7 +6,7 @@ from datetime import date
 import httpx
 import pytest
 
-from app.agent import ollama_agent, service
+from app.agent import ollama_agent
 from app.agent.service import answer_query, resolve_provider
 from app.config import get_settings
 
@@ -90,9 +90,8 @@ def test_auto_provider_resolution(monkeypatch):
     monkeypatch.setattr(s, "llm_provider", "auto")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
-    monkeypatch.setattr(service, "ollama_available", lambda: False)
-    assert resolve_provider() == "none"
-    monkeypatch.setattr(service, "ollama_available", lambda: True)
+    for key in ("gemini_api_key", "groq_api_key", "openrouter_api_key"):
+        monkeypatch.setattr(s, key, "")
     assert resolve_provider() == "none"  # local models are opt-in
     monkeypatch.setattr(s, "llm_provider", "ollama")
     assert resolve_provider() == "ollama"

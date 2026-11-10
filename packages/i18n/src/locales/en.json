@@ -115,7 +115,9 @@
     "server": "Server address",
     "account": "Account",
     "guest": "Using without login",
-    "district": "District"
+    "district": "District",
+    "keepRecordings": "Let the server keep my voice recordings to improve speech recognition",
+    "keepRecordingsHelp": "Off by default. When off, recordings are deleted right after they are turned into text."
   },
   "disclaimerTitle": "Please note",
   "offline": {

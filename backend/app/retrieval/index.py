@@ -7,8 +7,9 @@ with crop and language, and indexed twice:
 - BM25 over word tokens (rank_bm25),
 - a vector index. The default embedder is a character n-gram TF-IDF model,
   which needs no model download and handles Devanagari inflections reasonably.
-  It sits behind the `Embedder` protocol so a multilingual sentence-embedding
-  model and FAISS/Qdrant can replace it without changing callers.
+  RETRIEVAL_EMBEDDER=sentence-transformers swaps in a multilingual sentence-
+  embedding model. Search is a numpy dot product: exact, and instant at this
+  corpus size (add an ANN index such as FAISS only past ~100k chunks).
 
 Results from both rankers are combined with reciprocal rank fusion.
 """
@@ -67,6 +68,41 @@ class CharNgramEmbedder:
         return m / np.where(norms == 0, 1, norms)
 
 
+class SentenceEmbedder:
+    """Multilingual sentence embeddings (RETRIEVAL_EMBEDDER=sentence-transformers).
+
+    The default model maps English, Hindi and Marathi into one space, so a Marathi
+    question can match an English bulletin without the glossary. Needs
+    `pip install sentence-transformers` (downloads ~470 MB on first use).
+    """
+
+    def __init__(self, model_name: str, model=None) -> None:
+        if model is None:
+            from sentence_transformers import SentenceTransformer  # type: ignore
+
+            model = SentenceTransformer(model_name)
+        self._model = model
+
+    def fit(self, texts: list[str]) -> None:  # pretrained: nothing to fit
+        pass
+
+    def encode(self, texts: list[str]) -> np.ndarray:
+        m = np.asarray(self._model.encode(texts, normalize_embeddings=True), dtype=np.float32)
+        return m.reshape(len(texts), -1)
+
+
+def make_embedder() -> Embedder:
+    from app.config import get_settings
+
+    s = get_settings()
+    if s.retrieval_embedder == "sentence-transformers":
+        try:
+            return SentenceEmbedder(s.embedding_model)
+        except Exception as exc:  # missing package, no network for the download, ...
+            log.warning("sentence-transformers embedder unavailable (%s); using char n-grams", exc)
+    return CharNgramEmbedder()
+
+
 _FRONT_MATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
 
 
@@ -123,7 +159,7 @@ class AdvisoryIndex:
             self.vectors = np.zeros((0, 1), dtype=np.float32)
 
     @classmethod
-    def from_directory(cls, directory: Path = BULLETIN_DIR) -> "AdvisoryIndex":
+    def from_directory(cls, directory: Path = BULLETIN_DIR, embedder: Embedder | None = None) -> "AdvisoryIndex":
         chunks: list[Chunk] = []
         for path in sorted(directory.glob("*")):
             if path.suffix.lower() not in {".md", ".txt", ".pdf"}:
@@ -147,7 +183,7 @@ class AdvisoryIndex:
                     )
                 )
         log.info("indexed %d advisory chunks from %s", len(chunks), directory)
-        return cls(chunks)
+        return cls(chunks, embedder)
 
     def search(self, query: str, crop: str | None = None, language: str | None = None, k: int = 3) -> list[dict]:
         if not self.chunks:
@@ -194,4 +230,4 @@ class AdvisoryIndex:
 
 @lru_cache
 def get_index() -> AdvisoryIndex:
-    return AdvisoryIndex.from_directory()
+    return AdvisoryIndex.from_directory(embedder=make_embedder())

@@ -7,7 +7,7 @@ import { useApp } from "../lib/app-context";
 
 export function SettingsPage() {
   const { t } = useTranslation();
-  const { language, setLanguage, autoSpeak, setAutoSpeak, apiBase, setApiBase, loggedIn, logout, metaError, meta, district, setDistrict } = useApp();
+  const { language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase, loggedIn, logout, metaError, meta, district, setDistrict } = useApp();
   const [server, setServer] = useState(apiBase);
 
   return (
@@ -26,6 +26,15 @@ export function SettingsPage() {
           <input type="checkbox" className="h-6 w-6 accent-leaf-600" checked={autoSpeak} onChange={(e) => setAutoSpeak(e.target.checked)} />
           {t("settings.speakAnswers")}
         </label>
+        {meta?.voice.server_stt && meta.voice.stores_recordings && (
+          <label className="flex min-h-[48px] items-start gap-3">
+            <input type="checkbox" className="mt-1 h-6 w-6 shrink-0 accent-leaf-600" checked={keepRecordings} onChange={(e) => setKeepRecordings(e.target.checked)} />
+            <span>
+              {t("settings.keepRecordings")}
+              <span className="block text-sm text-stone-600 dark:text-stone-300">{t("settings.keepRecordingsHelp")}</span>
+            </span>
+          </label>
+        )}
       </section>
 
       {meta?.districts && meta.districts.length > 1 && (

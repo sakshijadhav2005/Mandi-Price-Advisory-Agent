@@ -2,14 +2,16 @@
   "name": "@mandi/capacitor",
   "version": "0.1.0",
   "private": true,
-  "description": "Fallback mobile path (plan section 13): wraps the apps/web build as an Android/iOS app.",
+  "description": "Fallback mobile path (plan section 13): wraps the apps/web build as Android and iOS apps.",
   "scripts": {
     "sync": "cap sync",
-    "android": "cap open android"
+    "android": "cap open android",
+    "ios": "cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "6.2.0",
-    "@capacitor/core": "6.2.0"
+    "@capacitor/core": "6.2.0",
+    "@capacitor/ios": "6.2.0"
   },
   "devDependencies": {
     "@capacitor/cli": "6.2.0"

@@ -38,6 +38,8 @@ interface AppState {
   setLanguage: (lang: LanguageCode) => void;
   autoSpeak: boolean;
   setAutoSpeak: (v: boolean) => void;
+  keepRecordings: boolean;
+  setKeepRecordings: (v: boolean) => void;
   apiBase: string;
   setApiBase: (url: string) => void;
   district: string | null;
@@ -59,6 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return isLanguage(saved) ? saved : null;
   });
   const [autoSpeak, setAutoSpeakState] = useState(() => webStore.get("mandi.autoSpeak") === "1");
+  const [keepRecordings, setKeepRecordingsState] = useState(() => webStore.get("mandi.keepRecordings") === "1");
   const [loggedIn, setLoggedIn] = useState(() => !!api.token);
   const [district, setDistrictState] = useState<string | null>(() => webStore.get("mandi.district"));
 
@@ -90,6 +93,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     webStore.set("mandi.autoSpeak", v ? "1" : "0");
     setAutoSpeakState(v);
   }, []);
+  const setKeepRecordings = useCallback((v: boolean) => {
+    webStore.set("mandi.keepRecordings", v ? "1" : "0");
+    setKeepRecordingsState(v);
+  }, []);
   const setApiBase = useCallback((url: string) => {
     webStore.set("mandi.apiBase", url);
     setApiBaseState(url);
@@ -106,7 +113,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = {
-    api, meta, metaError, language, setLanguage, autoSpeak, setAutoSpeak, apiBase, setApiBase,
+    api, meta, metaError, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase,
     loggedIn, logout, refreshAuth, district, setDistrict,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
