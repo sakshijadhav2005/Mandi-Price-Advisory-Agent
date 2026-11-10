@@ -9,3 +9,8 @@ __pycache__/
 evaluation/reports/results.json
 .expo/
 apps/capacitor/android/app/src/main/assets/public/
+backend/e2e.db
+backend/recordings/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/capacitor/ios/App/App/public/

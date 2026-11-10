@@ -35,3 +35,22 @@ jobs:
       - run: npx vitest run
         working-directory: apps/web
       - run: npm run build -w apps/web
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm }
+      - run: pip install -e "./backend"
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: npx playwright test
+        working-directory: apps/web
+        env: { E2E_BROWSER_CHANNEL: "", PYTHON: python }
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: apps/web/playwright-report }

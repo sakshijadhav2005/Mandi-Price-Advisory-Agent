@@ -1,0 +1,24 @@
+# Marathi end to end: ask in Marathi, then visit prices, history and settings.
+appId: in.mandiadvisor.app
+name: Marathi and tabs
+---
+- launchApp:
+    clearState: true
+- tapOn: "मराठी"
+- tapOn:
+    text: "तुमचा प्रश्न लिहा.*"
+- inputText: "मी कांदा विकू की थांबू?"
+- hideKeyboard
+- tapOn: "पाठवा"
+- extendedWaitUntil:
+    visible: "(आता विका|थांबा|पुरेशी माहिती नाही)"
+    timeout: 30000
+- takeScreenshot: maestro-02-mr-answer
+- tapOn: "दर"
+- assertVisible: ".*₹.*"
+- takeScreenshot: maestro-02-mr-prices
+- tapOn: "इतिहास"
+- assertVisible: ".*कांदा.*"
+- tapOn: "सेटिंग"
+- tapOn: "English"
+- assertVisible: "Prices"

@@ -30,7 +30,7 @@ const RECORDING: Audio.RecordingOptions = {
  * Record on the device and transcribe on the server (/voice/transcribe).
  * Needs STT_PROVIDER=whisper on the backend; otherwise the screen offers typing.
  */
-export function useRecorder(api: ApiClient, language: string) {
+export function useRecorder(api: ApiClient, language: string, consent = false) {
   const [state, dispatch] = useReducer(voiceReducer, { kind: "idle" } as VoiceState);
   const rec = useRef<Audio.Recording | null>(null);
 
@@ -63,12 +63,12 @@ export function useRecorder(api: ApiClient, language: string) {
       const ext = uri.split(".").pop() ?? "m4a";
       // React Native's FormData accepts { uri, name, type } file parts.
       const file = { uri, name: `speech.${ext}`, type: ext === "m4a" ? "audio/mp4" : "audio/webm" } as unknown as Blob;
-      const tr = await api.transcribe(file, language, `speech.${ext}`);
+      const tr = await api.transcribe(file, language, `speech.${ext}`, consent);
       dispatch({ type: "result", transcript: tr.text, confidence: tr.needs_confirmation ? Math.min(tr.confidence, 0.5) : tr.confidence });
     } catch {
       dispatch({ type: "fail", reason: "failed" });
     }
-  }, [api, language]);
+  }, [api, language, consent]);
 
   const cancel = useCallback(async () => {
     const recording = rec.current;

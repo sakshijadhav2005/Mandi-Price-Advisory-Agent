@@ -293,6 +293,35 @@ def tool_schemas() -> list[dict]:
     ]
 
 
+def simplify_schema(schema: dict) -> dict:
+    """Plain JSON Schema for OpenAI-style APIs: no nullable type arrays, optional fields not required."""
+    props = {}
+    for name, p in schema["properties"].items():
+        p = dict(p)
+        if isinstance(p.get("type"), list):
+            p["type"] = next(t for t in p["type"] if t != "null")
+        if "enum" in p:
+            p["enum"] = [v for v in p["enum"] if v is not None]
+        props[name] = p
+    required = [n for n in schema.get("required", []) if not isinstance(schema["properties"][n].get("type"), list)]
+    return {"type": "object", "properties": props, "required": required}
+
+
+def function_tools(names: set[str] | None = None) -> list[dict]:
+    """The tools in OpenAI "function" format (Ollama, Gemini, Groq, OpenRouter), optionally a subset."""
+    return [
+        {"type": "function", "function": {"name": t["name"], "description": t["description"], "parameters": simplify_schema(t["input_schema"])}}
+        for t in tool_schemas()
+        if names is None or t["name"] in names
+    ]
+
+
+def complete_args(name: str, args: dict) -> dict:
+    """Keep only the tool's parameters; ones the model left out are null (all are nullable or required)."""
+    schema = next((t["input_schema"] for t in tool_schemas() if t["name"] == name), None)
+    return {p: args.get(p) for p in schema["properties"]} if schema else args
+
+
 def run_tool(ctx: ToolContext, name: str, args: dict) -> tuple[dict, bool]:
     """Execute a tool. Returns (result, is_error) and appends to the trace."""
     func = TOOL_FUNCS.get(name)

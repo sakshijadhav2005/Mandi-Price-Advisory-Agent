@@ -22,6 +22,7 @@ from xml.sax.saxutils import escape as xml_escape
 import httpx
 
 from app.config import get_settings
+from app.voice import storage
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def _whisper_model():
     return WhisperModel(get_settings().whisper_model, device="auto", compute_type="int8")
 
 
-def transcribe(audio: bytes, suffix: str = ".webm", language_hint: str | None = None) -> Transcript:
+def transcribe(audio: bytes, suffix: str = ".webm", language_hint: str | None = None, consent: bool = False) -> Transcript:
     settings = get_settings()
     if settings.stt_provider != "whisper":
         raise VoiceNotConfigured("No server speech-to-text provider configured (STT_PROVIDER=none)")
@@ -65,8 +66,12 @@ def transcribe(audio: bytes, suffix: str = ".webm", language_hint: str | None = 
         segments, info = model.transcribe(path, language=WHISPER_LANGS.get(language_hint or ""), vad_filter=True)
         segments = list(segments)
     finally:
-        if not settings.store_voice_recordings:
-            os.unlink(path)
+        os.unlink(path)  # the temp file is always deleted; consented copies go to storage below
+    if storage.should_store(consent):
+        try:
+            storage.store_recording(audio, suffix, language_hint)
+        except Exception as exc:  # storage trouble must not break the farmer's question
+            log.error("could not store consented recording: %s", exc)
     text = " ".join(s.text.strip() for s in segments).strip()
     probs = [math.exp(s.avg_logprob) for s in segments] or [0.0]
     confidence = sum(probs) / len(probs)
@@ -150,4 +155,8 @@ def synthesize(text: str, language: str) -> tuple[bytes, str]:
 
 def capabilities() -> dict:
     s = get_settings()
-    return {"server_stt": s.stt_provider != "none", "server_tts": s.tts_provider != "none"}
+    return {
+        "server_stt": s.stt_provider != "none",
+        "server_tts": s.tts_provider != "none",
+        "stores_recordings": s.store_voice_recordings,  # apps then ask the farmer for consent
+    }

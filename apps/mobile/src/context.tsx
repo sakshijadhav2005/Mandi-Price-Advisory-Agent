@@ -25,6 +25,8 @@ interface MobileState {
   setLanguage: (l: LanguageCode) => void;
   autoSpeak: boolean;
   setAutoSpeak: (v: boolean) => void;
+  keepRecordings: boolean;
+  setKeepRecordings: (v: boolean) => void;
   apiBase: string;
   setApiBase: (url: string) => void;
   district: string | null;
@@ -44,6 +46,7 @@ export function MobileProvider({ children }: { children: ReactNode }) {
     return isLanguage(saved) ? saved : null;
   });
   const [autoSpeak, setAutoSpeakState] = useState(() => store.get("mandi.autoSpeak") !== "0");
+  const [keepRecordings, setKeepRecordingsState] = useState(() => store.get("mandi.keepRecordings") === "1");
   const [district, setDistrictState] = useState<string | null>(() => store.get("mandi.district"));
 
   useEffect(() => {
@@ -68,6 +71,10 @@ export function MobileProvider({ children }: { children: ReactNode }) {
     store.set("mandi.autoSpeak", v ? "1" : "0");
     setAutoSpeakState(v);
   }, []);
+  const setKeepRecordings = useCallback((v: boolean) => {
+    store.set("mandi.keepRecordings", v ? "1" : "0");
+    setKeepRecordingsState(v);
+  }, []);
   const setApiBase = useCallback((url: string) => {
     store.set("mandi.apiBase", url);
     setApiBaseState(url);
@@ -79,7 +86,7 @@ export function MobileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ api, meta, metaCached, language, setLanguage, autoSpeak, setAutoSpeak, apiBase, setApiBase, district, setDistrict }}>
+    <Ctx.Provider value={{ api, meta, metaCached, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase, district, setDistrict }}>
       {children}
     </Ctx.Provider>
   );

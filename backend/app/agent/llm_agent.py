@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import anthropic
 
-from app.agent.tools import ToolContext, run_tool, tool_schemas
+from app.agent.tools import ToolContext, complete_args, run_tool, tool_schemas
 from app.config import get_settings
 from app.reference import load_reference
 from app.translation.glossary import SUPPORTED_LANGUAGES, glossary_for
@@ -52,6 +52,18 @@ class LLMResult:
 
 class LLMUnavailable(Exception):
     pass
+
+
+BUDGET_EXHAUSTED = {"error": "Tool budget exhausted. Answer now with the information you already have."}
+
+
+def call_tool_within_budget(ctx: ToolContext, result: LLMResult, name: str, args: dict) -> tuple[dict, bool]:
+    """Run one model-requested tool call, enforcing the per-query tool budget (plan section 6)."""
+    if result.tool_calls >= get_settings().tool_budget:
+        result.budget_exhausted = True
+        return BUDGET_EXHAUSTED, True
+    result.tool_calls += 1
+    return run_tool(ctx, name, complete_args(name, args if isinstance(args, dict) else {}))
 
 
 _client: anthropic.Anthropic | None = None
@@ -152,13 +164,7 @@ def run_llm_agent(ctx: ToolContext, question: str, history: list[dict] | None = 
         messages.append({"role": "assistant", "content": response.content})
         tool_results = []
         for block in tool_uses:
-            if result.tool_calls >= settings.tool_budget:
-                result.budget_exhausted = True
-                content, is_error = {"error": "Tool budget exhausted. Answer now with the information you already have."}, True
-            else:
-                result.tool_calls += 1
-                args = block.input if isinstance(block.input, dict) else {}
-                content, is_error = run_tool(ctx, block.name, args)
+            content, is_error = call_tool_within_budget(ctx, result, block.name, block.input)
             tool_results.append(
                 {
                     "type": "tool_result",

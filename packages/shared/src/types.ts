@@ -147,7 +147,7 @@ export interface Meta {
   languages: Record<string, string>;
   crops: Named[];
   markets: (Named & { lat: number; lon: number; district?: string })[];
-  voice: { server_stt: boolean; server_tts: boolean };
+  voice: { server_stt: boolean; server_tts: boolean; stores_recordings?: boolean };
   auth_required: boolean;
   stale_after_days: number;
 }

@@ -177,10 +177,12 @@ export class ApiClient {
     return res.user;
   }
 
-  transcribe(audio: Blob, language?: string, filename = "speech.webm") {
+  /** `consent`: the farmer agreed to let the server keep this recording (deleted otherwise). */
+  transcribe(audio: Blob, language?: string, filename = "speech.webm", consent = false) {
     const form = new FormData();
     form.append("audio", audio, filename);
     if (language) form.append("language", language);
+    if (consent) form.append("consent", "true");
     return this.request<Transcript>("/voice/transcribe", { method: "POST", body: form });
   }
 

@@ -24,7 +24,7 @@ A multilingual (English, Hindi, Marathi) agent that helps small farmers decide w
 | `packages/i18n` | UI strings per language (i18next JSON). |
 | `apps/web` | React + Vite + Tailwind web app: first-launch language picker, chat with mic button, price dashboard with alerts, history, settings, OTP login. Installable PWA that shows the last prices offline. |
 | `apps/mobile` | React Native (Expo SDK 52) app, the primary mobile path: same screens, server speech-to-text from on-device recording, on-device text-to-speech, push price alerts, offline price cache. |
-| `apps/capacitor` | Fallback mobile path: the web build wrapped as an Android app (`android/` project generated, microphone permission added). |
+| `apps/capacitor` | Fallback mobile path: the web build wrapped as Android and iOS apps (`android/` and `ios/` projects generated, microphone, speech and location permissions added). |
 | `deploy/`, `docker-compose.yml`, `.github/workflows/ci.yml` | Web container (nginx), full stack with Postgres and the daily ingestion and alert job, CI for tests and builds. |
 | `evaluation/` | Test-set builder, evaluation runner and results report. |
 
@@ -53,6 +53,13 @@ Everything runs without paying for anything:
 | Spoken answers | The browser's or phone's speech engine (`TTS_PROVIDER=none`). |
 | Push alerts | Expo's push service, with a free Expo account. |
 
+**Optional free hosted LLM (Gemini, Groq or OpenRouter).** For natural answers in all three languages without paying, get a free key and put it in `backend/.env`:
+- Gemini (recommended, good Hindi and Marathi): `GEMINI_API_KEY=...` from https://aistudio.google.com/apikey
+- Groq: `GROQ_API_KEY=...` from https://console.groq.com/keys
+- OpenRouter: `OPENROUTER_API_KEY=...` from https://openrouter.ai/keys (uses a `:free` model)
+
+With `LLM_PROVIDER=auto` the first key set is used (Gemini, then Groq, then OpenRouter). Change the model with `GEMINI_MODEL`, `GROQ_MODEL` or `OPENROUTER_MODEL`. The same guardrails apply, and if the free quota runs out (HTTP 429) the template answer is used instead. Free tiers may use your prompts to improve their models; the prompts contain the farmer's question and the price data, not phone numbers.
+
 **Optional free local LLM (Ollama).** For more natural English answers, run `ollama pull qwen2.5:3b` and `ollama serve`, then set `LLM_PROVIDER=ollama`. It's opt-in because of what testing on this project showed with the 3B model:
 - English answers were often good. The guardrails rejected the ones that invented a number, recommended the wrong decision ("Hold your onions" for a sell result), or answered in the wrong language, and the template answer was used instead.
 - Some accepted answers still explained the reasoning badly; for example, one called the price after holding a "holding cost". The guardrails can't catch that.
@@ -60,7 +67,7 @@ Everything runs without paying for anything:
 
 `GET /meta` shows which writer is active (`answer_writer`).
 
-Claude (paid) is optional: set `ANTHROPIC_API_KEY` and `auto` switches to it.
+Claude (paid) is optional: set `ANTHROPIC_API_KEY` and `auto` switches to it (it takes priority over the free keys).
 
 Web app (Node 20+), from the repo root:
 
@@ -73,18 +80,29 @@ npm run dev        # http://localhost:5173
 
 Mobile (Expo): `cd apps/mobile && npx expo start`, then open in Expo Go or an Android emulator. The default server address is `http://10.0.2.2:8000` (the emulator's view of your PC); change it in Settings for a real phone. Push notifications need an EAS project id in `app.json`. Voice input on mobile needs `STT_PROVIDER=whisper` on the backend.
 
-Capacitor fallback: `npm run build -w apps/web`, then in `apps/capacitor`: `npx cap sync android && npx cap open android` (needs Android Studio).
+Capacitor fallback: `npm run build -w apps/web`, then in `apps/capacitor`: `npx cap sync android && npx cap open android` (needs Android Studio). iOS, on a Mac with Xcode and CocoaPods: `npx cap sync ios && npx cap open ios`.
 
 Docker (Postgres + API + web + daily ingestion and alert job): `docker compose up --build`, then `docker compose exec api python manage.py seed-synthetic`.
 
-Real prices: set `DATA_GOV_IN_API_KEY` and run `python manage.py fetch-data-gov` daily (`manage.py schedule` or cron), or import Agmarknet CSV exports with `python manage.py import-csv file.csv`.
+Real prices: set `DATA_GOV_IN_API_KEY` and run `python manage.py daily` once a day (cron or Windows Task Scheduler; or leave `manage.py schedule` running). It fetches prices, checks price alerts, and posts to `OPS_ALERT_WEBHOOK_URL` (Slack, Discord or Teams) when ingestion fails or returns nothing. Or or import Agmarknet CSV exports with `python manage.py import-csv file.csv`.
 
 ## Tests
 
 ```bash
-cd backend && python -m pytest          # 66 tests: decision engine, guardrails, retrieval, Claude and Ollama loops (fake servers), API, voice, alerts, admin, districts
+cd backend && python -m pytest          # decision engine, guardrails, retrieval, Claude/Gemini/Groq/Ollama loops (fake servers), API, voice, alerts, admin, districts, ops alerts
 node node_modules/vitest/vitest.mjs run  # in packages/shared and apps/web
 ```
+
+End-to-end (web app + real backend with synthetic prices, at 360 px phone width, in your installed Chrome):
+
+```bash
+cd apps/web
+node ../../node_modules/@playwright/test/cli.js test   # or: npx playwright test
+```
+
+Mobile UI flows (Maestro, on an emulator or phone with the app installed and the backend running): `maestro test apps/mobile/.maestro`.
+
+Optional backend extras: `pip install -e ".[semantic]"` and `RETRIEVAL_EMBEDDER=sentence-transformers` for multilingual sentence embeddings (a Marathi question then matches English bulletins without the glossary); `pip install -e ".[s3]"` and `S3_BUCKET=...` to keep consented voice recordings in S3-compatible storage. Recordings are kept only when `STORE_VOICE_RECORDINGS=true` **and** the farmer turns on "keep my voice recordings" in Settings; otherwise they are deleted right after transcription.
 
 ## Evaluation
 
@@ -121,4 +139,6 @@ These can't be done in code:
 - **API keys:** `ANTHROPIC_API_KEY` for Claude answers (then run `run_eval.py --llm`); a Google or Azure key for server text-to-speech.
 - **Native-speaker review** of `backend/data/languages/{hi,mr}.json` and `packages/i18n/src/locales/{hi,mr}.json`.
 - **Devices:** test the Expo and Capacitor apps on a real low-end Android phone (microphone, speech, push); create an EAS project and a Play Store internal testing track.
-- **Pilot:** 3–5 farmers or traders, recorded voice samples per language, then the demo video and the resume bullet with measured numbers.
+- **Pilot:** 3–5 farmers or traders and recorded voice samples per language, then a narrated demo with real prices and the resume bullet with measured numbers.
+
+Already done: a 48-second screen walkthrough on synthetic data, [docs/demo/mandi-advisor-demo.mp4](docs/demo/mandi-advisor-demo.mp4), with phone-width screenshots in [docs/screenshots](docs/screenshots). Re-record with `UI_CHECK_WEB=http://localhost:5173 python evaluation/scripts/ui_check.py --video`, then `ffmpeg -i docs/demo/mandi-advisor-demo.webm -c:v libx264 -pix_fmt yuv420p -an docs/demo/mandi-advisor-demo.mp4`. Hindi and Marathi review sheets for a native speaker are in [docs/review](docs/review) (`python tools/translation_review.py apply mr docs/review/translations_mr.csv` applies the corrections).

@@ -16,6 +16,7 @@ MAX_AUDIO_BYTES = 5 * 1024 * 1024  # ~5 min of Opus
 async def transcribe(
     audio: UploadFile = File(...),
     language: str | None = Form(default=None),
+    consent: bool = Form(default=False),  # farmer agreed to keep this recording
     _identity: Identity = Depends(get_identity),
 ) -> dict:
     data = await audio.read()
@@ -23,7 +24,7 @@ async def transcribe(
         raise HTTPException(413, "Audio too long")
     suffix = "." + (audio.filename or "audio.webm").rsplit(".", 1)[-1]
     try:
-        tr = adapters.transcribe(data, suffix=suffix, language_hint=language)
+        tr = adapters.transcribe(data, suffix=suffix, language_hint=language, consent=consent)
     except adapters.VoiceNotConfigured as exc:
         raise HTTPException(501, str(exc))
     return {"text": tr.text, "language": tr.language, "confidence": tr.confidence, "needs_confirmation": tr.needs_confirmation}

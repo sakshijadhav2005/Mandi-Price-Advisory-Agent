@@ -1,4 +1,4 @@
-import { canAutoSend, type ChatAnswer } from "@mandi/shared";
+import { assistantTurn, canAutoSend, turnsFromConversation, userTurn, type Turn } from "@mandi/shared";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,13 +8,10 @@ import { useMobile } from "../context";
 import { colors, s } from "../theme";
 import { speak, stopSpeaking, useRecorder } from "../voice";
 
-type Answer = Omit<ChatAnswer, "conversation_id" | "message_id">;
-type Turn = { key: number; role: "user"; text: string } | { key: number; role: "assistant"; answer: Answer; messageId?: number };
-let seq = 0;
 
 export function AskScreen({ conversationId: initialId }: { conversationId: number | null }) {
   const { t } = useTranslation();
-  const { api, meta, language, autoSpeak, district } = useMobile();
+  const { api, meta, language, autoSpeak, district, keepRecordings } = useMobile();
   const lang = language ?? "en";
   const [conversationId, setConversationId] = useState<number | null>(initialId);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -24,20 +21,14 @@ export function AskScreen({ conversationId: initialId }: { conversationId: numbe
   const [speakingKey, setSpeakingKey] = useState<number | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const scroll = useRef<ScrollView>(null);
-  const voice = useRecorder(api, lang);
+  const voice = useRecorder(api, lang, keepRecordings && !!meta?.voice.stores_recordings);
   const serverStt = !!meta?.voice.server_stt;
 
   useEffect(() => {
     if (!initialId) return;
     api
       .conversation(initialId)
-      .then((c) =>
-        setTurns(
-          c.messages.map((m) =>
-            m.role === "assistant" && m.answer ? { key: ++seq, role: "assistant", answer: m.answer, messageId: m.id } : { key: ++seq, role: "user", text: m.text },
-          ),
-        ),
-      )
+      .then((c) => setTurns(turnsFromConversation(c)))
       .catch(() => undefined);
   }, [api, initialId]);
 
@@ -57,13 +48,14 @@ export function AskScreen({ conversationId: initialId }: { conversationId: numbe
       if (!message || busy) return;
       setInput("");
       setError(null);
-      setTurns((ts) => [...ts, { key: ++seq, role: "user", text: message }]);
+      setTurns((ts) => [...ts, userTurn(message)]);
       setBusy(true);
       try {
         const res = await api.chat({ message, language: lang, conversation_id: conversationId, lat: coords?.lat, lon: coords?.lon, input_mode: mode, district });
         setConversationId(res.conversation_id);
-        const key = ++seq;
-        setTurns((ts) => [...ts, { key, role: "assistant", answer: res, messageId: res.message_id }]);
+        const turn = assistantTurn(res, res.message_id);
+        const key = turn.key;
+        setTurns((ts) => [...ts, turn]);
         if (autoSpeak || mode === "voice") {
           setSpeakingKey(key);
           void speak(res.text, res.language, () => setSpeakingKey((k) => (k === key ? null : k)));

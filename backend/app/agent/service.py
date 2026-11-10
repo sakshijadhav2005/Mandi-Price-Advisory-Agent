@@ -5,16 +5,19 @@ from __future__ import annotations
 import logging
 import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date
+from functools import partial
 
 from sqlalchemy.orm import Session
 
 from app.agent import fallback
 from app.agent.data import today
 from app.agent.guardrails import decision_consistent, language_ok, ungrounded_numbers
-from app.agent.llm_agent import LLMUnavailable, run_llm_agent
-from app.agent.ollama_agent import ollama_available, run_ollama_agent  # noqa: F401
+from app.agent.llm_agent import LLMResult, LLMUnavailable, run_llm_agent
+from app.agent.ollama_agent import run_ollama_agent
+from app.agent.openai_compat_agent import PRESETS, configured_free_provider, run_openai_compat_agent
 from app.agent.tools import ToolContext, compute_recommendation, run_tool
 from app.config import get_settings
 from app.reference import detect_crop, detect_district, detect_quantity_qtl, load_reference
@@ -43,7 +46,7 @@ class AgentAnswer:
 
 
 def resolve_provider() -> str:
-    """Which answer writer to use: anthropic | ollama | none."""
+    """Which answer writer to use: anthropic | gemini | groq | openrouter | ollama | none."""
     s = get_settings()
     if not s.llm_enabled:
         return "none"
@@ -51,14 +54,40 @@ def resolve_provider() -> str:
         return s.llm_provider
     if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
         return "anthropic"
+    if free := configured_free_provider():
+        return free
     # Local models are opt-in (LLM_PROVIDER=ollama): in testing, a 3B model's explanations
     # were often muddled even when the numbers and the decision passed the guardrails.
     return "none"
 
 
+Writer = Callable[[ToolContext, str, "list[dict] | None"], LLMResult]
+
+# Answer writers by provider name. A new provider is one entry here (and its module).
+WRITERS: dict[str, Writer] = {
+    "anthropic": run_llm_agent,
+    "ollama": run_ollama_agent,
+    **{name: partial(run_openai_compat_agent, name) for name in PRESETS},
+}
+
+
 def _tool_outputs(ctx: ToolContext) -> list[dict]:
     """Everything the model was shown: tool results plus the facts in the user turn."""
     return [*ctx.outputs, {"quantity_qtl": ctx.default_quantity_qtl, "as_of": ctx.as_of.isoformat()}]
+
+
+def guardrail_problem(text: str, ctx: ToolContext, language: str, question: str) -> str | None:
+    """Why an LLM answer must be replaced by the template answer, or None if it may be shown."""
+    if not text:
+        return "llm_empty_answer"
+    if not language_ok(text, language):
+        return "llm_wrong_language"
+    if bad := ungrounded_numbers(text, _tool_outputs(ctx)):
+        return f"llm_ungrounded_numbers:{','.join(bad[:5])}"
+    decision = (ctx.recommendation or {}).get("decision")
+    if not decision_consistent(text, decision, language, advisory=is_advisory_question(question)):
+        return "llm_decision_mismatch"
+    return None
 
 
 def answer_query(
@@ -82,16 +111,19 @@ def answer_query(
     quantity_qtl = detect_quantity_qtl(question) or quantity_qtl
     district = detect_district(question) or (district if district in load_reference().districts else None)
 
-    ctx = ToolContext(
-        session=session,
-        as_of=as_of or today(),
-        language=language,
-        farmer_lat=farmer_lat,
-        farmer_lon=farmer_lon,
-        default_crop=crop,
-        default_quantity_qtl=quantity_qtl,
-        district=district,
-    )
+    def new_context() -> ToolContext:
+        return ToolContext(
+            session=session,
+            as_of=as_of or today(),
+            language=language,
+            farmer_lat=farmer_lat,
+            farmer_lon=farmer_lon,
+            default_crop=crop,
+            default_quantity_qtl=quantity_qtl,
+            district=district,
+        )
+
+    ctx = new_context()
     warnings: list[str] = []
     usage: dict = {}
     mode = "offline"
@@ -100,12 +132,12 @@ def answer_query(
 
     provider = resolve_provider() if use_llm is not False else "none"
     if use_llm and provider == "none":
-        provider = settings.llm_provider if settings.llm_provider in ("anthropic", "ollama") else "anthropic"
+        provider = settings.llm_provider if settings.llm_provider in WRITERS else "anthropic"
     if provider == "ollama" and language not in settings.ollama_language_list:
         provider = "none"  # small local models write poor Hindi/Marathi; use the templates instead
-    if provider != "none":
+    if provider in WRITERS:
         try:
-            res = (run_ollama_agent if provider == "ollama" else run_llm_agent)(ctx, question, history)
+            res = WRITERS[provider](ctx, question, history)
             llm_text = res.text
             usage = {
                 "model": res.model,
@@ -114,16 +146,8 @@ def answer_query(
                 "tool_calls": res.tool_calls,
                 "budget_exhausted": res.budget_exhausted,
             }
-            if not res.text:
-                warnings.append("llm_empty_answer")
-            elif not language_ok(res.text, language):
-                warnings.append("llm_wrong_language")
-            elif bad := ungrounded_numbers(res.text, _tool_outputs(ctx)):
-                warnings.append(f"llm_ungrounded_numbers:{','.join(bad[:5])}")
-            elif not decision_consistent(
-                res.text, (ctx.recommendation or {}).get("decision"), language, advisory=is_advisory_question(question)
-            ):
-                warnings.append("llm_decision_mismatch")
+            if problem := guardrail_problem(res.text, ctx, language, question):
+                warnings.append(problem)
             else:
                 text, mode = res.text, "llm"
         except LLMUnavailable as exc:
@@ -133,16 +157,7 @@ def answer_query(
     if mode == "offline":
         # Fresh context so the offline writer's trace and sources are not mixed with a rejected LLM attempt.
         llm_trace = ctx.trace
-        ctx = ToolContext(
-            session=session,
-            as_of=ctx.as_of,
-            language=language,
-            farmer_lat=farmer_lat,
-            farmer_lon=farmer_lon,
-            default_crop=crop,
-            default_quantity_qtl=quantity_qtl,
-            district=district,
-        )
+        ctx = new_context()
         text = fallback.write_answer(ctx, crop, quantity_qtl, question=question)
         if llm_text is not None:
             ctx.trace = [{"tool": "(rejected llm attempt)", "args": {}, "is_error": True, "summary": f"{len(llm_trace)} tool calls"}] + ctx.trace

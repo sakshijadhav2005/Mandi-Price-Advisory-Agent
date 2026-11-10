@@ -5,7 +5,8 @@
     python manage.py import-csv path/to/agmarknet_export.csv [--source pilot_ground_truth]
     python manage.py fetch-data-gov            # needs DATA_GOV_IN_API_KEY
     python manage.py check-alerts              # evaluate price alerts, send push notifications
-    python manage.py schedule                  # daily: fetch prices, then check alerts
+    python manage.py daily                     # once: fetch prices, check alerts, alert ops on failure
+    python manage.py schedule                  # runs `daily` every day at --at
     python manage.py ask "kanda vikava ka?" --lang mr [--offline]
 """
 
@@ -54,11 +55,19 @@ def cmd_import_csv(args) -> None:
     log.info("imported %d rows from %s as source=%s", n, args.path, args.source)
 
 
-def cmd_fetch_data_gov(_args) -> None:
+def cmd_fetch_data_gov(_args) -> int:
     init_db()
     with session_scope() as s:
         n = price_ingest.fetch_data_gov_in(s)
     log.info("fetched %d rows from data.gov.in", n)
+    return n
+
+
+def cmd_daily(args) -> None:
+    """One daily run (for cron / Task Scheduler): fetch prices, check alerts, alert ops on failure."""
+    from app.ops import run_daily
+
+    log.info("daily job: %s", run_daily(lambda: cmd_fetch_data_gov(args), lambda: cmd_check_alerts(args)))
 
 
 def cmd_check_alerts(_args) -> None:
@@ -81,14 +90,7 @@ def cmd_schedule(args) -> None:
             target += timedelta(days=1)
         log.info("next price ingestion at %s", target)
         time.sleep((target - now).total_seconds())
-        try:
-            cmd_fetch_data_gov(args)
-        except Exception as exc:  # recorded as a failed IngestionRun by the loader
-            log.error("daily ingestion failed: %s", exc)
-        try:
-            cmd_check_alerts(args)
-        except Exception as exc:
-            log.error("alert check failed: %s", exc)
+        cmd_daily(args)
 
 
 def cmd_ask(args) -> None:
@@ -125,6 +127,7 @@ def main() -> None:
     sp.set_defaults(func=cmd_import_csv)
     sub.add_parser("fetch-data-gov").set_defaults(func=cmd_fetch_data_gov)
     sub.add_parser("check-alerts").set_defaults(func=cmd_check_alerts)
+    sub.add_parser("daily").set_defaults(func=cmd_daily)
     sp = sub.add_parser("schedule")
     sp.add_argument("--at", default="18:30", help="local time HH:MM (Agmarknet updates through the day)")
     sp.set_defaults(func=cmd_schedule)

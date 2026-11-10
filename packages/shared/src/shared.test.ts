@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiClient, ApiError, MemoryStore, canAutoSend, formatRupees, voiceReducer } from "./index";
+import { ApiClient, ApiError, MemoryStore, canAutoSend, formatRupees, turnsFromConversation, userTurn, voiceReducer, type Answer } from "./index";
 
 describe("formatRupees", () => {
   it("uses Indian grouping", () => {
@@ -47,5 +47,25 @@ describe("ApiClient", () => {
     await api.conversations();
     expect(fetchMock.mock.calls[1][0]).toBe("http://x/conversations");
     expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe("Bearer tok");
+  });
+});
+
+describe("conversation turns", () => {
+  it("maps a saved conversation to turns with unique keys", () => {
+    const answer = { text: "Sell now", language: "en" } as unknown as Answer;
+    const turns = turnsFromConversation({
+      id: 1,
+      title: "onion",
+      language: "en",
+      messages: [
+        { id: 10, role: "user", text: "Sell onion?", language: "en", created_at: "" },
+        { id: 11, role: "assistant", text: "Sell now", language: "en", created_at: "", answer },
+        { id: 12, role: "assistant", text: "orphan", language: "en", created_at: "" },
+      ],
+    });
+    expect(turns.map((t) => t.role)).toEqual(["user", "assistant", "user"]);
+    expect(turns[1]).toMatchObject({ role: "assistant", messageId: 11, answer });
+    expect(new Set(turns.map((t) => t.key)).size).toBe(3);
+    expect(userTurn("x").key).toBeGreaterThan(turns[2].key);
   });
 });

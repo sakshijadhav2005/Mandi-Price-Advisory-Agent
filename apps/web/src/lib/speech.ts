@@ -41,7 +41,7 @@ function recorderSupported(): boolean {
  * to recording Opus audio and sending it to /voice/transcribe when the server
  * has an STT provider.
  */
-export function useVoiceInput(language: string, api: ApiClient, serverStt: boolean) {
+export function useVoiceInput(language: string, api: ApiClient, serverStt: boolean, consent = false) {
   const [state, dispatch] = useReducer(voiceReducer, { kind: "idle" } as VoiceState);
   const [interim, setInterim] = useState("");
   const recRef = useRef<Recognition | null>(null);
@@ -98,7 +98,7 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
           stream.getTracks().forEach((t) => t.stop());
           if (cancelled.current) return;
           try {
-            const tr = await api.transcribe(new Blob(chunks, { type: recorder.mimeType }), language);
+            const tr = await api.transcribe(new Blob(chunks, { type: recorder.mimeType }), language, "speech.webm", consent);
             dispatch({ type: "result", transcript: tr.text, confidence: tr.needs_confirmation ? Math.min(tr.confidence, 0.5) : tr.confidence });
           } catch {
             dispatch({ type: "fail", reason: "failed" });
@@ -113,7 +113,7 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
       return;
     }
     dispatch({ type: "fail", reason: "unsupported" });
-  }, [api, language, serverStt]);
+  }, [api, language, serverStt, consent]);
 
   const stop = useCallback(() => {
     dispatch({ type: "stop" });

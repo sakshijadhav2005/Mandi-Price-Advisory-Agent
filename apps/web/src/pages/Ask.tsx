@@ -1,4 +1,4 @@
-import { canAutoSend, displayName, type ChatAnswer } from "@mandi/shared";
+import { assistantTurn, canAutoSend, displayName, turnsFromConversation, userTurn, type Turn } from "@mandi/shared";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
@@ -8,14 +8,10 @@ import { MicButton, VoicePanel } from "../components/VoiceControl";
 import { useApp } from "../lib/app-context";
 import { useSpeaker, useVoiceInput } from "../lib/speech";
 
-type Answer = Omit<ChatAnswer, "conversation_id" | "message_id">;
-type Turn = { key: number; role: "user"; text: string } | { key: number; role: "assistant"; answer: Answer; messageId?: number };
-
-let keySeq = 0;
 
 export function AskPage() {
   const { t } = useTranslation();
-  const { api, meta, language, autoSpeak, district } = useApp();
+  const { api, meta, language, autoSpeak, district, keepRecordings } = useApp();
   const lang = language ?? "en";
   const params = useParams();
   const navigate = useNavigate();
@@ -30,7 +26,7 @@ export function AskPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const voice = useVoiceInput(lang, api, !!meta?.voice.server_stt);
+  const voice = useVoiceInput(lang, api, !!meta?.voice.server_stt, keepRecordings && !!meta?.voice.stores_recordings);
   const speaker = useSpeaker(api, !!meta?.voice.server_tts);
 
   // Load an existing conversation from history.
@@ -40,13 +36,7 @@ export function AskPage() {
       .conversation(Number(params.id))
       .then((c) => {
         setConversationId(c.id);
-        setTurns(
-          c.messages.map((m) =>
-            m.role === "assistant" && m.answer
-              ? { key: ++keySeq, role: "assistant", answer: m.answer, messageId: m.id }
-              : { key: ++keySeq, role: "user", text: m.text },
-          ),
-        );
+        setTurns(turnsFromConversation(c));
       })
       .catch(() => navigate("/", { replace: true }));
   }, [api, params.id, navigate]);
@@ -61,7 +51,7 @@ export function AskPage() {
       if (!message || busy) return;
       setError(null);
       setInput("");
-      setTurns((ts) => [...ts, { key: ++keySeq, role: "user", text: message }]);
+      setTurns((ts) => [...ts, userTurn(message)]);
       setBusy(true);
       try {
         const res = await api.chat({
@@ -76,7 +66,7 @@ export function AskPage() {
           district,
         });
         setConversationId(res.conversation_id);
-        const turn: Turn = { key: ++keySeq, role: "assistant", answer: res, messageId: res.message_id };
+        const turn = assistantTurn(res, res.message_id);
         setTurns((ts) => [...ts, turn]);
         if (autoSpeak || mode === "voice") void speaker.speak(turn.key, res.text, res.language);
       } catch {

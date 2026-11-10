@@ -10,7 +10,6 @@ from fastapi.testclient import TestClient
 from app import alerts as alerts_mod
 from app.alerts import check_alerts
 from app.config import get_settings
-from app.db.models import Notification, PriceAlert
 from app.main import app
 from app.voice import adapters
 from app.voice.metrics import cer, normalise, wer

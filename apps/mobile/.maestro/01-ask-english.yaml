@@ -1,0 +1,20 @@
+# Fresh install: pick English, ask sell-or-hold, check the answer card.
+# Needs the backend running with synthetic prices (README "Run it"), reachable from
+# the device at the app's server address (emulator default http://10.0.2.2:8000).
+# Run on a dev build or Expo Go:  maestro test apps/mobile/.maestro
+appId: in.mandiadvisor.app
+name: Ask in English
+---
+- launchApp:
+    clearState: true
+- tapOn: "English"
+- tapOn:
+    text: "Type your question.*"
+- inputText: "Should I sell my onion now? I have 20 quintals."
+- hideKeyboard
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible: "(Sell now|Hold|Not enough data)"
+    timeout: 30000
+- assertVisible: "Please note.*"
+- takeScreenshot: maestro-01-ask-english

@@ -65,7 +65,7 @@ export function HistoryScreen({ onOpen }: { onOpen: (id: number) => void }) {
 
 export function SettingsScreen() {
   const { t } = useTranslation();
-  const { api, meta, language, setLanguage, autoSpeak, setAutoSpeak, apiBase, setApiBase, district, setDistrict } = useMobile();
+  const { api, meta, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase, district, setDistrict } = useMobile();
   const [server, setServer] = useState(apiBase);
   const [pushOk, setPushOk] = useState<boolean | null>(null);
 
@@ -85,6 +85,15 @@ export function SettingsScreen() {
           <Text style={[s.body, { flex: 1 }]}>{t("settings.speakAnswers")}</Text>
           <Switch value={autoSpeak} onValueChange={setAutoSpeak} trackColor={{ true: colors.leaf }} />
         </View>
+        {meta?.voice.server_stt && meta.voice.stores_recordings && (
+          <View style={[s.row, { justifyContent: "space-between" }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.body}>{t("settings.keepRecordings")}</Text>
+              <Text style={s.small}>{t("settings.keepRecordingsHelp")}</Text>
+            </View>
+            <Switch value={keepRecordings} onValueChange={setKeepRecordings} trackColor={{ true: colors.leaf }} />
+          </View>
+        )}
       </View>
       {meta?.districts && meta.districts.length > 1 && (
         <View style={s.card}>
