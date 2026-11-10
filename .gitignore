@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.db
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+evaluation/reports/results.json
+.expo/
+apps/capacitor/android/app/src/main/assets/public/

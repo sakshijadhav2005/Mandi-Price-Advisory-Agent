@@ -1,0 +1,78 @@
+{
+  "_note": "Pilot-region reference data. Coordinates are approximate town centres. Cost and loss figures are planning ASSUMPTIONS to be replaced with numbers collected from local traders and farmers during the pilot (plan section 9). The first district is the default.",
+  "districts": [
+    {
+      "id": "nashik",
+      "name": "Nashik",
+      "names": {"hi": "नासिक", "mr": "नाशिक"},
+      "state": "Maharashtra",
+      "centre": {"lat": 20.0059, "lon": 73.7900},
+      "markets": [
+        {"id": "lasalgaon", "name": "Lasalgaon", "names": {"hi": "लासलगांव", "mr": "लासलगाव"}, "lat": 20.1500, "lon": 74.2333},
+        {"id": "pimpalgaon", "name": "Pimpalgaon Baswant", "names": {"hi": "पिंपलगांव बसवंत", "mr": "पिंपळगाव बसवंत"}, "lat": 20.1667, "lon": 73.9875},
+        {"id": "nashik", "name": "Nashik", "names": {"hi": "नासिक", "mr": "नाशिक"}, "lat": 20.0059, "lon": 73.7900},
+        {"id": "yeola", "name": "Yeola", "names": {"hi": "येवला", "mr": "येवला"}, "lat": 20.0424, "lon": 74.4894},
+        {"id": "manmad", "name": "Manmad", "names": {"hi": "मनमाड", "mr": "मनमाड"}, "lat": 20.2519, "lon": 74.4397}
+      ]
+    },
+    {
+      "id": "pune",
+      "name": "Pune",
+      "names": {"hi": "पुणे", "mr": "पुणे"},
+      "state": "Maharashtra",
+      "centre": {"lat": 18.5204, "lon": 73.8567},
+      "markets": [
+        {"id": "pune", "name": "Pune (Gultekdi)", "names": {"hi": "पुणे (गुलटेकडी)", "mr": "पुणे (गुलटेकडी)"}, "lat": 18.4870, "lon": 73.8650},
+        {"id": "chakan", "name": "Chakan", "names": {"hi": "चाकण", "mr": "चाकण"}, "lat": 18.7606, "lon": 73.8636},
+        {"id": "manchar", "name": "Manchar", "names": {"hi": "मंचर", "mr": "मंचर"}, "lat": 19.0040, "lon": 73.9440},
+        {"id": "junnar", "name": "Junnar", "names": {"hi": "जुन्नर", "mr": "जुन्नर"}, "lat": 19.2000, "lon": 73.8800},
+        {"id": "baramati", "name": "Baramati", "names": {"hi": "बारामती", "mr": "बारामती"}, "lat": 18.1514, "lon": 74.5815}
+      ]
+    }
+  ],
+  "crops": [
+    {
+      "id": "onion",
+      "name": "Onion",
+      "agmarknet_commodity": "Onion",
+      "aliases": ["onion", "onions", "pyaz", "pyaaz", "kanda", "प्याज", "प्याज़", "कांदा", "कांदे", "कांद्याला", "कांद्याचे", "कांद्याचा"],
+      "names": {"hi": "प्याज", "mr": "कांदा"},
+      "storage_cost_per_qtl_day": 1.5,
+      "weight_loss_pct_per_day": 0.25,
+      "max_hold_days": 30,
+      "default_horizon_days": 7
+    },
+    {
+      "id": "tomato",
+      "name": "Tomato",
+      "agmarknet_commodity": "Tomato",
+      "aliases": ["tomato", "tomatoes", "tamatar", "टमाटर", "टोमॅटो", "टोमॅटोला", "टोमॅटोचे", "टोमाटो"],
+      "names": {"hi": "टमाटर", "mr": "टोमॅटो"},
+      "storage_cost_per_qtl_day": 4.0,
+      "weight_loss_pct_per_day": 4.0,
+      "max_hold_days": 3,
+      "default_horizon_days": 3
+    },
+    {
+      "id": "potato",
+      "name": "Potato",
+      "agmarknet_commodity": "Potato",
+      "aliases": ["potato", "potatoes", "aloo", "alu", "batata", "आलू", "आलुओं", "बटाटा", "बटाटे", "बटाट्याला", "बटाट्याचे"],
+      "names": {"hi": "आलू", "mr": "बटाटा"},
+      "storage_cost_per_qtl_day": 1.2,
+      "weight_loss_pct_per_day": 0.05,
+      "max_hold_days": 90,
+      "default_horizon_days": 14,
+      "_note": "Assumes rented cold storage (about Rs 150-250 per quintal per season) with low weight loss; ambient heaps lose much more."
+    }
+  ],
+  "transport": {
+    "rate_per_qtl_km": 2.2,
+    "fixed_per_qtl": 25.0,
+    "min_distance_km": 5.0,
+    "road_factor": 1.3
+  },
+  "nearby_radius_km": 60,
+  "max_nearby_markets": 6,
+  "market_fees_pct": 1.5
+}

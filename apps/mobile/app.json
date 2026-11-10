@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Mandi Advisor",
+    "slug": "mandi-advisor",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "splash": { "backgroundColor": "#25713a" },
+    "android": {
+      "package": "in.mandiadvisor.app",
+      "permissions": ["RECORD_AUDIO", "ACCESS_COARSE_LOCATION"],
+      "adaptiveIcon": { "foregroundImage": "./assets/icon.png", "backgroundColor": "#25713a" }
+    },
+    "ios": {
+      "bundleIdentifier": "in.mandiadvisor.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Speak your question about crop prices.",
+        "NSLocationWhenInUseUsageDescription": "Estimate transport cost to nearby mandis."
+      }
+    },
+    "plugins": [
+      ["expo-av", { "microphonePermission": "Speak your question about crop prices." }],
+      ["expo-notifications", { "color": "#25713a" }],
+      ["expo-location", { "locationWhenInUsePermission": "Estimate transport cost to nearby mandis." }]
+    ],
+    "extra": {
+      "apiBase": "http://10.0.2.2:8000",
+      "eas": { "projectId": "" }
+    }
+  }
+}

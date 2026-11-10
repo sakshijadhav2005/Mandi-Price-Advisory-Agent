@@ -1,0 +1,7 @@
+{
+  "appId": "in.mandiadvisor.web",
+  "appName": "Mandi Advisor",
+  "webDir": "../web/dist",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}

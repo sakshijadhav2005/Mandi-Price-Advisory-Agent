@@ -1,0 +1,135 @@
+{
+  "code": "en",
+  "name": "English",
+  "speech_locale": "en-IN",
+  "script": "Latin",
+  "review_status": "source",
+  "templates": {
+    "decision.sell": "Sell now",
+    "eos": ".",
+    "decision.hold": "Hold for about {h} days",
+    "decision.insufficient_data": "Not enough recent price data to advise",
+    "confidence.high": "high",
+    "confidence.medium": "medium",
+    "confidence.low": "low",
+    "confidence_line": "Confidence: {c}.",
+    "best_now": "Best market today for {crop}: {market}, modal price ₹{modal}/quintal (reported {date}). After transport (about ₹{transport}/quintal) and market fees you would get about ₹{net}/quintal.",
+    "total_now": "For {qty} quintals that is about ₹{total}.",
+    "hold_case": "Prices are rising about {trend}% a day. Holding {h} days could give about ₹{hold_net}/quintal at {hold_market} after storage cost and weight loss, about ₹{gain}/quintal more. Prices can still move by around ₹{sigma}/quintal either way.",
+    "reason.holding_costs_exceed_expected_rise": "Prices are rising slightly, but storage cost and weight loss over {h} days would eat up the gain.",
+    "reason.prices_flat_or_falling": "Prices are flat or falling, so holding is unlikely to pay.",
+    "reason.expected_gain_too_small_for_risk": "Holding might add about ₹{gain}/quintal, but that is small compared with how much prices move (about ₹{sigma}/quintal), so it is not worth the risk.",
+    "reason.perishable_crop": "{crop} spoils quickly, so holding is risky.",
+    "reason.some_markets_stale": "Some markets have not reported prices recently and were left out: {stale}.",
+    "insufficient": "The latest price reports for {crop} are older than {days} days or missing, so I cannot give reliable sell or hold advice. Please check today's rate at the mandi or with your trader before selling.",
+    "unsupported_crop": "I can currently advise on these crops only: {crops}. Please ask about one of them.",
+    "advice_tip": "Tip: {tip}",
+    "synthetic_note": "Note: these prices are demo (synthetic) data, not real market reports.",
+    "disclaimer": "This is decision support, not a guarantee. Prices can change; confirm with your trader before you sell.",
+    "alert.title": "{crop} price alert",
+    "alert.above": "{crop} at {market} is now ₹{price}/quintal (reported {date}), above your ₹{threshold} alert.",
+    "alert.below": "{crop} at {market} is now ₹{price}/quintal (reported {date}), below your ₹{threshold} alert.",
+    "advice_from": "From the crop advisory ({title}):",
+    "reason.seasonal_rise": "Last year, prices rose about {season}% over the same {h} days."
+  },
+  "glossary": {
+    "onion": [
+      "onion"
+    ],
+    "tomato": [
+      "tomato"
+    ],
+    "market": [
+      "market"
+    ],
+    "price": [
+      "price"
+    ],
+    "modal price": [
+      "modal price"
+    ],
+    "quintal": [
+      "quintal"
+    ],
+    "storage": [
+      "storage"
+    ],
+    "sell": [
+      "sell"
+    ],
+    "hold": [
+      "hold"
+    ],
+    "transport": [
+      "transport"
+    ],
+    "rot": [
+      "rot"
+    ],
+    "sprouting": [
+      "sprouting"
+    ],
+    "grading": [
+      "grading"
+    ],
+    "harvest": [
+      "harvest"
+    ],
+    "weight loss": [
+      "weight loss"
+    ],
+    "arrivals": [
+      "arrivals"
+    ],
+    "curing": [
+      "curing"
+    ],
+    "ventilated": [
+      "ventilated"
+    ],
+    "commission": [
+      "commission"
+    ],
+    "potato": [
+      "potato"
+    ],
+    "cold storage": [
+      "cold storage"
+    ]
+  },
+  "decision_words": {
+    "sell": [
+      "sell"
+    ],
+    "hold": [
+      "hold",
+      "wait",
+      "store it"
+    ],
+    "insufficient_data": [
+      "not enough",
+      "insufficient",
+      "too old",
+      "missing",
+      "cannot",
+      "can't"
+    ]
+  },
+  "advisory_words": [
+    "store",
+    "storage",
+    "rot",
+    "sprout",
+    "grade",
+    "grading",
+    "harvest",
+    "cure",
+    "curing",
+    "pack",
+    "crate",
+    "handle",
+    "handling",
+    "spoil",
+    "keep"
+  ]
+}

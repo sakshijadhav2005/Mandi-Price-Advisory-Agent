@@ -1,0 +1,7 @@
+id,language,audio_path,reference,expected_crop,hypothesis
+en-001,en,audio/en-001.webm,Should I sell my onion now or wait?,onion,should i sell my onion now or wait
+en-002,en,audio/en-002.webm,"I have 20 quintals of tomato, sell today?",tomato,i have 20 quintals of tomato sell to day
+hi-001,hi,audio/hi-001.webm,क्या मैं अपना प्याज अभी बेचूं?,onion,क्या मैं अपना प्याज अभी बेचूं
+hi-002,hi,audio/hi-002.webm,टमाटर का भाव क्या है?,tomato,टमाटर का भाव क्या हैं
+mr-001,mr,audio/mr-001.webm,मी कांदा आता विकू की थांबू?,onion,मी कांदा आता विकू की थांबू
+mr-002,mr,audio/mr-002.webm,टोमॅटोला आज काय भाव आहे?,tomato,टोमॅटो ला आज काय भाव आहे

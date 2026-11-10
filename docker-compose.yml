@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16.4
+    environment:
+      POSTGRES_USER: mandi
+      POSTGRES_PASSWORD: mandi
+      POSTGRES_DB: mandi
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://mandi:mandi@db:5432/mandi
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      TTS_PROVIDER: ${TTS_PROVIDER:-none}
+      GOOGLE_TTS_API_KEY: ${GOOGLE_TTS_API_KEY:-}
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,capacitor://localhost,https://localhost}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      DATA_GOV_IN_API_KEY: ${DATA_GOV_IN_API_KEY:-}
+    ports: ["8000:8000"]
+    depends_on: [db]
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+      args:
+        VITE_API_BASE: ${PUBLIC_API_BASE:-http://localhost:8000}
+    ports: ["8080:80"]
+    depends_on: [api]
+  ingest:
+    build: ./backend
+    command: python manage.py schedule --at 18:30  # fetch prices, then check price alerts
+    environment:
+      DATABASE_URL: postgresql+psycopg://mandi:mandi@db:5432/mandi
+      DATA_GOV_IN_API_KEY: ${DATA_GOV_IN_API_KEY:-}
+      EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
+    depends_on: [db]
+volumes:
+  pgdata:

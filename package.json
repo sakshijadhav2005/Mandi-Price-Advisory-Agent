@@ -1,0 +1,17 @@
+{
+  "name": "mandi-agent",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/web",
+    "apps/mobile",
+    "apps/capacitor"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "mobile": "npm run start -w apps/mobile"
+  }
+}

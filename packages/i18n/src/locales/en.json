@@ -1,0 +1,140 @@
+{
+  "app": {
+    "name": "Mandi Advisor",
+    "tagline": "Sell now or hold? Ask in your language."
+  },
+  "nav": {
+    "ask": "Ask",
+    "prices": "Prices",
+    "history": "History",
+    "settings": "Settings"
+  },
+  "language": {
+    "choose": "Choose your language",
+    "continue": "Continue"
+  },
+  "login": {
+    "title": "Log in with your mobile number",
+    "phone": "Mobile number",
+    "sendCode": "Send code",
+    "code": "Enter the 6-digit code",
+    "verify": "Log in",
+    "devCode": "Test code (dev mode): {{code}}",
+    "guest": "Continue without login",
+    "logout": "Log out"
+  },
+  "ask": {
+    "placeholder": "Type your question, e.g. Should I sell my onion now?",
+    "send": "Send",
+    "crop": "Crop",
+    "quantity": "Quantity (quintals)",
+    "anyCrop": "From my question",
+    "thinking": "Checking prices…",
+    "empty": "Ask about onion, tomato or potato prices, or whether to sell now or hold.",
+    "examples": [
+      "Should I sell my onion now or wait?",
+      "I have 20 quintals of tomato. Sell today?",
+      "I have potatoes in cold storage. Hold or sell?",
+      "How should I store onions?"
+    ],
+    "error": "Something went wrong. Please try again.",
+    "useLocation": "Use my location for transport cost",
+    "locationOn": "Using your location",
+    "newChat": "New question"
+  },
+  "voice": {
+    "start": "Tap to speak",
+    "stop": "Tap to stop",
+    "listening": "Listening…",
+    "cancel": "Cancel",
+    "unsupported": "Voice input is not available in this browser. Please type instead.",
+    "confirm": "Is this what you said?",
+    "sendIt": "Yes, send",
+    "retype": "Edit",
+    "speakAgain": "Speak again",
+    "play": "Listen",
+    "stopPlay": "Stop",
+    "failed": "Could not hear clearly. Please speak again or type."
+  },
+  "answer": {
+    "decision": {
+      "sell": "Sell now",
+      "hold": "Hold",
+      "insufficient_data": "Not enough data"
+    },
+    "confidence": "Confidence: {{level}}",
+    "level": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "bestMarket": "Best market now",
+    "netNow": "You get (after costs)",
+    "holdFor": "If you hold {{days}} days",
+    "sources": "Sources",
+    "showSources": "Show sources and details",
+    "hideSources": "Hide sources",
+    "priceSource": "{{market}} price, {{date}}",
+    "demoData": "demo data",
+    "helpful": "Was this helpful?",
+    "yes": "Yes",
+    "no": "No",
+    "thanks": "Thank you!",
+    "offline": "Basic answer (AI writer unavailable)",
+    "steps": "Steps the assistant took",
+    "perQtl": "₹{{value}}/qtl"
+  },
+  "prices": {
+    "title": "Mandi prices",
+    "market": "Market",
+    "modal": "Modal",
+    "range": "Min – Max",
+    "date": "Reported",
+    "status": {
+      "fresh": "Recent",
+      "stale": "Old data",
+      "missing": "No data"
+    },
+    "daysOld": "{{count}} days old",
+    "today": "today",
+    "unit": "₹ per quintal",
+    "demo": "These are demo (synthetic) prices, not real market reports.",
+    "trend": "Last 30 days"
+  },
+  "history": {
+    "title": "Your questions",
+    "empty": "No questions yet.",
+    "open": "Open",
+    "delete": "Delete",
+    "messages": "{{count}} messages"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "speakAnswers": "Read answers aloud automatically",
+    "server": "Server address",
+    "account": "Account",
+    "guest": "Using without login",
+    "district": "District"
+  },
+  "disclaimerTitle": "Please note",
+  "offline": {
+    "banner": "You are offline. Showing saved prices; answers need internet.",
+    "noAnswer": "You are offline. Connect to the internet to ask a question."
+  },
+  "alerts": {
+    "title": "Price alerts",
+    "inbox": "New alerts",
+    "markRead": "Mark as read",
+    "add": "Add alert",
+    "anyMarket": "Any nearby market",
+    "above": "Goes above",
+    "below": "Goes below",
+    "threshold": "Price (₹/quintal)",
+    "none": "No alerts yet. Get notified when the price crosses a level.",
+    "delete": "Remove",
+    "item": "{{crop}} at {{market}} {{direction}} ₹{{price}}",
+    "lastHit": "last triggered {{date}}",
+    "pushNote": "On the website, alerts appear here. The mobile app also sends a notification."
+  }
+}

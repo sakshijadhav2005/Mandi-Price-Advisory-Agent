@@ -1,0 +1,52 @@
+[
+  {
+    "screen": "01-language-picker",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "02-mr-ask-empty",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "03-mr-sell-hold-answer",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "04-mr-sources-open",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "05-mr-storage-answer",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "06-mr-prices",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "07-mr-history",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "08-mr-settings",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "09-en-pune-potato-answer",
+    "overflow": 0,
+    "small": []
+  },
+  {
+    "screen": "10-en-pune-potato-prices",
+    "overflow": 0,
+    "small": []
+  }
+]

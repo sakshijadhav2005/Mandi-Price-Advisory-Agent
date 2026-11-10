@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-soil-50 text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-leaf-500 ring-offset-2 ring-offset-soil-50 dark:ring-offset-stone-950;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 font-semibold transition disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-leaf-600 text-white hover:bg-leaf-700 active:bg-leaf-900;
+  }
+  .btn-ghost {
+    @apply btn border border-stone-300 bg-white text-stone-800 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:hover:bg-stone-800;
+  }
+  .card {
+    @apply rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-stone-900;
+  }
+  .input {
+    @apply min-h-[48px] w-full rounded-xl border border-stone-300 bg-white px-3 text-base text-stone-900 placeholder:text-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400;
+  }
+}

@@ -1,0 +1,37 @@
+[project]
+name = "mandi-agent"
+version = "0.1.0"
+description = "Multilingual sell/hold advisory agent for mandi prices"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "SQLAlchemy>=2.0",
+    "numpy>=1.26",
+    "scikit-learn>=1.4",
+    "rank-bm25>=0.2.2",
+    "anthropic>=2.0",
+    "PyJWT>=2.8",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27",
+    "pypdf>=4.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+postgres = ["psycopg[binary]>=3.1"]
+whisper = ["faster-whisper>=1.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_default_fixture_loop_scope = "function"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
