@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     llm_provider: str = "auto"
     # Free hosted models (OpenAI-compatible APIs)
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.5-flash"
     groq_api_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
     openrouter_api_key: str = ""

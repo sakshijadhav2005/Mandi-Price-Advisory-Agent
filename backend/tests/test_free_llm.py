@@ -63,7 +63,7 @@ def test_gemini_tool_loop_answer(session, gemini):
     calls = gemini([tool_call("compute_recommendation", {"crop": "onion"}), answer_from_recommendation])
     ans = answer_query(session, "Should I sell onion?", language="en", as_of=AS_OF, use_llm=True)
     assert ans.mode == "llm", ans.warnings
-    assert ans.usage["model"] == "gemini:gemini-2.5-flash"
+    assert ans.usage["model"] == "gemini:gemini-3.5-flash"
     assert ans.usage["input_tokens"] == 2000
     assert [t["tool"] for t in ans.trace] == ["compute_recommendation"]
     assert calls[0]["url"].startswith("https://generativelanguage.googleapis.com/")
