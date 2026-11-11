@@ -84,7 +84,7 @@ Capacitor fallback: `npm run build -w apps/web`, then in `apps/capacitor`: `npx 
 
 Docker (Postgres + API + web + daily ingestion and alert job): `docker compose up --build`, then `docker compose exec api python manage.py seed-synthetic`.
 
-Real prices: set `DATA_GOV_IN_API_KEY` (free, from your data.gov.in account) and run `python manage.py daily` once a day (cron or Windows Task Scheduler; or leave `manage.py schedule` running). It fetches prices, checks price alerts, and posts to `OPS_ALERT_WEBHOOK_URL` (Slack, Discord or Teams) when ingestion fails or returns nothing. Or import Agmarknet CSV exports with `python manage.py import-csv file.csv`.
+Real prices: set `DATA_GOV_IN_API_KEY` (free, from your data.gov.in account) and run `python manage.py daily` once a day. On Windows, `.\deploy\install-daily-task.ps1` registers a Task Scheduler job for 18:30 (log in `backend/daily.log`); on Linux use cron, or leave `manage.py schedule` running. Each API call is retried three times with a 20 s pause, because data.gov.in is often slow. It fetches prices, checks price alerts, and posts to `OPS_ALERT_WEBHOOK_URL` (Slack, Discord or Teams) when ingestion fails or returns nothing. Or import Agmarknet CSV exports with `python manage.py import-csv file.csv`.
 
 How the feed is mapped onto the pilot markets:
 - `DATA_GOV_IN_RESOURCE_ID` picks the dataset; the default is "Variety-wise Daily Market Prices". The fetch filters by state and commodity only, because Agmarknet has spelt districts both "Nasik" and "Nashik".

@@ -135,6 +135,56 @@ def test_fetch_data_gov_in_filters_by_state_and_commodity_and_keeps_only_pilot_m
         session.commit()
 
 
+def test_fetch_retries_timeouts_then_succeeds(session, monkeypatch):
+    attempts: list[int] = []
+
+    def flaky_get(url, params, timeout):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise httpx.ReadTimeout("slow", request=httpx.Request("GET", url))
+        return httpx.Response(200, json={"records": [_rec("Yeola", "Red", 2400, commodity=params["filters[commodity]"])]}, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(ingest.httpx, "get", flaky_get)
+    monkeypatch.setattr(ingest, "RETRY_BACKOFF_S", 0)
+    monkeypatch.setattr(ingest.get_settings(), "data_gov_in_api_key", "test-key")
+    try:
+        assert ingest.fetch_data_gov_in(session) == 3
+        assert len(attempts) == 4  # 3 crops + 1 retry
+    finally:
+        session.execute(delete(Price).where(Price.source == "data_gov_in"))
+        session.commit()
+
+
+def test_fetch_gives_up_after_repeated_timeouts_and_records_the_failure(session, monkeypatch):
+    def always_timeout(url, params, timeout):
+        raise httpx.ReadTimeout("slow", request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(ingest.httpx, "get", always_timeout)
+    monkeypatch.setattr(ingest, "RETRY_BACKOFF_S", 0)
+    monkeypatch.setattr(ingest.get_settings(), "data_gov_in_api_key", "test-key")
+    with pytest.raises(httpx.ReadTimeout):
+        ingest.fetch_data_gov_in(session)
+    from app.agent.data import last_ingestion
+
+    run = last_ingestion(session)
+    assert run and run["status"] == "failed" and "ReadTimeout" in run["message"]
+
+
+def test_fetch_does_not_retry_a_bad_key(session, monkeypatch):
+    attempts: list[int] = []
+
+    def forbidden(url, params, timeout):
+        attempts.append(1)
+        return httpx.Response(403, json={"message": "invalid key"}, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(ingest.httpx, "get", forbidden)
+    monkeypatch.setattr(ingest, "RETRY_BACKOFF_S", 0)
+    monkeypatch.setattr(ingest.get_settings(), "data_gov_in_api_key", "bad-key")
+    with pytest.raises(httpx.HTTPStatusError):
+        ingest.fetch_data_gov_in(session)
+    assert len(attempts) == 1
+
+
 # ----------------------------------------------------------------------------- real beats synthetic
 
 

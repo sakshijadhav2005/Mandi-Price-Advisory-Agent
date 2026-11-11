@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 from collections import Counter
 import logging
+import time
 from datetime import date, datetime
 from pathlib import Path
 
@@ -160,6 +161,33 @@ def load_csv(session: Session, path: Path, source: str = "agmarknet_csv") -> int
     return upsert_prices(session, rows, source)
 
 
+# data.gov.in is often slow or briefly unreachable; a daily job should not give up on one timeout.
+FETCH_ATTEMPTS = 3
+FETCH_TIMEOUT_S = 60.0
+RETRY_BACKOFF_S = 20.0
+
+
+def _get_with_retries(url: str, params: dict) -> httpx.Response:
+    """GET with retries on timeouts, connection errors and 5xx. Re-raises the last error."""
+    last: Exception | None = None
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            resp = httpx.get(url, params=params, timeout=FETCH_TIMEOUT_S)
+            if resp.status_code >= 500:
+                raise httpx.HTTPStatusError(f"server error {resp.status_code}", request=resp.request, response=resp)
+            resp.raise_for_status()
+            return resp
+        except (httpx.TimeoutException, httpx.TransportError, httpx.HTTPStatusError) as exc:
+            last = exc
+            if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code < 500:
+                raise  # a 4xx (bad key, bad resource id) will not fix itself
+            if attempt < FETCH_ATTEMPTS:
+                log.warning("data.gov.in attempt %d/%d failed (%s); retrying in %.0fs", attempt, FETCH_ATTEMPTS, exc, RETRY_BACKOFF_S)
+                time.sleep(RETRY_BACKOFF_S)
+    assert last is not None
+    raise last
+
+
 def fetch_data_gov_in(session: Session, limit: int = 1000) -> int:
     """Pull today's Agmarknet prices for every configured district and crop from data.gov.in.
 
@@ -180,7 +208,7 @@ def fetch_data_gov_in(session: Session, limit: int = 1000) -> int:
         # Markets are matched by their exact published names instead.
         states = sorted({d.state for d in ref.districts.values()})
         for state, crop in ((st, c) for st in states for c in ref.crops.values()):
-            resp = httpx.get(
+            resp = _get_with_retries(
                 DATA_GOV_URL.format(resource_id=settings.data_gov_in_resource_id),
                 params={
                     "api-key": settings.data_gov_in_api_key,
@@ -189,9 +217,7 @@ def fetch_data_gov_in(session: Session, limit: int = 1000) -> int:
                     "filters[state.keyword]": state,
                     "filters[commodity]": crop.agmarknet_commodity,
                 },
-                timeout=60,
             )
-            resp.raise_for_status()
             for rec in resp.json().get("records", []):
                 if row := normalise_record(rec, "data_gov_in"):
                     rows.append(row)
