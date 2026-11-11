@@ -1,5 +1,5 @@
 import { speechLocale } from "@mandi/i18n";
-import { voiceReducer, type ApiClient, type VoiceState } from "@mandi/shared";
+import { voiceReducer, type ApiClient, type VoiceFailure, type VoiceState } from "@mandi/shared";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 // Minimal typings for the Web Speech API (not in lib.dom for all TS versions).
@@ -36,6 +36,35 @@ function recorderSupported(): boolean {
   return typeof MediaRecorder !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
 }
 
+/** A pause this long after the last recognised words ends the question. */
+const PAUSE_MS = 1800;
+/** No single question runs longer than this. */
+const MAX_LISTEN_MS = 20_000;
+
+/** Browsers only allow the microphone on https or localhost. */
+export function secureContext(): boolean {
+  return typeof window === "undefined" || window.isSecureContext !== false;
+}
+
+/** Map a Web Speech API error code to a reason the UI can explain. */
+function recognitionFailure(code: string): VoiceFailure {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "denied";
+    case "audio-capture":
+      return "no-mic";
+    case "network":
+      return "network";
+    case "no-speech":
+      return "no-speech";
+    case "language-not-supported":
+      return "unsupported";
+    default:
+      return "failed";
+  }
+}
+
 /**
  * Voice input. Prefers the browser recogniser (no cost, no upload); falls back
  * to recording Opus audio and sending it to /voice/transcribe when the server
@@ -48,20 +77,40 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
   const mediaRef = useRef<MediaRecorder | null>(null);
   const cancelled = useRef(false);
 
-  const supported = browserSttSupported() || (serverStt && recorderSupported());
+  const supported = secureContext() && (browserSttSupported() || (serverStt && recorderSupported()));
 
   const start = useCallback(async () => {
     cancelled.current = false;
     setInterim("");
+    if (!secureContext()) {
+      dispatch({ type: "fail", reason: "insecure" });
+      return;
+    }
     const Ctor = recognitionCtor();
     if (Ctor) {
       const rec = new Ctor();
       rec.lang = speechLocale(language);
       rec.interimResults = true;
       rec.maxAlternatives = 1;
-      rec.continuous = false;
+      // Single-phrase mode ends at the first short pause, often after two or
+      // three words. Keep listening and end the question ourselves after a
+      // longer pause, or when it has gone on long enough.
+      rec.continuous = true;
       let finalText = "";
+      let interimText = "";
       let confidence = 0;
+      let errored = false;
+      let pauseTimer: ReturnType<typeof setTimeout> | undefined;
+      const finish = () => {
+        clearTimeout(pauseTimer);
+        clearTimeout(maxTimer);
+        try {
+          rec.stop();
+        } catch {
+          /* already stopped */
+        }
+      };
+      const maxTimer = setTimeout(finish, MAX_LISTEN_MS);
       rec.onresult = (e) => {
         let text = "";
         for (let i = 0; i < e.results.length; i++) {
@@ -72,19 +121,40 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
             confidence = r[0].confidence || 0.5; // some engines report 0 when unknown
           }
         }
+        interimText = text;
         setInterim(text);
+        clearTimeout(pauseTimer);
+        pauseTimer = setTimeout(finish, PAUSE_MS);
       };
       rec.onerror = (e) => {
         if (cancelled.current) return;
-        dispatch({ type: "fail", reason: e.error === "not-allowed" ? "denied" : e.error === "no-speech" ? "no-speech" : "failed" });
+        // "aborted" follows our own stop()/abort() and is not a failure.
+        if (e.error === "aborted") return;
+        errored = true;
+        dispatch({ type: "fail", reason: recognitionFailure(e.error) });
       };
       rec.onend = () => {
-        if (cancelled.current) return;
-        dispatch({ type: "result", transcript: finalText, confidence });
+        clearTimeout(pauseTimer);
+        clearTimeout(maxTimer);
+        // The browser fires onend after onerror; keep the real reason.
+        if (cancelled.current || errored) return;
+        if (finalText) {
+          dispatch({ type: "result", transcript: finalText, confidence });
+        } else {
+          // Stopped before the engine finalised: use what it heard so far,
+          // at low confidence so the farmer is asked to confirm it.
+          dispatch({ type: "result", transcript: interimText, confidence: interimText ? 0.5 : 0 });
+        }
       };
       recRef.current = rec;
       dispatch({ type: "start", at: Date.now() });
-      rec.start();
+      try {
+        rec.start();
+      } catch {
+        // start() throws if a previous session is still open.
+        errored = true;
+        dispatch({ type: "fail", reason: "failed" });
+      }
       return;
     }
     if (serverStt && recorderSupported()) {
@@ -107,8 +177,9 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
         mediaRef.current = recorder;
         dispatch({ type: "start", at: Date.now() });
         recorder.start();
-      } catch {
-        dispatch({ type: "fail", reason: "denied" });
+      } catch (err) {
+        const name = (err as { name?: string } | null)?.name;
+        dispatch({ type: "fail", reason: name === "NotFoundError" || name === "OverconstrainedError" ? "no-mic" : "denied" });
       }
       return;
     }
@@ -166,6 +237,17 @@ export function browserTtsSupported(): boolean {
 export function useSpeaker(api: ApiClient, serverTts: boolean) {
   const [speakingId, setSpeakingId] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Chrome loads its voice list asynchronously; ask for it early so the first
+  // spoken answer already uses a Hindi or Marathi voice.
+  useEffect(() => {
+    if (!browserTtsSupported()) return;
+    const synth = window.speechSynthesis;
+    synth.getVoices();
+    const refresh = () => synth.getVoices();
+    synth.addEventListener?.("voiceschanged", refresh);
+    return () => synth.removeEventListener?.("voiceschanged", refresh);
+  }, []);
 
   const stop = useCallback(() => {
     if (browserTtsSupported()) window.speechSynthesis.cancel();

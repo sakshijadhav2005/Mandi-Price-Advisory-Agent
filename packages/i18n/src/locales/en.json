@@ -54,7 +54,15 @@
     "speakAgain": "Speak again",
     "play": "Listen",
     "stopPlay": "Stop",
-    "failed": "Could not hear clearly. Please speak again or type."
+    "failed": "Could not hear clearly. Please speak again or type.",
+    "denied": "Microphone access was blocked. Allow the microphone for this site in your browser settings, then tap the mic again.",
+    "noMic": "No microphone was found. Connect or enable a microphone, or type your question.",
+    "network": "Voice recognition needs an internet connection and could not reach the speech service. Check your connection or type your question.",
+    "insecure": "Voice input only works on a secure (https) address or on localhost. Open the app over https, or type your question.",
+    "thinking": "Thinking…",
+    "speaking": "Speaking…",
+    "end": "End voice chat",
+    "hint": "Say your question. The answer is read aloud, then I listen again."
   },
   "answer": {
     "decision": {

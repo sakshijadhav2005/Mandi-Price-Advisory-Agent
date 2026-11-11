@@ -25,6 +25,10 @@ export function AskPage() {
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Hands-free voice conversation: tap the mic once, then speak, hear the
+  // answer, and speak again without touching the screen.
+  const [handsFree, setHandsFree] = useState(false);
+  const wasSpeaking = useRef(false);
 
   const voice = useVoiceInput(lang, api, !!meta?.voice.server_stt, keepRecordings && !!meta?.voice.stores_recordings);
   const speaker = useSpeaker(api, !!meta?.voice.server_tts);
@@ -78,14 +82,43 @@ export function AskPage() {
     [api, autoSpeak, busy, conversationId, coords, crop, district, lang, qty, speaker, t],
   );
 
-  // Confident voice results are sent straight away; others wait for confirmation.
+  const startVoice = useCallback(() => {
+    speaker.stop(); // tapping the mic while the answer is read aloud interrupts it
+    setHandsFree(true);
+    void voice.start();
+  }, [speaker, voice]);
+
+  const endVoice = useCallback(() => {
+    setHandsFree(false);
+    speaker.stop();
+    voice.cancel();
+  }, [speaker, voice]);
+
+  // In the hands-free conversation every transcript is sent straight away and
+  // shown as the question bubble. Otherwise only confident results are sent and
+  // the rest wait for confirmation. While an answer is still loading the
+  // transcript stays on screen instead of being dropped.
   useEffect(() => {
-    if (voice.state.kind === "confirming" && canAutoSend(voice.state)) {
+    if (!busy && voice.state.kind === "confirming" && (handsFree || canAutoSend(voice.state))) {
       const text = voice.state.transcript;
       voice.reset();
       void send(text, "voice");
     }
-  }, [voice, send]);
+  }, [busy, handsFree, voice, send]);
+
+  // A voice error or a failed answer ends the hands-free conversation.
+  useEffect(() => {
+    if (voice.state.kind === "error" || error) setHandsFree(false);
+  }, [voice.state.kind, error]);
+
+  // When the spoken answer finishes, listen for the next question.
+  useEffect(() => {
+    const speaking = speaker.speakingId !== null;
+    if (wasSpeaking.current && !speaking && handsFree && !busy && voice.state.kind === "idle") {
+      void voice.start();
+    }
+    wasSpeaking.current = speaking;
+  }, [speaker.speakingId, handsFree, busy, voice]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -101,7 +134,7 @@ export function AskPage() {
   };
 
   const newChat = () => {
-    speaker.stop();
+    endVoice();
     setTurns([]);
     setConversationId(null);
     navigate("/");
@@ -144,12 +177,15 @@ export function AskPage() {
                 canSpeak={speaker.supported}
                 speaking={speaker.speakingId === turn.key}
                 onSpeak={() => void speaker.speak(turn.key, turn.answer.text, turn.answer.language)}
-                onStop={speaker.stop}
+                onStop={() => {
+                  setHandsFree(false);
+                  speaker.stop();
+                }}
               />
             </li>
           ),
         )}
-        {busy && (
+        {busy && !handsFree && (
           <li className="card flex items-center gap-3 text-stone-600 dark:text-stone-300">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-leaf-600 border-t-transparent" />
             {t("ask.thinking")}
@@ -161,6 +197,10 @@ export function AskPage() {
       <VoicePanel
         state={voice.state}
         interim={voice.interim}
+        handsFree={handsFree}
+        thinking={busy}
+        speaking={speaker.speakingId !== null}
+        onEnd={endVoice}
         onCancel={voice.cancel}
         onAccept={(text) => {
           voice.reset();
@@ -176,7 +216,7 @@ export function AskPage() {
 
       <form onSubmit={onSubmit} className="card space-y-3">
         <div className="flex items-end gap-3">
-          <MicButton state={voice.state} supported={voice.supported} onStart={() => void voice.start()} onStop={voice.stop} disabled={busy} />
+          <MicButton state={voice.state} supported={voice.supported} onStart={startVoice} onStop={voice.stop} disabled={busy} />
           <label className="sr-only" htmlFor="question">
             {t("ask.placeholder")}
           </label>

@@ -9,19 +9,25 @@
  * silently.
  */
 
+/**
+ * Why voice input stopped. "insecure" means the page is not served over https
+ * (or localhost), so the browser refuses microphone access.
+ */
+export type VoiceFailure = "unsupported" | "insecure" | "no-speech" | "denied" | "no-mic" | "network" | "failed";
+
 export type VoiceState =
   | { kind: "idle" }
   | { kind: "listening"; startedAt: number }
   | { kind: "transcribing" }
   | { kind: "confirming"; transcript: string; confidence: number }
-  | { kind: "error"; reason: "unsupported" | "no-speech" | "denied" | "failed" };
+  | { kind: "error"; reason: VoiceFailure };
 
 export type VoiceEvent =
   | { type: "start"; at: number }
   | { type: "stop" }
   | { type: "cancel" }
   | { type: "result"; transcript: string; confidence: number }
-  | { type: "fail"; reason: "unsupported" | "no-speech" | "denied" | "failed" }
+  | { type: "fail"; reason: VoiceFailure }
   | { type: "accept" }
   | { type: "reset" };
 
