@@ -84,7 +84,14 @@ Capacitor fallback: `npm run build -w apps/web`, then in `apps/capacitor`: `npx 
 
 Docker (Postgres + API + web + daily ingestion and alert job): `docker compose up --build`, then `docker compose exec api python manage.py seed-synthetic`.
 
-Real prices: set `DATA_GOV_IN_API_KEY` and run `python manage.py daily` once a day (cron or Windows Task Scheduler; or leave `manage.py schedule` running). It fetches prices, checks price alerts, and posts to `OPS_ALERT_WEBHOOK_URL` (Slack, Discord or Teams) when ingestion fails or returns nothing. Or or import Agmarknet CSV exports with `python manage.py import-csv file.csv`.
+Real prices: set `DATA_GOV_IN_API_KEY` (free, from your data.gov.in account) and run `python manage.py daily` once a day (cron or Windows Task Scheduler; or leave `manage.py schedule` running). It fetches prices, checks price alerts, and posts to `OPS_ALERT_WEBHOOK_URL` (Slack, Discord or Teams) when ingestion fails or returns nothing. Or import Agmarknet CSV exports with `python manage.py import-csv file.csv`.
+
+How the feed is mapped onto the pilot markets:
+- `DATA_GOV_IN_RESOURCE_ID` picks the dataset; the default is "Variety-wise Daily Market Prices". The fetch filters by state and commodity only, because Agmarknet has spelt districts both "Nasik" and "Nashik".
+- Markets are matched **exactly** against the `agmarknet_names` listed per market in `backend/data/reference.json` (Agmarknet lists Pune(Moshi), Pune(Pimpri) and others separately, so substring matching is not safe). Rows for markets that are not listed are logged with their published names, so you can add a spelling after the first run.
+- Agmarknet publishes one row per variety. The `agmarknet_varieties` list per crop picks the main variety (for onion "Red" first); if none of the listed varieties is present, the varieties are averaged, weighted by arrivals when known.
+- The feed only has the current day. Backfill history from an Agmarknet CSV export with `import-csv` so the 14-day trend and the seasonal signal have something to work with.
+- When real rows arrive, they take priority over synthetic rows for the same market and day. Run `python manage.py purge-synthetic` to drop the demo prices altogether.
 
 ## Tests
 

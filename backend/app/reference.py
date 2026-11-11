@@ -19,6 +19,8 @@ class Market:
     lon: float
     names: dict[str, str] = field(default_factory=dict)
     district: str = ""
+    # Exact market names as Agmarknet / data.gov.in publish them (several spellings allowed).
+    agmarknet_names: tuple[str, ...] = ()
 
     def display(self, lang: str) -> str:
         return self.names.get(lang, self.name)
@@ -32,6 +34,7 @@ class District:
     state: str
     centre: dict
     market_ids: tuple[str, ...]
+    agmarknet_names: tuple[str, ...] = ()
 
     def display(self, lang: str) -> str:
         return self.names.get(lang, self.name)
@@ -51,6 +54,8 @@ class Crop:
     weight_loss_pct_per_day: float
     max_hold_days: int
     default_horizon_days: int
+    # Preferred Agmarknet varieties, best first. Rows of other varieties are averaged.
+    agmarknet_varieties: tuple[str, ...] = ()
 
     def display(self, lang: str) -> str:
         return self.names.get(lang, self.name)
@@ -80,6 +85,16 @@ class Reference:
     @property
     def default_district(self) -> District:
         return next(iter(self.districts.values()))
+
+    def market_by_agmarknet_name(self, name: str) -> Market | None:
+        """Exact (case- and space-insensitive) match on a published Agmarknet market name."""
+        key = agmarknet_key(name)
+        if not key:
+            return None
+        for m in self.markets.values():
+            if key in {agmarknet_key(n) for n in (m.agmarknet_names or (m.name,))}:
+                return m
+        return None
 
     @property
     def district(self) -> dict:
@@ -114,8 +129,18 @@ def load_reference() -> Reference:
         for m in d["markets"]:
             if m["id"] in markets:
                 raise ValueError(f"duplicate market id {m['id']!r} in reference.json")
-            markets[m["id"]] = Market(m["id"], m["name"], m["lat"], m["lon"], m.get("names", {}), d["id"])
-        districts[d["id"]] = District(d["id"], d["name"], d.get("names", {}), d["state"], d["centre"], tuple(m["id"] for m in d["markets"]))
+            markets[m["id"]] = Market(
+                m["id"], m["name"], m["lat"], m["lon"], m.get("names", {}), d["id"], tuple(m.get("agmarknet_names", [m["name"]]))
+            )
+        districts[d["id"]] = District(
+            d["id"],
+            d["name"],
+            d.get("names", {}),
+            d["state"],
+            d["centre"],
+            tuple(m["id"] for m in d["markets"]),
+            tuple(d.get("agmarknet_names", [d["name"]])),
+        )
     crops = {
         c["id"]: Crop(
             id=c["id"],
@@ -127,6 +152,7 @@ def load_reference() -> Reference:
             weight_loss_pct_per_day=c["weight_loss_pct_per_day"],
             max_hold_days=c["max_hold_days"],
             default_horizon_days=c["default_horizon_days"],
+            agmarknet_varieties=tuple(c.get("agmarknet_varieties", [])),
         )
         for c in raw["crops"]
     }
@@ -139,6 +165,11 @@ def load_reference() -> Reference:
         raw.get("nearby_radius_km", 60.0),
         raw.get("max_nearby_markets", 6),
     )
+
+
+def agmarknet_key(name: str) -> str:
+    """Normalise a published market name: lower-case, no spaces, no punctuation."""
+    return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

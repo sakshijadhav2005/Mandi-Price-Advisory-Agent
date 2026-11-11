@@ -26,6 +26,9 @@ class PricePoint:
 Series = dict[str, list[PricePoint]]  # market -> points sorted by date ascending
 
 
+SYNTHETIC_SOURCE = "synthetic"
+
+
 def today() -> date:
     override = get_settings().as_of_override
     return date.fromisoformat(override) if override else date.today()
@@ -39,9 +42,19 @@ def load_series(session: Session, crop: str, as_of: date, lookback_days: int = 3
     )
     if market:
         q = q.where(Price.market == market)
-    series: Series = defaultdict(list)
+    # One observation per market and day. When a real source and the synthetic
+    # generator both have a row for the same day, the real one wins, so a
+    # database that still holds synthetic history never mixes the two.
+    best: dict[tuple[str, date], PricePoint] = {}
     for p in session.scalars(q.order_by(Price.price_date)):
-        series[p.market].append(PricePoint(p.price_date, p.min_price, p.modal_price, p.max_price, p.arrivals_tonnes, p.source))
+        point = PricePoint(p.price_date, p.min_price, p.modal_price, p.max_price, p.arrivals_tonnes, p.source)
+        key = (p.market, p.price_date)
+        current = best.get(key)
+        if current is None or (current.source == SYNTHETIC_SOURCE and p.source != SYNTHETIC_SOURCE):
+            best[key] = point
+    series: Series = defaultdict(list)
+    for (m, _day), point in sorted(best.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        series[m].append(point)
     return dict(series)
 
 

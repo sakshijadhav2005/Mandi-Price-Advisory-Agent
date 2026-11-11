@@ -7,6 +7,7 @@ records an IngestionRun so failures show up in the freshness status.
 from __future__ import annotations
 
 import csv
+from collections import Counter
 import logging
 from datetime import date, datetime
 from pathlib import Path
@@ -25,11 +26,13 @@ DATA_GOV_URL = "https://api.data.gov.in/resource/{resource_id}"
 
 
 def _match_market(name: str) -> str | None:
-    name = name.strip().lower()
-    for m in load_reference().markets.values():
-        if m.name.lower() in name or name in m.name.lower() or m.id in name:
-            return m.id
-    return None
+    """Exact match on the Agmarknet market names listed in reference.json.
+
+    Substring matching is not safe here: Agmarknet lists Pune(Moshi), Pune(Pimpri)
+    and others as separate markets, and all of them contain "pune".
+    """
+    m = load_reference().market_by_agmarknet_name(name)
+    return m.id if m else None
 
 
 def _match_crop(commodity: str) -> str | None:
@@ -67,14 +70,56 @@ def normalise_record(rec: dict, source: str) -> dict | None:
             "max_price": float(keys.get("max_price") or keys.get("max_x0020_price")),
             "arrivals_tonnes": float(keys["arrivals_tonnes"]) if keys.get("arrivals_tonnes") else None,
             "source": source,
+            "variety": str(keys.get("variety") or "").strip(),
         }
     except (TypeError, ValueError) as exc:
         log.warning("skipping malformed record %s: %s", rec, exc)
         return None
 
 
+def _mean(values: list[float], weights: list[float | None]) -> float:
+    if all(w for w in weights):
+        total = sum(w for w in weights if w)
+        return sum(v * (w or 0) for v, w in zip(values, weights)) / total
+    return sum(values) / len(values)
+
+
+def aggregate_varieties(rows: list[dict]) -> list[dict]:
+    """Collapse one row per variety into one row per crop, market, day and source.
+
+    Agmarknet publishes a separate row for each variety traded. If the crop lists
+    preferred varieties in reference.json, the best one present is used; otherwise
+    the varieties are averaged (weighted by arrivals when they are known), with
+    the overall min and max. A single row passes through unchanged.
+    """
+    groups: dict[tuple, list[dict]] = {}
+    for r in rows:
+        groups.setdefault((r["crop"], r["market"], r["price_date"], r["source"]), []).append(r)
+    crops = load_reference().crops
+    out: list[dict] = []
+    for (crop, _market, _day, _source), group in groups.items():
+        chosen = group
+        for pref in crops[crop].agmarknet_varieties:
+            hits = [r for r in group if r.get("variety", "").lower() == pref.lower()]
+            if hits:
+                chosen = hits
+                break
+        base = dict(chosen[0])
+        if len(chosen) > 1:
+            weights = [r["arrivals_tonnes"] for r in chosen]
+            base["modal_price"] = round(_mean([r["modal_price"] for r in chosen], weights), 2)
+            base["min_price"] = min(r["min_price"] for r in chosen)
+            base["max_price"] = max(r["max_price"] for r in chosen)
+            arrivals = [r["arrivals_tonnes"] for r in chosen if r["arrivals_tonnes"] is not None]
+            base["arrivals_tonnes"] = sum(arrivals) if arrivals else None
+        base.pop("variety", None)
+        out.append(base)
+    return out
+
+
 def upsert_prices(session: Session, rows: list[dict], job_source: str) -> int:
     """Insert rows, replacing any existing observation with the same key. Returns rows written."""
+    rows = aggregate_varieties(rows)
     written = 0
     for row in rows:
         existing = session.scalar(
@@ -127,25 +172,38 @@ def fetch_data_gov_in(session: Session, limit: int = 1000) -> int:
         raise RuntimeError("DATA_GOV_IN_API_KEY is not set")
     ref = load_reference()
     rows: list[dict] = []
+    unmatched: Counter[str] = Counter()
     try:
-        for district, crop in ((d, c) for d in ref.districts.values() for c in ref.crops.values()):
+        # One call per state and commodity. The district filter is deliberately
+        # left out: Agmarknet has spelt districts differently over the years
+        # ("Nasik" / "Nashik"), and a wrong spelling silently returns nothing.
+        # Markets are matched by their exact published names instead.
+        states = sorted({d.state for d in ref.districts.values()})
+        for state, crop in ((st, c) for st in states for c in ref.crops.values()):
             resp = httpx.get(
                 DATA_GOV_URL.format(resource_id=settings.data_gov_in_resource_id),
                 params={
                     "api-key": settings.data_gov_in_api_key,
                     "format": "json",
                     "limit": limit,
-                    "filters[state.keyword]": district.state,
-                    "filters[district]": district.name,
+                    "filters[state.keyword]": state,
                     "filters[commodity]": crop.agmarknet_commodity,
                 },
-                timeout=30,
+                timeout=60,
             )
             resp.raise_for_status()
             for rec in resp.json().get("records", []):
                 if row := normalise_record(rec, "data_gov_in"):
                     rows.append(row)
-    except Exception as exc:  # network, HTTP, or schema change
+                else:
+                    keys = {k.strip().lower(): v for k, v in rec.items()}
+                    unmatched[f"{keys.get('district', '?')} / {keys.get('market', '?')}"] += 1
+    except Exception as exc:  # noqa: BLE001 - any failure is recorded for ops
         record_failure(session, "data_gov_in", repr(exc))
         raise
+    if unmatched:
+        log.info(
+            "data.gov.in rows for markets not in reference.json (add their names to agmarknet_names if wanted): %s",
+            ", ".join(f"{name} x{n}" for name, n in unmatched.most_common(40)),
+        )
     return upsert_prices(session, rows, "data_gov_in")

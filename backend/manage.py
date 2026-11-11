@@ -4,6 +4,7 @@
     python manage.py seed-synthetic [--days 730] [--end 2026-11-08]
     python manage.py import-csv path/to/agmarknet_export.csv [--source pilot_ground_truth]
     python manage.py fetch-data-gov            # needs DATA_GOV_IN_API_KEY
+    python manage.py purge-synthetic           # drop the demo prices once real ones arrive
     python manage.py check-alerts              # evaluate price alerts, send push notifications
     python manage.py daily                     # once: fetch prices, check alerts, alert ops on failure
     python manage.py schedule                  # runs `daily` every day at --at
@@ -46,6 +47,15 @@ def cmd_seed_synthetic(args) -> None:
         s.execute(delete(Price).where(Price.source == "synthetic"))
         n = price_ingest.bulk_insert_prices(s, rows, "synthetic")
     log.info("inserted %d synthetic price rows (%s .. %s)", n, start, end)
+
+
+def cmd_purge_synthetic(_args) -> None:
+    """Delete the synthetic demo prices. Run this once real prices are flowing."""
+    init_db()
+    with session_scope() as s:
+        n = s.execute(delete(Price).where(Price.source == "synthetic")).rowcount
+        s.commit()
+    log.info("deleted %d synthetic price rows", n)
 
 
 def cmd_import_csv(args) -> None:
@@ -126,6 +136,7 @@ def main() -> None:
     sp.add_argument("--source", default="agmarknet_csv", help="e.g. pilot_ground_truth for prices farmers actually received")
     sp.set_defaults(func=cmd_import_csv)
     sub.add_parser("fetch-data-gov").set_defaults(func=cmd_fetch_data_gov)
+    sub.add_parser("purge-synthetic").set_defaults(func=cmd_purge_synthetic)
     sub.add_parser("check-alerts").set_defaults(func=cmd_check_alerts)
     sub.add_parser("daily").set_defaults(func=cmd_daily)
     sp = sub.add_parser("schedule")

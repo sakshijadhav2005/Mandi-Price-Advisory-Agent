@@ -4,29 +4,31 @@
     {
       "id": "nashik",
       "name": "Nashik",
+      "agmarknet_names": ["Nashik", "Nasik"],
       "names": {"hi": "नासिक", "mr": "नाशिक"},
       "state": "Maharashtra",
       "centre": {"lat": 20.0059, "lon": 73.7900},
       "markets": [
-        {"id": "lasalgaon", "name": "Lasalgaon", "names": {"hi": "लासलगांव", "mr": "लासलगाव"}, "lat": 20.1500, "lon": 74.2333},
-        {"id": "pimpalgaon", "name": "Pimpalgaon Baswant", "names": {"hi": "पिंपलगांव बसवंत", "mr": "पिंपळगाव बसवंत"}, "lat": 20.1667, "lon": 73.9875},
-        {"id": "nashik", "name": "Nashik", "names": {"hi": "नासिक", "mr": "नाशिक"}, "lat": 20.0059, "lon": 73.7900},
-        {"id": "yeola", "name": "Yeola", "names": {"hi": "येवला", "mr": "येवला"}, "lat": 20.0424, "lon": 74.4894},
-        {"id": "manmad", "name": "Manmad", "names": {"hi": "मनमाड", "mr": "मनमाड"}, "lat": 20.2519, "lon": 74.4397}
+        {"id": "lasalgaon", "name": "Lasalgaon", "agmarknet_names": ["Lasalgaon", "Lasalgaon(Niphad)", "Lasalgaon(Vinchur)"], "names": {"hi": "लासलगांव", "mr": "लासलगाव"}, "lat": 20.1500, "lon": 74.2333},
+        {"id": "pimpalgaon", "name": "Pimpalgaon Baswant", "agmarknet_names": ["Pimpalgaon Baswant", "Pimpalgaon", "Pimpalgaon(B)"], "names": {"hi": "पिंपलगांव बसवंत", "mr": "पिंपळगाव बसवंत"}, "lat": 20.1667, "lon": 73.9875},
+        {"id": "nashik", "name": "Nashik", "agmarknet_names": ["Nashik", "Nasik"], "names": {"hi": "नासिक", "mr": "नाशिक"}, "lat": 20.0059, "lon": 73.7900},
+        {"id": "yeola", "name": "Yeola", "agmarknet_names": ["Yeola"], "names": {"hi": "येवला", "mr": "येवला"}, "lat": 20.0424, "lon": 74.4894},
+        {"id": "manmad", "name": "Manmad", "agmarknet_names": ["Manmad"], "names": {"hi": "मनमाड", "mr": "मनमाड"}, "lat": 20.2519, "lon": 74.4397}
       ]
     },
     {
       "id": "pune",
       "name": "Pune",
+      "agmarknet_names": ["Pune"],
       "names": {"hi": "पुणे", "mr": "पुणे"},
       "state": "Maharashtra",
       "centre": {"lat": 18.5204, "lon": 73.8567},
       "markets": [
-        {"id": "pune", "name": "Pune (Gultekdi)", "names": {"hi": "पुणे (गुलटेकडी)", "mr": "पुणे (गुलटेकडी)"}, "lat": 18.4870, "lon": 73.8650},
-        {"id": "chakan", "name": "Chakan", "names": {"hi": "चाकण", "mr": "चाकण"}, "lat": 18.7606, "lon": 73.8636},
-        {"id": "manchar", "name": "Manchar", "names": {"hi": "मंचर", "mr": "मंचर"}, "lat": 19.0040, "lon": 73.9440},
-        {"id": "junnar", "name": "Junnar", "names": {"hi": "जुन्नर", "mr": "जुन्नर"}, "lat": 19.2000, "lon": 73.8800},
-        {"id": "baramati", "name": "Baramati", "names": {"hi": "बारामती", "mr": "बारामती"}, "lat": 18.1514, "lon": 74.5815}
+        {"id": "pune", "name": "Pune (Gultekdi)", "agmarknet_names": ["Pune", "Pune(Gultekdi)", "Pune (Gultekdi)"], "names": {"hi": "पुणे (गुलटेकडी)", "mr": "पुणे (गुलटेकडी)"}, "lat": 18.4870, "lon": 73.8650},
+        {"id": "chakan", "name": "Chakan", "agmarknet_names": ["Chakan", "Khed(Chakan)"], "names": {"hi": "चाकण", "mr": "चाकण"}, "lat": 18.7606, "lon": 73.8636},
+        {"id": "manchar", "name": "Manchar", "agmarknet_names": ["Manchar", "Ambegaon(Manchar)"], "names": {"hi": "मंचर", "mr": "मंचर"}, "lat": 19.0040, "lon": 73.9440},
+        {"id": "junnar", "name": "Junnar", "agmarknet_names": ["Junnar", "Junnar(Narayangaon)", "Junnar(Alephata)", "Junnar(Otur)"], "names": {"hi": "जुन्नर", "mr": "जुन्नर"}, "lat": 19.2000, "lon": 73.8800},
+        {"id": "baramati", "name": "Baramati", "agmarknet_names": ["Baramati"], "names": {"hi": "बारामती", "mr": "बारामती"}, "lat": 18.1514, "lon": 74.5815}
       ]
     }
   ],
@@ -35,6 +37,7 @@
       "id": "onion",
       "name": "Onion",
       "agmarknet_commodity": "Onion",
+      "agmarknet_varieties": ["Red", "Nasik Red", "Local", "Onion", "Other"],
       "aliases": ["onion", "onions", "pyaz", "pyaaz", "kanda", "प्याज", "प्याज़", "कांदा", "कांदे", "कांद्याला", "कांद्याचे", "कांद्याचा"],
       "names": {"hi": "प्याज", "mr": "कांदा"},
       "storage_cost_per_qtl_day": 1.5,
@@ -46,6 +49,7 @@
       "id": "tomato",
       "name": "Tomato",
       "agmarknet_commodity": "Tomato",
+      "agmarknet_varieties": ["Hybrid", "Local", "Deshi", "Other", "Tomato"],
       "aliases": ["tomato", "tomatoes", "tamatar", "टमाटर", "टोमॅटो", "टोमॅटोला", "टोमॅटोचे", "टोमाटो"],
       "names": {"hi": "टमाटर", "mr": "टोमॅटो"},
       "storage_cost_per_qtl_day": 4.0,
@@ -57,6 +61,7 @@
       "id": "potato",
       "name": "Potato",
       "agmarknet_commodity": "Potato",
+      "agmarknet_varieties": ["Jyoti", "Local", "Desi", "Other", "Potato"],
       "aliases": ["potato", "potatoes", "aloo", "alu", "batata", "आलू", "आलुओं", "बटाटा", "बटाटे", "बटाट्याला", "बटाट्याचे"],
       "names": {"hi": "आलू", "mr": "बटाटा"},
       "storage_cost_per_qtl_day": 1.2,
