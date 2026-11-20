@@ -23,14 +23,14 @@ export function HistoryPage() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold">{t("history.title")}</h2>
-      {items?.length === 0 && <p className="text-stone-600 dark:text-stone-300">{t("history.empty")}</p>}
+      <h2 className="text-2xl font-bold tracking-tight">{t("history.title")}</h2>
+      {items?.length === 0 && <p className="text-muted">{t("history.empty")}</p>}
       <ul className="space-y-2">
         {items?.map((c) => (
           <li key={c.id} className="card flex items-center gap-3">
             <Link to={`/c/${c.id}`} className="min-w-0 flex-1" lang={c.language}>
               <p className="truncate font-medium">{c.title}</p>
-              <p className="text-sm text-stone-500">
+              <p className="text-sm text-muted">
                 {new Date(c.created_at).toLocaleDateString()} · {t("history.messages", { count: c.messages })}
               </p>
             </Link>

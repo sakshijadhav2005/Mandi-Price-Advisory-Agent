@@ -10,7 +10,7 @@ import re
 
 from app.agent.tools import ToolContext, run_tool
 from app.reference import load_reference
-from app.translation.languages import is_advisory_question
+from app.translation.languages import asks_sell_or_hold, is_advisory_question
 from app.translation.templates import inr, t
 
 _SENTENCE_END = re.compile(r"(?<=[.!?।])\s+")
@@ -30,12 +30,18 @@ def _tip(ctx: ToolContext, decision: str, crop_id: str) -> str | None:
     return None
 
 
-def advisory_answer(ctx: ToolContext, question: str, crop_id: str | None) -> str | None:
-    """Answer a storage / handling question from the best bulletin passage, preferring the farmer's language."""
+def advisory_answer(ctx: ToolContext, question: str, crop_id: str | None, require_match: bool = False) -> str | None:
+    """Answer from the best bulletin / uploaded-document passage, preferring the farmer's language.
+
+    `require_match`: only answer when the passage shares words with the question
+    (used for questions that name no crop, where any passage would otherwise win).
+    """
     result, err = run_tool(ctx, "search_advisories", {"query": question, "crop": crop_id})
     if err or not result["results"]:
         return None
-    hits = result["results"]
+    hits = [h for h in result["results"] if h["bm25"] > 0] if require_match else result["results"]
+    if not hits:
+        return None
     hit = next((h for h in hits if h["language"] == ctx.language), None)
     if hit is None:
         if ctx.language != "en":
@@ -55,6 +61,10 @@ def write_answer(
     ref = load_reference()
     lang = ctx.language
     if not crop_id or crop_id not in ref.crops:
+        # A general question (a scheme, a pest, ...) may be covered by an uploaded document.
+        # A sell/hold question about an unsupported crop still gets the supported-crops reply.
+        if question and not asks_sell_or_hold(question) and (doc := advisory_answer(ctx, question, None, require_match=True)):
+            return doc
         return t(lang, "unsupported_crop", crops=", ".join(c.display(lang) for c in ref.crops.values()))
     crop = ref.crops[crop_id]
     crop_name = crop.display(lang)

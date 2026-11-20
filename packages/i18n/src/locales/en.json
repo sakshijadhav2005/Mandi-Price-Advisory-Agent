@@ -21,7 +21,9 @@
     "verify": "Log in",
     "devCode": "Test code (dev mode): {{code}}",
     "guest": "Continue without login",
-    "logout": "Log out"
+    "logout": "Log out",
+    "or": "or",
+    "googleFailed": "Google sign-in failed. Try again, or log in with your mobile number."
   },
   "ask": {
     "placeholder": "Type your question, e.g. Should I sell my onion now?",

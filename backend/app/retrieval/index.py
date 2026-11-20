@@ -159,7 +159,8 @@ class AdvisoryIndex:
             self.vectors = np.zeros((0, 1), dtype=np.float32)
 
     @classmethod
-    def from_directory(cls, directory: Path = BULLETIN_DIR, embedder: Embedder | None = None) -> "AdvisoryIndex":
+    def from_directory(cls, directory: Path | None = None, embedder: Embedder | None = None) -> "AdvisoryIndex":
+        directory = directory or BULLETIN_DIR  # looked up at call time so tests can point it elsewhere
         chunks: list[Chunk] = []
         for path in sorted(directory.glob("*")):
             if path.suffix.lower() not in {".md", ".txt", ".pdf"}:
@@ -231,3 +232,9 @@ class AdvisoryIndex:
 @lru_cache
 def get_index() -> AdvisoryIndex:
     return AdvisoryIndex.from_directory(embedder=make_embedder())
+
+
+def rebuild_index() -> AdvisoryIndex:
+    """Re-read the bulletin folder (after an admin upload or delete)."""
+    get_index.cache_clear()
+    return get_index()

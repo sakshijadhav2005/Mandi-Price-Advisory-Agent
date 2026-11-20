@@ -7,9 +7,9 @@ import { SpeakerIcon, StopIcon } from "./Icons";
 type Answer = Omit<ChatAnswer, "conversation_id" | "message_id">;
 
 const DECISION_STYLE: Record<Decision, string> = {
-  sell: "bg-leaf-600 text-white",
-  hold: "bg-sky-700 text-white",
-  insufficient_data: "bg-amber-200 text-amber-950 dark:bg-amber-300",
+  sell: "bg-leaf text-white",
+  hold: "bg-board text-board-ink",
+  insufficient_data: "bg-turmeric-soft text-turmeric-ink ring-1 ring-inset ring-turmeric/40",
 };
 
 const CONFIDENCE_DOTS: Record<string, number> = { high: 3, medium: 2, low: 1 };
@@ -53,21 +53,18 @@ export function AnswerCard({
   };
 
   return (
-    <article className="card space-y-3" lang={lang}>
+    <article className="card space-y-4" lang={lang}>
       {answer.decision && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-3 py-1 text-base font-bold ${DECISION_STYLE[answer.decision]}`}>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <span className={`font-display rounded-lg px-3.5 py-1.5 text-lg font-bold leading-tight tracking-tight ${DECISION_STYLE[answer.decision]}`}>
             {t(`answer.decision.${answer.decision}`)}
             {answer.decision === "hold" && rec ? ` · ${rec.horizon_days}d` : ""}
           </span>
           {answer.confidence && answer.decision !== "insufficient_data" && (
-            <span className="flex items-center gap-1.5 text-sm text-stone-600 dark:text-stone-300">
-              <span className="flex gap-0.5" aria-hidden>
+            <span className="flex items-center gap-2 text-sm font-medium text-muted">
+              <span className="flex gap-1" aria-hidden>
                 {[1, 2, 3].map((i) => (
-                  <span
-                    key={i}
-                    className={`h-2.5 w-2.5 rounded-full ${i <= CONFIDENCE_DOTS[answer.confidence!] ? "bg-leaf-600" : "bg-stone-300 dark:bg-stone-700"}`}
-                  />
+                  <span key={i} className={`h-1.5 w-5 rounded-full ${i <= CONFIDENCE_DOTS[answer.confidence!] ? "bg-leaf" : "bg-line"}`} />
                 ))}
               </span>
               {t("answer.confidence", { level: t(`answer.level.${answer.confidence}`) })}
@@ -80,17 +77,17 @@ export function AnswerCard({
 
       {rec && rec.decision !== "insufficient_data" && rec.best_net_now_per_qtl !== null && (
         <dl className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-xl bg-leaf-50 p-3 dark:bg-leaf-900/40">
-            <dt className="text-stone-600 dark:text-stone-300">{t("answer.bestMarket")}</dt>
-            <dd className="font-semibold">{marketName(meta, rec.best_market_now, lang)}</dd>
-            <dd className="text-lg font-bold">{t("answer.perQtl", { value: formatRupees(rec.best_net_now_per_qtl, lang) })}</dd>
-            <dd className="text-xs text-stone-500 dark:text-stone-400">{t("answer.netNow")}</dd>
+          <div className="rounded-lg bg-board p-3">
+            <dt className="text-xs font-medium text-white/65">{t("answer.bestMarket")}</dt>
+            <dd className="truncate font-semibold text-white">{marketName(meta, rec.best_market_now, lang)}</dd>
+            <dd className="num mt-1 text-xl font-semibold text-board-ink">{t("answer.perQtl", { value: formatRupees(rec.best_net_now_per_qtl, lang) })}</dd>
+            <dd className="text-xs text-white/65">{t("answer.netNow")}</dd>
           </div>
-          <div className="rounded-xl bg-stone-100 p-3 dark:bg-stone-800">
-            <dt className="text-stone-600 dark:text-stone-300">{t("answer.holdFor", { days: rec.horizon_days })}</dt>
-            <dd className="font-semibold">{marketName(meta, rec.best_market_hold, lang)}</dd>
-            <dd className="text-lg font-bold">{t("answer.perQtl", { value: formatRupees(rec.best_net_hold_per_qtl, lang) })}</dd>
-            <dd className="text-xs text-stone-500 dark:text-stone-400">± {formatRupees(rec.uncertainty_per_qtl, lang)}</dd>
+          <div className="rounded-lg border border-line bg-sunken p-3">
+            <dt className="text-xs font-medium text-muted">{t("answer.holdFor", { days: rec.horizon_days })}</dt>
+            <dd className="truncate font-semibold">{marketName(meta, rec.best_market_hold, lang)}</dd>
+            <dd className="num mt-1 text-xl font-semibold">{t("answer.perQtl", { value: formatRupees(rec.best_net_hold_per_qtl, lang) })}</dd>
+            <dd className="num text-xs text-muted">± {formatRupees(rec.uncertainty_per_qtl, lang)}</dd>
           </div>
         </dl>
       )}
@@ -108,50 +105,50 @@ export function AnswerCard({
       </div>
 
       {open && (
-        <div className="space-y-3 border-t border-stone-200 pt-3 text-sm dark:border-stone-800">
-          <h3 className="font-semibold">{t("answer.sources")}</h3>
+        <div className="space-y-3 border-t border-dashed border-line pt-3 text-sm">
+          <h3 className="eyebrow">{t("answer.sources")}</h3>
           <ul className="space-y-2">
             {answer.sources.map((s) =>
               s.kind === "price" ? (
                 <li key={s.id} className="flex flex-wrap gap-x-2">
                   <span>{t("answer.priceSource", { market: marketName(meta, s.market, lang), date: formatDate(s.date, lang) })}</span>
-                  <span className="text-stone-500">({s.origin === "synthetic" ? t("answer.demoData") : s.origin})</span>
+                  <span className="text-muted">({s.origin === "synthetic" ? t("answer.demoData") : s.origin})</span>
                 </li>
               ) : (
-                <li key={s.id} className="rounded-lg bg-stone-50 p-2 dark:bg-stone-800/60">
+                <li key={s.id} className="rounded-lg bg-sunken p-2.5">
                   <p className="font-medium">{s.title}</p>
-                  <p className="text-stone-600 dark:text-stone-300">{s.excerpt}…</p>
-                  <p className="text-xs text-stone-500">{s.origin}</p>
+                  <p className="text-muted">{s.excerpt}…</p>
+                  <p className="num mt-1 text-[11px] text-muted">{s.origin}</p>
                 </li>
               ),
             )}
           </ul>
           {answer.trace.length > 0 && (
             <>
-              <h3 className="font-semibold">{t("answer.steps")}</h3>
-              <ol className="list-decimal space-y-0.5 pl-5 font-mono text-xs text-stone-600 dark:text-stone-400">
+              <h3 className="eyebrow">{t("answer.steps")}</h3>
+              <ol className="list-decimal space-y-0.5 pl-5 font-mono text-xs text-muted">
                 {answer.trace.map((step, i) => (
-                  <li key={i} className={step.is_error ? "text-red-700 dark:text-red-400" : ""}>
+                  <li key={i} className={step.is_error ? "text-chilli-ink" : ""}>
                     {step.tool}: {step.summary}
                   </li>
                 ))}
               </ol>
             </>
           )}
-          {answer.mode === "offline" && <p className="text-xs text-stone-500">{t("answer.offline")}</p>}
+          {answer.mode === "offline" && <p className="text-xs text-muted">{t("answer.offline")}</p>}
         </div>
       )}
 
-      <aside className="rounded-xl bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
+      <aside className="rounded-r-lg border-l-[3px] border-turmeric bg-turmeric-soft/70 px-3 py-2.5 text-sm text-turmeric-ink">
         <strong>{t("disclaimerTitle")}:</strong> {answer.disclaimer}
         {isDemo && <span className="mt-1 block font-medium">{t("prices.demo")}</span>}
       </aside>
 
       {messageId && (
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3 text-sm">
           {voted === null ? (
             <>
-              <span className="text-stone-600 dark:text-stone-300">{t("answer.helpful")}</span>
+              <span className="mr-auto text-muted">{t("answer.helpful")}</span>
               <button type="button" className="btn-ghost min-h-[40px] px-3" onClick={() => vote(true)}>
                 {t("answer.yes")}
               </button>
@@ -160,7 +157,7 @@ export function AnswerCard({
               </button>
             </>
           ) : (
-            <span className="text-leaf-700 dark:text-leaf-500">{t("answer.thanks")}</span>
+            <span className="font-medium text-leaf-ink">{t("answer.thanks")}</span>
           )}
         </div>
       )}

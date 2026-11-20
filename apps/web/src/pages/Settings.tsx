@@ -12,9 +12,9 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold">{t("settings.title")}</h2>
+      <h2 className="text-2xl font-bold tracking-tight">{t("settings.title")}</h2>
       <section className="card space-y-3">
-        <h3 className="font-semibold">{t("settings.language")}</h3>
+        <h3 className="eyebrow">{t("settings.language")}</h3>
         <div className="grid grid-cols-3 gap-2">
           {LANGUAGES.map((l) => (
             <button key={l.code} type="button" lang={l.code} className={language === l.code ? "btn-primary" : "btn-ghost"} onClick={() => setLanguage(l.code)}>
@@ -23,15 +23,15 @@ export function SettingsPage() {
           ))}
         </div>
         <label className="flex min-h-[48px] items-center gap-3">
-          <input type="checkbox" className="h-6 w-6 accent-leaf-600" checked={autoSpeak} onChange={(e) => setAutoSpeak(e.target.checked)} />
+          <input type="checkbox" className="h-6 w-6 accent-[rgb(var(--leaf))]" checked={autoSpeak} onChange={(e) => setAutoSpeak(e.target.checked)} />
           {t("settings.speakAnswers")}
         </label>
         {meta?.voice.server_stt && meta.voice.stores_recordings && (
           <label className="flex min-h-[48px] items-start gap-3">
-            <input type="checkbox" className="mt-1 h-6 w-6 shrink-0 accent-leaf-600" checked={keepRecordings} onChange={(e) => setKeepRecordings(e.target.checked)} />
+            <input type="checkbox" className="mt-1 h-6 w-6 shrink-0 accent-[rgb(var(--leaf))]" checked={keepRecordings} onChange={(e) => setKeepRecordings(e.target.checked)} />
             <span>
               {t("settings.keepRecordings")}
-              <span className="block text-sm text-stone-600 dark:text-stone-300">{t("settings.keepRecordingsHelp")}</span>
+              <span className="block text-sm text-muted">{t("settings.keepRecordingsHelp")}</span>
             </span>
           </label>
         )}
@@ -39,7 +39,7 @@ export function SettingsPage() {
 
       {meta?.districts && meta.districts.length > 1 && (
         <section className="card space-y-3">
-          <h3 className="font-semibold">{t("settings.district")}</h3>
+          <h3 className="eyebrow">{t("settings.district")}</h3>
           <div className="grid grid-cols-2 gap-2">
             {meta.districts.map((d) => (
               <button
@@ -56,14 +56,14 @@ export function SettingsPage() {
       )}
 
       <section className="card space-y-3">
-        <h3 className="font-semibold">{t("settings.account")}</h3>
+        <h3 className="eyebrow">{t("settings.account")}</h3>
         {loggedIn ? (
           <button type="button" className="btn-ghost" onClick={logout}>
             {t("login.logout")}
           </button>
         ) : (
           <>
-            <p className="text-sm text-stone-600 dark:text-stone-300">{t("settings.guest")}</p>
+            <p className="text-sm text-muted">{t("settings.guest")}</p>
             <Link to="/login" className="btn-primary">
               {t("login.verify")}
             </Link>
@@ -81,8 +81,12 @@ export function SettingsPage() {
             OK
           </button>
         </div>
-        {metaError && <p className="text-sm text-red-700 dark:text-red-400">{metaError}</p>}
+        {metaError && <p className="text-sm text-chilli-ink">{metaError}</p>}
       </section>
+
+      <Link to="/admin" className="block text-center text-sm text-muted underline">
+        Admin
+      </Link>
     </div>
   );
 }

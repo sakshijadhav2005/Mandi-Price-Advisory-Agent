@@ -11,7 +11,8 @@ from app.agent.data import today
 from app.agent.service import resolve_provider
 from app.api import admin, alerts, auth, chat, prices, voice
 from app.config import get_settings
-from app.db.session import init_db
+from app.db.retention import purge_old_history
+from app.db.session import init_db, session_scope
 from app.reference import load_reference
 from app.retrieval.index import get_index
 from app.translation.languages import load_languages
@@ -28,11 +29,26 @@ if get_settings().sentry_dsn:
         logging.getLogger(__name__).warning("SENTRY_DSN is set but sentry-sdk is not installed")
 
 
+def _retention_loop(stop: threading.Event) -> None:
+    """Delete chat history older than HISTORY_RETENTION_DAYS now, then every hour."""
+    while True:
+        try:
+            with session_scope() as s:
+                purge_old_history(s)
+        except Exception:  # never let a cleanup error kill the thread
+            logging.getLogger(__name__).exception("history retention run failed")
+        if stop.wait(3600):
+            return
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
     threading.Thread(target=get_index, daemon=True).start()  # warm the advisory index
+    stop = threading.Event()
+    threading.Thread(target=_retention_loop, args=(stop,), daemon=True).start()
     yield
+    stop.set()
 
 
 app = FastAPI(title="Mandi Price & Advisory Agent", version="0.1.0", lifespan=lifespan)
@@ -73,5 +89,6 @@ def meta() -> dict:
         "voice": capabilities(),
         "answer_writer": resolve_provider(),
         "auth_required": s.auth_required,
+        "google_client_id": s.google_client_id or None,  # public value; the web app shows "Sign in with Google" when set
         "stale_after_days": s.stale_after_days,
     }

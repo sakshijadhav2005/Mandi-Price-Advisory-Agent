@@ -8,7 +8,7 @@ import io
 import statistics
 from collections import Counter, defaultdict
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,6 +17,9 @@ from app.agent.data import last_ingestion
 from app.config import get_settings
 from app.db.models import Feedback, Message, Notification, PriceAlert, User
 from app.db.session import get_db
+from app.reference import load_reference
+from app.retrieval import documents
+from app.translation.glossary import SUPPORTED_LANGUAGES
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -105,3 +108,44 @@ def export(db: Session = Depends(get_db)) -> StreamingResponse:
         )
     buf.seek(0)
     return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=pilot_export.csv"})
+
+
+@router.get("/documents", dependencies=[Depends(require_admin)])
+def list_documents() -> list[dict]:
+    """Advisory documents the agent answers from (built-in bulletins and uploads)."""
+    return documents.list_documents()
+
+
+@router.post("/documents", dependencies=[Depends(require_admin)], status_code=201)
+async def upload_document(
+    file: UploadFile = File(...),
+    title: str = Form(""),
+    crop: str = Form("all"),
+    language: str = Form("en"),
+    source: str = Form(""),
+    published: str = Form(""),
+) -> dict:
+    """Upload a .pdf/.md/.txt file; it is chunked and indexed right away."""
+    crop = crop.strip().lower() or "all"
+    if crop != "all" and crop not in load_reference().crops:
+        raise HTTPException(422, f"Unknown crop {crop!r}. Use 'all' or one of: {', '.join(load_reference().crops)}.")
+    if language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(422, f"Unsupported language {language!r}.")
+    data = await file.read(documents.MAX_BYTES + 1)
+    try:
+        return documents.save_document(
+            file.filename or "", data, title=title, crop=crop, language=language, source=source, published=published
+        )
+    except documents.DocumentError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@router.delete("/documents/{doc_id}", dependencies=[Depends(require_admin)])
+def delete_document(doc_id: str) -> dict:
+    try:
+        documents.delete_document(doc_id)
+    except KeyError:
+        raise HTTPException(404, "Document not found") from None
+    except documents.DocumentError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {"deleted": True}

@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     jwt_ttl_hours: int = 24 * 30
     auth_required: bool = False  # dev default: guests may chat without OTP login
     otp_dev_mode: bool = True  # logs the OTP instead of sending an SMS
+    google_client_id: str = ""  # OAuth 2.0 web client ID; enables "Sign in with Google" when set
 
     # Voice (server-side providers are optional; the web app can use browser speech)
     stt_provider: str = "none"  # none | whisper
@@ -88,6 +89,7 @@ class Settings(BaseSettings):
 
     # Pilot / admin
     admin_token: str = ""  # enables /admin endpoints when set
+    history_retention_days: int = 30  # chat questions/answers older than this are deleted; 0 keeps them forever
     sentry_dsn: str = ""
 
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,capacitor://localhost,http://localhost"

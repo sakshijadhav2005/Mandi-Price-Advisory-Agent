@@ -15,10 +15,11 @@ A multilingual (English, Hindi, Marathi) agent that helps small farmers decide w
 | `backend/app/agent/fallback.py` | Template answer writer in all 3 languages. Used when no LLM is configured, so the app and evaluation run offline. |
 | `backend/app/retrieval/index.py` | Hybrid retrieval: BM25 + character n-gram vectors, fused with RRF, with glossary-based cross-language query expansion. |
 | `backend/app/ingestion/` | data.gov.in API adapter, Agmarknet CSV importer, synthetic generator. |
-| `backend/app/api/` | FastAPI: `/auth/otp/*`, `/chat`, `/ws/chat`, `/prices`, `/conversations`, `/feedback`, `/voice/*`, `/meta`. OpenAPI docs at `/docs`. |
+| `backend/app/api/` | FastAPI: `/auth/otp/*`, `/auth/google`, `/chat`, `/ws/chat`, `/prices`, `/conversations`, `/feedback`, `/voice/*`, `/meta`. OpenAPI docs at `/docs`. |
 | `backend/app/voice/` | Whisper speech-to-text, Google Cloud and Azure text-to-speech (with an answer cache), and WER/CER metrics. |
 | `backend/app/alerts.py`, `api/alerts.py` | Price alerts: thresholds checked after each daily ingestion, Expo push to phones, in-app inbox for the web. |
-| `backend/app/api/admin.py` | Pilot monitoring: `/admin/stats` (answers, helpful rate, voice share, latency per language) and `/admin/export.csv`. Enabled by `ADMIN_TOKEN`. |
+| `backend/app/api/admin.py` | Pilot monitoring: `/admin/stats` (answers, helpful rate, voice share, latency per language) and `/admin/export.csv`. Document management: `/admin/documents` (list, upload PDF/Markdown/text, delete uploads); an upload is indexed at once and the agent answers from it on the next question. Enabled by `ADMIN_TOKEN`; the web app's **Admin** page (link at the bottom of Settings, or `/admin`) uses it. |
+| `backend/app/db/retention.py` | Deletes chat questions and answers (and their feedback) older than `HISTORY_RETENTION_DAYS` (30) at startup and every hour; `python manage.py purge-history` runs it by hand. |
 | `backend/data/languages/*.json` | Language packs: answer templates, glossary, speech locale, script. Adding a language needs no code change. |
 | `packages/shared` | TypeScript API client, types, formatting helpers and the voice state machine, shared by web and mobile. |
 | `packages/i18n` | UI strings per language (i18next JSON). |
@@ -132,6 +133,13 @@ These numbers only show the pipeline works. They say nothing about real-market p
 Voice: `python evaluation/scripts/voice_eval.py evaluation/test_sets/voice_manifest.csv` reports WER, CER and intent accuracy per language. The included `voice_manifest.example.csv` has 6 typed examples to show the format; the plan's 30–50 recorded samples per language still need to be collected.
 
 Pilot: import prices farmers actually received with `python manage.py import-csv sales.csv --source pilot_ground_truth`, and watch `/admin/stats` during the pilot.
+
+## Login
+
+Login and signup are one step: the first successful login creates the account, and the server then issues its own JWT (HS256, `JWT_SECRET`).
+
+- **Mobile number + OTP.** In dev mode (`OTP_DEV_MODE=true`) the code is shown on screen instead of being sent by SMS.
+- **Sign in with Google** (OAuth 2.0 / OpenID Connect). Create an OAuth client ID of type "Web application" in Google Cloud Console, add your web origin (for example `http://localhost:5173`) under "Authorised JavaScript origins", and set `GOOGLE_CLIENT_ID`. The button then appears on the login page. The server checks the Google ID token's signature against Google's keys, plus its audience, issuer, expiry and verified email. A Google account and a phone account are separate accounts.
 
 ## Adding a crop, market or language
 

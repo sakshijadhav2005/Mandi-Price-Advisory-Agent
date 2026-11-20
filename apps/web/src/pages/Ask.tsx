@@ -145,15 +145,27 @@ export function AskPage() {
   return (
     <div className="space-y-4">
       {turns.length === 0 ? (
-        <section className="space-y-3">
-          <p className="text-stone-700 dark:text-stone-300">{t("ask.empty")}</p>
-          <div className="flex flex-col gap-2">
-            {examples.map((ex) => (
-              <button key={ex} type="button" className="btn-ghost justify-start text-left font-normal" onClick={() => void send(ex)}>
-                {ex}
-              </button>
+        <section className="space-y-4">
+          <p className="font-display text-2xl font-semibold leading-snug tracking-tight">{t("ask.empty")}</p>
+          <ol className="overflow-hidden rounded-xl border border-line bg-surface">
+            {examples.map((ex, i) => (
+              <li key={ex} className="border-line [&:not(:first-child)]:border-t">
+                <button
+                  type="button"
+                  className="group flex min-h-[56px] w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-sunken"
+                  onClick={() => void send(ex)}
+                >
+                  <span className="num w-6 shrink-0 text-xs font-semibold text-muted" aria-hidden>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="flex-1">{ex}</span>
+                  <span className="text-muted transition-transform group-hover:translate-x-0.5" aria-hidden>
+                    →
+                  </span>
+                </button>
+              </li>
             ))}
-          </div>
+          </ol>
         </section>
       ) : (
         <div className="flex justify-end">
@@ -167,7 +179,7 @@ export function AskPage() {
         {turns.map((turn) =>
           turn.role === "user" ? (
             <li key={turn.key} className="flex justify-end">
-              <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-leaf-600 px-4 py-2 text-white">{turn.text}</p>
+              <p className="max-w-[85%] rounded-2xl rounded-br-md bg-ink px-4 py-2.5 text-paper">{turn.text}</p>
             </li>
           ) : (
             <li key={turn.key}>
@@ -186,13 +198,21 @@ export function AskPage() {
           ),
         )}
         {busy && !handsFree && (
-          <li className="card flex items-center gap-3 text-stone-600 dark:text-stone-300">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-leaf-600 border-t-transparent" />
+          <li className="card flex items-center gap-3 text-muted">
+            <span className="flex items-end gap-1" aria-hidden>
+              {[0, 150, 300].map((d) => (
+                <span key={d} className="h-3 w-1.5 animate-pulse rounded-full bg-turmeric" style={{ animationDelay: `${d}ms` }} />
+              ))}
+            </span>
             {t("ask.thinking")}
           </li>
         )}
       </ol>
-      {error && <p className="rounded-xl bg-red-50 p-3 text-red-800 dark:bg-red-950/50 dark:text-red-200">{error}</p>}
+      {error && (
+        <p role="alert" className="rounded-r-lg border-l-[3px] border-chilli bg-chilli-soft px-3 py-2.5 text-chilli-ink">
+          {error}
+        </p>
+      )}
 
       <VoicePanel
         state={voice.state}
@@ -214,7 +234,7 @@ export function AskPage() {
         onRetry={() => void voice.start()}
       />
 
-      <form onSubmit={onSubmit} className="card space-y-3">
+      <form onSubmit={onSubmit} className="card space-y-3 shadow-[0_8px_24px_-12px_rgb(var(--ink)/0.25)]">
         <div className="flex items-end gap-3">
           <MicButton state={voice.state} supported={voice.supported} onStart={startVoice} onStop={voice.stop} disabled={busy} />
           <label className="sr-only" htmlFor="question">
@@ -223,8 +243,9 @@ export function AskPage() {
           <textarea
             id="question"
             ref={inputRef}
-            className="input min-h-[64px] flex-1 resize-none py-2"
+            className="input min-h-[64px] flex-1 resize-none py-2.5"
             rows={2}
+            autoComplete="off"
             value={input}
             placeholder={t("ask.placeholder")}
             onChange={(e) => setInput(e.target.value)}
@@ -239,7 +260,7 @@ export function AskPage() {
             <SendIcon className="h-6 w-6" />
           </button>
         </div>
-        {!voice.supported && <p className="text-sm text-stone-500">{t("voice.unsupported")}</p>}
+        {!voice.supported && <p className="text-sm text-muted">{t("voice.unsupported")}</p>}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label" htmlFor="crop">
@@ -258,10 +279,10 @@ export function AskPage() {
             <label className="label" htmlFor="qty">
               {t("ask.quantity")}
             </label>
-            <input id="qty" className="input" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value.replace(/[^\d.]/g, ""))} />
+            <input id="qty" className="input num" inputMode="decimal" autoComplete="off" value={qty} onChange={(e) => setQty(e.target.value.replace(/[^\d.]/g, ""))} />
           </div>
         </div>
-        <button type="button" className="flex min-h-[44px] items-center gap-1.5 text-sm text-leaf-700 dark:text-leaf-500" onClick={shareLocation}>
+        <button type="button" className="flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-leaf-ink" onClick={shareLocation}>
           <PinIcon />
           {coords ? t("ask.locationOn") : t("ask.useLocation")}
         </button>

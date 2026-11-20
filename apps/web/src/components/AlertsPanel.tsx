@@ -51,11 +51,11 @@ export function AlertsPanel({ crop, district }: { crop: string; district?: strin
   return (
     <section className="space-y-3">
       {inbox.length > 0 && (
-        <div className="card space-y-2 border-leaf-500" role="status">
-          <h3 className="font-semibold">{t("alerts.inbox")}</h3>
+        <div className="card space-y-2 border-l-[3px] border-l-leaf" role="status">
+          <h3 className="eyebrow">{t("alerts.inbox")}</h3>
           <ul className="space-y-2">
             {inbox.map((n) => (
-              <li key={n.id} className="rounded-xl bg-leaf-50 p-3 text-sm dark:bg-leaf-900/40">
+              <li key={n.id} className="rounded-lg bg-leaf-soft p-3 text-sm">
                 <p className="font-semibold">{n.title}</p>
                 <p>{n.body}</p>
               </li>
@@ -70,7 +70,7 @@ export function AlertsPanel({ crop, district }: { crop: string; district?: strin
       <div className="card space-y-3">
         <h3 className="text-lg font-semibold">{t("alerts.title")}</h3>
         {mine.length === 0 ? (
-          <p className="text-sm text-stone-600 dark:text-stone-300">{t("alerts.none")}</p>
+          <p className="text-sm text-muted">{t("alerts.none")}</p>
         ) : (
           <ul className="space-y-2">
             {mine.map((a) => (
@@ -82,7 +82,7 @@ export function AlertsPanel({ crop, district }: { crop: string; district?: strin
                     direction: t(`alerts.${a.direction}`),
                     price: formatRupees(a.threshold, lang),
                   })}
-                  {a.last_triggered_on && <span className="block text-xs text-stone-500">{t("alerts.lastHit", { date: formatDate(a.last_triggered_on, lang) })}</span>}
+                  {a.last_triggered_on && <span className="block text-xs text-muted">{t("alerts.lastHit", { date: formatDate(a.last_triggered_on, lang) })}</span>}
                 </span>
                 <button type="button" className="btn-ghost min-h-[40px] px-3" onClick={() => void remove(a.id)}>
                   {t("alerts.delete")}
@@ -116,8 +116,8 @@ export function AlertsPanel({ crop, district }: { crop: string; district?: strin
             {t("alerts.add")}
           </button>
         </form>
-        {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
-        <p className="text-xs text-stone-500">{t("alerts.pushNote")}</p>
+        {error && <p className="text-sm text-chilli-ink">{error}</p>}
+        <p className="text-xs text-muted">{t("alerts.pushNote")}</p>
       </div>
     </section>
   );

@@ -1,9 +1,11 @@
 import type {
+  AdminDocument,
   AppNotification,
   ChatAnswer,
   ChatRequest,
   ConversationDetail,
   ConversationSummary,
+  DocumentUpload,
   Meta,
   PriceAlert,
   PricesResponse,
@@ -177,6 +179,17 @@ export class ApiClient {
     return res.user;
   }
 
+  /** Sign in (or sign up) with a Google ID token from Google Identity Services; stores our own JWT. */
+  async googleLogin(credential: string, language?: string) {
+    const res = await this.request<{
+      token: string;
+      created: boolean;
+      user: { id: number; phone: string | null; email: string | null; name: string | null; language: string };
+    }>("/auth/google", { method: "POST", body: JSON.stringify({ credential, language }) });
+    this.setToken(res.token);
+    return res.user;
+  }
+
   /** `consent`: the farmer agreed to let the server keep this recording (deleted otherwise). */
   transcribe(audio: Blob, language?: string, filename = "speech.webm", consent = false) {
     const form = new FormData();
@@ -184,6 +197,33 @@ export class ApiClient {
     if (language) form.append("language", language);
     if (consent) form.append("consent", "true");
     return this.request<Transcript>("/voice/transcribe", { method: "POST", body: form });
+  }
+
+  // --- admin (X-Admin-Token; the server enables these only when ADMIN_TOKEN is set) ---
+
+  adminStats(adminToken: string) {
+    return this.request<Record<string, unknown>>("/admin/stats", { headers: { "X-Admin-Token": adminToken } });
+  }
+
+  adminDocuments(adminToken: string) {
+    return this.request<AdminDocument[]>("/admin/documents", { headers: { "X-Admin-Token": adminToken } });
+  }
+
+  uploadDocument(adminToken: string, doc: DocumentUpload) {
+    const form = new FormData();
+    form.append("file", doc.file, doc.filename);
+    for (const key of ["title", "crop", "language", "source", "published"] as const) {
+      const v = doc[key];
+      if (v) form.append(key, v);
+    }
+    return this.request<AdminDocument>("/admin/documents", { method: "POST", body: form, headers: { "X-Admin-Token": adminToken } });
+  }
+
+  deleteDocument(adminToken: string, id: string) {
+    return this.request<{ deleted: boolean }>(`/admin/documents/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "X-Admin-Token": adminToken },
+    });
   }
 
   async speak(text: string, language: string): Promise<Blob> {

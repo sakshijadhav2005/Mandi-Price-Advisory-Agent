@@ -67,3 +67,11 @@ def is_advisory_question(text: str) -> bool:
         if not any(s in w.lower() or w.lower() in s for s in storage)
     ]
     return not any(w in lowered for w in decision_stems)
+
+
+def asks_sell_or_hold(text: str) -> bool:
+    """True when the question uses a sell / hold word in any language."""
+    lowered = text.lower()
+    return any(
+        w.lower() in lowered for p in load_languages().values() for d in ("sell", "hold") for w in p.decision_words.get(d, [])
+    )

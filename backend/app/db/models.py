@@ -60,8 +60,11 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    phone: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    phone: Mapped[str | None] = mapped_column(String(20), unique=True, index=True, nullable=True)  # None for Google-only accounts
     language: Mapped[str] = mapped_column(String(8), default="en")
+    google_sub: Mapped[str | None] = mapped_column(String(64), unique=True, index=True, nullable=True)  # Google account id
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

@@ -4,7 +4,7 @@
  *   stay visible offline (the UI shows their report dates and staleness).
  * - Everything else (chat, auth, voice): network only.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `shell-${VERSION}`;
 const DATA = `data-${VERSION}`;
 

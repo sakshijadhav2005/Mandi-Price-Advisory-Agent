@@ -149,6 +149,8 @@ export interface Meta {
   markets: (Named & { lat: number; lon: number; district?: string })[];
   voice: { server_stt: boolean; server_tts: boolean; stores_recordings?: boolean };
   auth_required: boolean;
+  /** OAuth 2.0 client ID; set when the server offers "Sign in with Google". */
+  google_client_id?: string | null;
   stale_after_days: number;
 }
 
@@ -208,4 +210,30 @@ export interface Transcript {
   language: string;
   confidence: number;
   needs_confirmation: boolean;
+}
+
+/** An advisory document the agent answers from (built-in bulletin or admin upload). */
+export interface AdminDocument {
+  id: string;
+  title: string;
+  crop: string;
+  language: string;
+  source: string;
+  published: string;
+  filename: string;
+  format: string;
+  chunks: number;
+  words: number;
+  uploaded_at: string | null;
+  deletable: boolean;
+}
+
+export interface DocumentUpload {
+  file: Blob;
+  filename: string;
+  title?: string;
+  crop?: string;
+  language?: string;
+  source?: string;
+  published?: string;
 }

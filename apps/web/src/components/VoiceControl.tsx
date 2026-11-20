@@ -25,9 +25,9 @@ export function MicButton({
       aria-pressed={listening}
       aria-label={listening ? t("voice.stop") : t("voice.start")}
       title={supported ? undefined : t("voice.unsupported")}
-      className={`grid h-16 w-16 shrink-0 place-items-center rounded-full text-white shadow-lg transition ${
-        listening ? "animate-pulse bg-red-600" : "bg-leaf-600 hover:bg-leaf-700"
-      } disabled:bg-stone-400`}
+      className={`grid h-16 w-16 shrink-0 place-items-center rounded-full text-white shadow-[inset_0_-3px_0_rgb(0_0_0/0.2)] transition-[background-color,transform] active:scale-95 ${
+        listening ? "animate-pulse bg-chilli" : "bg-leaf hover:bg-leaf/90"
+      } disabled:bg-muted disabled:opacity-60`}
     >
       {listening ? <StopIcon className="h-7 w-7" /> : <MicIcon className="h-8 w-8" />}
     </button>
@@ -84,23 +84,23 @@ export function VoicePanel({
           <div className="relative grid h-24 w-24 place-items-center">
             {phase !== "thinking" && (
               <span
-                className={`absolute inset-0 animate-ping rounded-full opacity-30 ${phase === "listening" ? "bg-red-500" : "bg-leaf-500"}`}
+                className={`absolute inset-0 animate-ping rounded-full opacity-30 ${phase === "listening" ? "bg-chilli" : "bg-leaf"}`}
               />
             )}
             <span
-              className={`relative grid h-20 w-20 place-items-center rounded-full text-white shadow-lg ${
-                phase === "listening" ? "bg-red-600" : phase === "speaking" ? "bg-leaf-600" : "bg-stone-500"
+              className={`relative grid h-20 w-20 place-items-center rounded-full shadow-lg ${
+                phase === "listening" ? "bg-chilli text-white" : phase === "speaking" ? "bg-leaf text-white" : "bg-board text-board-ink"
               }`}
             >
               {phase === "listening" && <MicIcon className="h-9 w-9" />}
               {phase === "speaking" && <SpeakerIcon className="h-9 w-9" />}
-              {phase === "thinking" && <span className="h-9 w-9 animate-spin rounded-full border-4 border-white border-t-transparent" />}
+              {phase === "thinking" && <span className="h-9 w-9 animate-spin rounded-full border-4 border-current border-t-transparent" />}
             </span>
           </div>
-          <p className={`font-semibold ${phase === "listening" ? "text-red-700 dark:text-red-400" : "text-stone-700 dark:text-stone-200"}`}>
+          <p className={`font-display text-lg font-semibold ${phase === "listening" ? "text-chilli-ink" : "text-ink"}`}>
             {t(phase === "listening" ? "voice.listening" : phase === "thinking" ? "voice.thinking" : "voice.speaking")}
           </p>
-          {phase === "listening" && (interim ? <p className="text-lg">{interim}</p> : <p className="text-sm text-stone-500">{t("voice.hint")}</p>)}
+          {phase === "listening" && (interim ? <p className="text-lg">{interim}</p> : <p className="text-sm text-muted">{t("voice.hint")}</p>)}
           <div className="flex gap-2">
             {phase === "listening" && !handsFree && (
               <button type="button" className="btn-ghost" onClick={onCancel}>
@@ -117,8 +117,8 @@ export function VoicePanel({
       )}
       {state.kind === "confirming" && (
         <>
-          <p className="text-sm text-stone-600 dark:text-stone-300">{t("voice.confirm")}</p>
-          <p className="text-lg font-medium">“{state.transcript}”</p>
+          <p className="eyebrow">{t("voice.confirm")}</p>
+          <p className="font-display text-xl font-medium">“{state.transcript}”</p>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-primary" onClick={() => onAccept(state.transcript)}>
               {t("voice.sendIt")}

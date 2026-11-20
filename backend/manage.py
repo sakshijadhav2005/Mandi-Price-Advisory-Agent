@@ -5,6 +5,7 @@
     python manage.py import-csv path/to/agmarknet_export.csv [--source pilot_ground_truth]
     python manage.py fetch-data-gov            # needs DATA_GOV_IN_API_KEY
     python manage.py purge-synthetic           # drop the demo prices once real ones arrive
+    python manage.py purge-history             # delete chat history older than HISTORY_RETENTION_DAYS (30)
     python manage.py check-alerts              # evaluate price alerts, send push notifications
     python manage.py daily                     # once: fetch prices, check alerts, alert ops on failure
     python manage.py schedule                  # runs `daily` every day at --at
@@ -56,6 +57,15 @@ def cmd_purge_synthetic(_args) -> None:
         n = s.execute(delete(Price).where(Price.source == "synthetic")).rowcount
         s.commit()
     log.info("deleted %d synthetic price rows", n)
+
+
+def cmd_purge_history(_args) -> None:
+    """Delete chat questions/answers older than HISTORY_RETENTION_DAYS (the server also does this hourly)."""
+    from app.db.retention import purge_old_history
+
+    init_db()
+    with session_scope() as s:
+        log.info("history retention: %s", purge_old_history(s))
 
 
 def cmd_import_csv(args) -> None:
@@ -137,6 +147,7 @@ def main() -> None:
     sp.set_defaults(func=cmd_import_csv)
     sub.add_parser("fetch-data-gov").set_defaults(func=cmd_fetch_data_gov)
     sub.add_parser("purge-synthetic").set_defaults(func=cmd_purge_synthetic)
+    sub.add_parser("purge-history").set_defaults(func=cmd_purge_history)
     sub.add_parser("check-alerts").set_defaults(func=cmd_check_alerts)
     sub.add_parser("daily").set_defaults(func=cmd_daily)
     sp = sub.add_parser("schedule")
