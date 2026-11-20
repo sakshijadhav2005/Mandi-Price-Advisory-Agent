@@ -101,6 +101,8 @@ cd backend && python -m pytest          # decision engine, guardrails, retrieval
 node node_modules/vitest/vitest.mjs run  # in packages/shared and apps/web
 ```
 
+On Windows, `npm run build`, `npm run typecheck` and `npm test` fail while the project folder name contains `&` (cmd.exe splits the path at it). Rename the folder, or call the tools through node from the package folder, for example in `apps/web`: `node ../../node_modules/typescript/bin/tsc --noEmit -p .` and `node ../../node_modules/vite/bin/vite.js build`.
+
 End-to-end (web app + real backend with synthetic prices, at 360 px phone width, in your installed Chrome):
 
 ```bash
