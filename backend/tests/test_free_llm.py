@@ -91,6 +91,35 @@ def test_invented_number_falls_back(session, gemini):
     assert any(w.startswith("llm_ungrounded_numbers") for w in ans.warnings)
 
 
+def test_slow_llm_falls_back_within_the_deadline(session, gemini, monkeypatch):
+    """A slow connection must not leave the farmer on "Checking prices…" for minutes."""
+    import time
+
+    monkeypatch.setattr(get_settings(), "llm_deadline_s", 5.0)
+    timeouts = []
+    slow = tool_call("check_data_freshness", {"crop": "onion"})
+
+    def slow_reply(_req):
+        time.sleep(2.5)  # every model round takes 2.5 s; the model never finishes on its own
+        return slow
+
+    calls = gemini([slow_reply] * 10)
+    real_post = openai_compat_agent.httpx.post
+
+    def recording_post(url, headers=None, json=None, timeout=None):
+        timeouts.append(timeout)
+        return real_post(url, headers=headers, json=json, timeout=timeout)
+
+    monkeypatch.setattr(openai_compat_agent.httpx, "post", recording_post)
+    started = time.monotonic()
+    ans = answer_query(session, "Should I sell my onion now or wait?", language="en", as_of=AS_OF, use_llm=True)
+    assert time.monotonic() - started < 6
+    assert ans.mode == "offline" and ans.decision
+    assert any("LLM_DEADLINE_S" in w for w in ans.warnings)
+    # 0 s: first round (2.5 s). Then 2.5 s are left, less than the 3 s a call needs, so stop.
+    assert len(calls) == 1 and timeouts[0] <= 5.0
+
+
 def test_tool_budget_enforced(session, gemini, monkeypatch):
     monkeypatch.setattr(get_settings(), "tool_budget", 1)
     final = {"choices": [{"finish_reason": "stop", "message": {"content": "Check today's rate at the mandi."}}]}

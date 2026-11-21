@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, timedelta
 
@@ -34,14 +35,28 @@ def today() -> date:
     return date.fromisoformat(override) if override else date.today()
 
 
-def load_series(session: Session, crop: str, as_of: date, lookback_days: int = 30, market: str | None = None) -> Series:
+def load_series(
+    session: Session,
+    crop: str,
+    as_of: date,
+    lookback_days: int = 30,
+    market: str | None = None,
+    markets: Iterable[str] | None = None,
+) -> Series:
+    """Daily prices per market. Pass `market` or `markets` (the farmer's scope): with
+    every district in India, loading all markets would read far more than needed.
+    Markets outside the pilot get demo prices the first time (see ensure_demo_prices)."""
+    from app.ingestion.synthetic import ensure_demo_prices
+
     q = select(Price).where(
         Price.crop == crop,
         Price.price_date <= as_of,
         Price.price_date > as_of - timedelta(days=lookback_days),
     )
-    if market:
-        q = q.where(Price.market == market)
+    wanted = [market] if market else (list(markets) if markets is not None else None)
+    if wanted is not None:
+        ensure_demo_prices(session, wanted, max(as_of, today()))
+        q = q.where(Price.market.in_(wanted))
     # One observation per market and day. When a real source and the synthetic
     # generator both have a row for the same day, the real one wins, so a
     # database that still holds synthetic history never mixes the two.

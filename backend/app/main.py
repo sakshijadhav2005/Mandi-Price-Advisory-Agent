@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from app.agent.data import today
 from app.agent.service import resolve_provider
@@ -52,6 +53,8 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Mandi Price & Advisory Agent", version="0.1.0", lifespan=lifespan)
+# /meta lists every district and market in India (~250 KB); gzip makes it ~10x smaller on a slow phone link.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_settings().cors_origin_list,
@@ -79,6 +82,7 @@ def meta() -> dict:
         "today": today().isoformat(),
         "district": ref.district,
         "districts": [d.as_dict() for d in ref.districts.values()],
+        "states": ref.states,
         "languages": {code: p.name for code, p in load_languages().items()},
         "language_packs": [{"code": p.code, "name": p.name, "speech_locale": p.speech_locale} for p in load_languages().values()],
         "crops": [{"id": c.id, "name": c.name, "names": c.names} for c in ref.crops.values()],

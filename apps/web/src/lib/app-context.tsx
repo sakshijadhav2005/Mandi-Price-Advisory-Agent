@@ -44,9 +44,27 @@ interface AppState {
   setApiBase: (url: string) => void;
   district: string | null;
   setDistrict: (d: string | null) => void;
+  /** Light or dark colours, or "system" to follow the phone. */
+  theme: Theme;
+  setTheme: (t: Theme) => void;
   loggedIn: boolean;
   logout: () => void;
   refreshAuth: () => void;
+}
+
+export type Theme = "system" | "light" | "dark";
+
+const THEME_COLOR = { light: "#f4efe4", dark: "#12110e" };
+
+function applyTheme(theme: Theme) {
+  const root = document.documentElement;
+  if (theme === "system") delete root.dataset.theme;
+  else root.dataset.theme = theme;
+  // The browser bar colour follows the chosen theme too.
+  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
+    if (theme === "system") m.content = m.media.includes("dark") ? THEME_COLOR.dark : THEME_COLOR.light;
+    else m.content = THEME_COLOR[theme];
+  });
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -64,6 +82,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [keepRecordings, setKeepRecordingsState] = useState(() => webStore.get("mandi.keepRecordings") === "1");
   const [loggedIn, setLoggedIn] = useState(() => !!api.token);
   const [district, setDistrictState] = useState<string | null>(() => webStore.get("mandi.district"));
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const saved = webStore.get("mandi.theme");
+    return saved === "light" || saved === "dark" ? saved : "system";
+  });
+
+  useEffect(() => applyTheme(theme), [theme]);
 
   useEffect(() => {
     if (language) {
@@ -105,6 +129,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     api.setToken(null);
     setLoggedIn(false);
   }, [api]);
+  const setTheme = useCallback((t: Theme) => {
+    if (t === "system") webStore.remove("mandi.theme");
+    else webStore.set("mandi.theme", t);
+    setThemeState(t);
+  }, []);
   const refreshAuth = useCallback(() => setLoggedIn(!!api.token), [api]);
   const setDistrict = useCallback((d: string | null) => {
     if (d) webStore.set("mandi.district", d);
@@ -114,7 +143,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = {
     api, meta, metaError, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase,
-    loggedIn, logout, refreshAuth, district, setDistrict,
+    loggedIn, logout, refreshAuth, district, setDistrict, theme, setTheme,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

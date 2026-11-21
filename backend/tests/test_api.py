@@ -14,8 +14,12 @@ def test_meta_and_health():
         assert c.get("/health").json() == {"ok": True}
         meta = c.get("/meta").json()
         assert set(meta["languages"]) == {"en", "hi", "mr"}
-        assert {cr["id"] for cr in meta["crops"]} == {"onion", "tomato", "potato"}
-        assert {d["id"] for d in meta["districts"]} == {"nashik", "pune"}
+        ids = {cr["id"] for cr in meta["crops"]}
+        assert {"onion", "tomato", "potato", "brinjal", "okra", "cauliflower", "spinach"} <= ids
+        assert all(cr["names"].get("hi") and cr["names"].get("mr") for cr in meta["crops"])
+        ids = [d["id"] for d in meta["districts"]]
+        assert ids[:2] == ["nashik", "pune"] and len(ids) > 700  # the pilot first, then all of India
+        assert {"Maharashtra", "Uttar Pradesh", "Tamil Nadu", "Ladakh"} <= set(meta["states"])
         assert meta["today"] == "2026-11-08"
 
 

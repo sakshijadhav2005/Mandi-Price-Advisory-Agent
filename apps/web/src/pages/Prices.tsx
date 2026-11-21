@@ -42,21 +42,17 @@ export function PricesPage() {
           {t("prices.unit")} · {t("prices.trend")}
         </p>
       </div>
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-sunken p-1" role="tablist">
-        {(meta?.crops ?? [{ id: "onion", name: "Onion", names: {} }]).map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            role="tab"
-            aria-selected={crop === c.id}
-            className={`min-h-[44px] flex-1 whitespace-nowrap rounded-lg px-4 font-semibold transition-colors ${
-              crop === c.id ? "bg-surface text-ink shadow-[0_1px_2px_rgb(var(--ink)/0.15)]" : "text-muted hover:text-ink"
-            }`}
-            onClick={() => setCrop(c.id)}
-          >
-            {displayName(c, lang)}
-          </button>
-        ))}
+      <div>
+        <label className="label" htmlFor="prices-crop">
+          {t("ask.crop")}
+        </label>
+        <select id="prices-crop" className="input font-semibold" value={crop} onChange={(e) => setCrop(e.target.value)}>
+          {(meta?.crops ?? [{ id: "onion", name: "Onion", names: {} }]).map((c) => (
+            <option key={c.id} value={c.id}>
+              {displayName(c, lang)}
+            </option>
+          ))}
+        </select>
       </div>
       {demo && (
         <p className="rounded-r-lg border-l-[3px] border-turmeric bg-turmeric-soft/70 px-3 py-2.5 text-sm text-turmeric-ink">{t("prices.demo")}</p>

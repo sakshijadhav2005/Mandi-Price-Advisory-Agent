@@ -142,6 +142,8 @@ export interface DistrictInfo extends Named {
 export interface Meta {
   today: string;
   districts?: DistrictInfo[];
+  /** Every state and union territory that has districts, sorted. */
+  states?: string[];
   language_packs?: LanguagePackInfo[];
   district: { name: string; state: string };
   languages: Record<string, string>;

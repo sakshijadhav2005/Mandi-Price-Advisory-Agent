@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 import json
 import math
 import re
@@ -56,9 +57,15 @@ class Crop:
     default_horizon_days: int
     # Preferred Agmarknet varieties, best first. Rows of other varieties are averaged.
     agmarknet_varieties: tuple[str, ...] = ()
+    # Other spellings Agmarknet has used for the same commodity ("Peas Wet" / "Green Peas").
+    agmarknet_commodity_aliases: tuple[str, ...] = ()
 
     def display(self, lang: str) -> str:
         return self.names.get(lang, self.name)
+
+    @property
+    def agmarknet_commodities(self) -> tuple[str, ...]:
+        return (self.agmarknet_commodity, *self.agmarknet_commodity_aliases)
 
 
 @dataclass(frozen=True)
@@ -81,20 +88,55 @@ class Reference:
     market_fees_pct: float
     nearby_radius_km: float = 60.0
     max_nearby_markets: int = 6
+    # Districts with hand-checked markets in reference.json (the pilot). Every other
+    # district has a main market at its centre plus markets found in the Agmarknet feed.
+    curated_districts: tuple[str, ...] = ()
+    # (state key, Agmarknet market key) -> market id, for matching the price feed.
+    agmarknet_index: dict[tuple[str, str], str] = field(default_factory=dict, repr=False, compare=False)
 
     @property
     def default_district(self) -> District:
         return next(iter(self.districts.values()))
 
-    def market_by_agmarknet_name(self, name: str) -> Market | None:
-        """Exact (case- and space-insensitive) match on a published Agmarknet market name."""
+    @property
+    def states(self) -> list[str]:
+        return sorted({d.state for d in self.districts.values()})
+
+    @property
+    def curated_market_ids(self) -> list[str]:
+        return [m for d in self.curated_districts for m in self.districts[d].market_ids]
+
+    def market_by_agmarknet_name(self, name: str, state: str | None = None) -> Market | None:
+        """Exact (case- and space-insensitive) match on a published Agmarknet market name.
+
+        With `state`, only markets in that state match: "Aurangabad" is a market in
+        Bihar and in Maharashtra. Without it, the first market with the name wins.
+        """
         key = agmarknet_key(name)
         if not key:
             return None
-        for m in self.markets.values():
-            if key in {agmarknet_key(n) for n in (m.agmarknet_names or (m.name,))}:
-                return m
+        if state is not None:
+            st = agmarknet_key(state)
+            for (s_key, k), m_id in self.agmarknet_index.items():
+                if k == key and _state_matches(st, self.districts[self.markets[m_id].district].state):
+                    return self.markets[m_id]
+            return None
+        for (_st, k), m_id in self.agmarknet_index.items():
+            if k == key:
+                return self.markets[m_id]
         return None
+
+    def district_by_agmarknet_name(self, state: str, name: str) -> District | None:
+        """The district an Agmarknet row belongs to: same state, closest name spelling."""
+        st = agmarknet_key(state)
+        in_state = [d for d in self.districts.values() if _state_matches(st, d.state)]
+        key = agmarknet_key(name)
+        for d in in_state:
+            if key in {agmarknet_key(n) for n in (*d.agmarknet_names, d.name)}:
+                return d
+        names = {agmarknet_key(d.name): d for d in in_state}
+        close = difflib.get_close_matches(key, list(names), n=1, cutoff=0.8)
+        return names[close[0]] if close else None
 
     @property
     def district(self) -> dict:
@@ -120,8 +162,54 @@ class Reference:
         return Scope(d.id, d.centre["lat"], d.centre["lon"], d.market_ids, False)
 
 
+def _state_matches(state_key: str, state: str) -> bool:
+    """Agmarknet spells some states differently ("Chattisgarh", "NCT of Delhi")."""
+    ours = agmarknet_key(state)
+    if not state_key:
+        return False
+    return state_key == ours or state_key.endswith(ours) or difflib.SequenceMatcher(None, state_key, ours).ratio() >= 0.85
+
+
+def _main_market(d: District) -> Market:
+    """The district's main market, at its centre, until the Agmarknet feed lists its markets.
+
+    Its Agmarknet name is the district name, which is how Agmarknet usually names the
+    market in the district headquarters, so real prices for it are matched directly.
+    """
+    return Market(
+        f"{d.id}-market",
+        f"{d.name} market",
+        d.centre["lat"],
+        d.centre["lon"],
+        {"hi": f"{d.name} मंडी", "mr": f"{d.name} बाजार"},
+        d.id,
+        tuple(dict.fromkeys((d.name, *d.agmarknet_names))),
+    )
+
+
+def _discovered_markets() -> list[dict]:
+    """Markets registered from the Agmarknet feed (table agmarknet_markets), if the table exists."""
+    try:
+        from sqlalchemy import inspect, select
+
+        from app.db.models import AgmarknetMarket
+        from app.db.session import get_engine
+
+        engine = get_engine()
+        if not inspect(engine).has_table(AgmarknetMarket.__tablename__):
+            return []
+        with engine.connect() as conn:
+            return [dict(r._mapping) for r in conn.execute(select(AgmarknetMarket.__table__))]
+    except Exception:  # noqa: BLE001 - reference data must load even without a database
+        return []
+
+
 @lru_cache
 def load_reference() -> Reference:
+    """reference.json (pilot districts, crops, costs) + india_districts.json + discovered markets.
+
+    Cached; call `load_reference.cache_clear()` after registering new markets.
+    """
     raw = json.loads((DATA_DIR / "reference.json").read_text(encoding="utf-8"))
     districts: dict[str, District] = {}
     markets: dict[str, Market] = {}
@@ -141,6 +229,35 @@ def load_reference() -> Reference:
             tuple(m["id"] for m in d["markets"]),
             tuple(d.get("agmarknet_names", [d["name"]])),
         )
+    curated = tuple(districts)
+
+    discovered: dict[str, list[dict]] = {}
+    for row in _discovered_markets():
+        discovered.setdefault(row["district"], []).append(row)
+    india_path = DATA_DIR / "india_districts.json"
+    if india_path.exists():
+        for d in json.loads(india_path.read_text(encoding="utf-8")):
+            if d["id"] in districts:
+                continue  # the pilot entry in reference.json has the checked markets
+            base = District(d["id"], d["name"], d.get("names", {}), d["state"], {"lat": d["lat"], "lon": d["lon"]}, (), (d["name"], *d.get("aliases", [])))
+            main = _main_market(base)
+            own = [main]
+            for row in discovered.get(d["id"], []):
+                if row["id"] in markets or row["id"] == main.id:
+                    continue
+                own.append(Market(row["id"], row["name"], row["lat"], row["lon"], {}, d["id"], (row["agmarknet_name"],)))
+            for m in own:
+                markets[m.id] = m
+            districts[d["id"]] = District(
+                base.id, base.name, base.names, base.state, base.centre, tuple(m.id for m in own), base.agmarknet_names
+            )
+
+    index: dict[tuple[str, str], str] = {}
+    for m in markets.values():
+        st = agmarknet_key(districts[m.district].state)
+        for n in m.agmarknet_names or (m.name,):
+            index.setdefault((st, agmarknet_key(n)), m.id)
+
     crops = {
         c["id"]: Crop(
             id=c["id"],
@@ -153,6 +270,7 @@ def load_reference() -> Reference:
             max_hold_days=c["max_hold_days"],
             default_horizon_days=c["default_horizon_days"],
             agmarknet_varieties=tuple(c.get("agmarknet_varieties", [])),
+            agmarknet_commodity_aliases=tuple(c.get("agmarknet_commodity_aliases", [])),
         )
         for c in raw["crops"]
     }
@@ -164,6 +282,8 @@ def load_reference() -> Reference:
         raw["market_fees_pct"],
         raw.get("nearby_radius_km", 60.0),
         raw.get("max_nearby_markets", 6),
+        curated,
+        index,
     )
 
 
@@ -187,32 +307,107 @@ def tokens(text: str) -> list[str]:
     return [t.lower() for t in _TOKEN_RE.findall(text)]
 
 
+def _starts_word(text: str, alias: str) -> bool:
+    """`alias` occurs in `text` at the start of a word ("onions" has "onion").
+
+    Devanagari vowel signs are not word characters for `\\b`, so the boundary is
+    checked by hand: the alias must not follow a letter or vowel sign. This keeps
+    a Marathi postposition such as "-मुळे" (because of) from reading as a crop.
+    """
+    start = text.find(alias)
+    while start != -1:
+        if start == 0 or not _TOKEN_RE.match(text[start - 1]):
+            return True
+        start = text.find(alias, start + 1)
+    return False
+
+
 def detect_crop(text: str) -> str | None:
-    """Find a supported crop mentioned in free text (any supported language)."""
-    toks = tokens(text)
+    """Find a supported crop mentioned in free text (any supported language).
+
+    The longest matching alias wins, so "shimla mirch" is capsicum rather than
+    green chilli, "patta gobi" cabbage rather than cauliflower and "sweet potato"
+    not potato. Short aliases (3 characters or fewer) must be a whole word.
+    """
+    toks = set(tokens(text))
+    lowered = text.lower()
+    best: tuple[int, str] | None = None
+    for crop in load_reference().crops.values():
+        for alias in crop.aliases:
+            if alias in toks or (len(alias) > 3 and _starts_word(lowered, alias)):
+                if best is None or len(alias) > best[0]:
+                    best = (len(alias), crop.id)
+    return best[1] if best else None
+
+
+# District and market names that are also everyday words in a farmer's question:
+# "mandi" means market (and is a district in Himachal Pradesh), "mon" and "una" are
+# districts too. They are never read as a place on their own.
+_PLACE_STOPWORDS = {"mandi", "mon", "una", "market", "bazar", "bazaar"}
+
+
+def _place_mentioned(text: str, name: str) -> bool:
+    """`name` is a whole word in `text` (English), or starts a word (Devanagari, so
+    "नाशिकला" still names Nashik)."""
+    name = name.lower().strip()
+    if not name or name in _PLACE_STOPWORDS:
+        return False
+    whole_word = name.isascii()
+    start = text.find(name)
+    while start != -1:
+        before_ok = start == 0 or not _TOKEN_RE.match(text[start - 1])
+        after = start + len(name)
+        after_ok = not whole_word or after == len(text) or not _TOKEN_RE.match(text[after])
+        if before_ok and after_ok:
+            return True
+        start = text.find(name, start + 1)
+    return False
+
+
+def _without_crop_names(text: str) -> str:
+    """Remove multi-word crop names first: "shimla mirch" is capsicum, not Shimla district."""
     lowered = text.lower()
     for crop in load_reference().crops.values():
         for alias in crop.aliases:
-            if alias in toks or (len(alias) > 3 and alias in lowered):
-                return crop.id
-    return None
+            if " " in alias:
+                lowered = lowered.replace(alias, " ")
+    return lowered
 
 
-def detect_district(text: str) -> str | None:
-    lowered = text.lower()
-    for d in load_reference().districts.values():
-        if any(c and c.lower() in lowered for c in [d.id, d.name.lower(), *d.names.values()]):
-            return d.id
-    return None
+def _best_place(text: str, candidates, preferred=lambda _id: False) -> str | None:
+    """Longest name mentioned wins; on a tie, a place `preferred` says yes to."""
+    best: tuple[int, bool, str] | None = None
+    for place_id, names in candidates:
+        for n in names:
+            if n and _place_mentioned(text, n):
+                score = (len(n), bool(preferred(place_id)), place_id)
+                if best is None or score[:2] > best[:2]:
+                    best = score
+    return best[2] if best else None
+
+
+def detect_district(text: str, prefer_state: str | None = None) -> str | None:
+    """A district named in the question (any in India), longest name first.
+
+    Several states have a district of the same name ("Aurangabad" in Bihar, and the
+    old name of Chhatrapati Sambhajinagar in Maharashtra); the farmer's own state wins.
+    """
+    lowered = _without_crop_names(text)
+    ref = load_reference()
+    return _best_place(
+        lowered,
+        ((d.id, (d.name, *d.names.values(), *d.agmarknet_names)) for d in ref.districts.values()),
+        lambda d_id: prefer_state is not None and ref.districts[d_id].state == prefer_state,
+    )
 
 
 def detect_market(text: str) -> str | None:
-    lowered = text.lower()
-    for m in load_reference().markets.values():
-        candidates = [m.id, m.name.lower(), m.name.split()[0].lower(), *m.names.values()]
-        if any(c and c.lower() in lowered for c in candidates):
-            return m.id
-    return None
+    lowered = _without_crop_names(text)
+    ref = load_reference()
+    return _best_place(
+        lowered,
+        ((m.id, (m.name, m.name.split()[0], *m.names.values(), *m.agmarknet_names)) for m in ref.markets.values()),
+    )
 
 
 _QTY_RE = re.compile(

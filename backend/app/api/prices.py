@@ -34,7 +34,7 @@ def prices(
     scope = ref.scope(district, lat, lon)
     as_of = as_of or today()
     stale_after = get_settings().stale_after_days
-    series = load_series(db, crop, as_of, lookback_days=days, market=market)
+    series = load_series(db, crop, as_of, lookback_days=days, markets=[market] if market else scope.market_ids)
     markets = []
     for m_id in [market] if market else list(scope.market_ids):
         pts = series.get(m_id, [])

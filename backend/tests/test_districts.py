@@ -60,7 +60,7 @@ def test_pune_chat_and_prices(session):
     with TestClient(app) as c:
         data = c.get("/prices", params={"crop": "potato", "district": "pune"}).json()
         assert data["district"] == "pune" and {m["market"] for m in data["markets"]} == PUNE_MARKETS
-        assert c.get("/prices", params={"crop": "onion", "district": "mumbai"}).status_code == 404
+        assert c.get("/prices", params={"crop": "onion", "district": "atlantis"}).status_code == 404
         r = c.post("/chat", json={"message": "potato sell?", "language": "en", "district": "pune"}, headers=GUEST).json()
         assert r["recommendation"]["best_market_now"] in PUNE_MARKETS
 

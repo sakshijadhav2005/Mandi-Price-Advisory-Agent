@@ -115,6 +115,81 @@
     ],
     "cold storage": [
       "शीतगृह"
+    ],
+    "brinjal": [
+      "वांगी"
+    ],
+    "cabbage": [
+      "कोबी"
+    ],
+    "cauliflower": [
+      "फुलकोबी"
+    ],
+    "okra": [
+      "भेंडी"
+    ],
+    "green chilli": [
+      "हिरवी मिरची"
+    ],
+    "capsicum": [
+      "ढोबळी मिरची"
+    ],
+    "carrot": [
+      "गाजर"
+    ],
+    "cucumber": [
+      "काकडी"
+    ],
+    "bitter gourd": [
+      "कारले"
+    ],
+    "bottle gourd": [
+      "दुधी भोपळा"
+    ],
+    "ridge gourd": [
+      "दोडका"
+    ],
+    "pumpkin": [
+      "लाल भोपळा"
+    ],
+    "green peas": [
+      "हिरवा वाटाणा"
+    ],
+    "beans": [
+      "फरसबी"
+    ],
+    "cluster beans": [
+      "गवार"
+    ],
+    "drumstick": [
+      "शेवगा"
+    ],
+    "radish": [
+      "मुळा"
+    ],
+    "beetroot": [
+      "बीट"
+    ],
+    "spinach": [
+      "पालक"
+    ],
+    "fenugreek": [
+      "मेथी"
+    ],
+    "coriander leaves": [
+      "कोथिंबीर"
+    ],
+    "garlic": [
+      "लसूण"
+    ],
+    "ginger": [
+      "आले"
+    ],
+    "sweet potato": [
+      "रताळे"
+    ],
+    "lemon": [
+      "लिंबू"
     ]
   },
   "decision_words": {

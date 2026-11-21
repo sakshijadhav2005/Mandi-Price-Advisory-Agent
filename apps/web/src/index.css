@@ -35,8 +35,10 @@
     --chilli-soft: 251 226 218;
   }
 
+  /* Dark colours: follow the phone unless the farmer picked light or dark in Settings
+     (data-theme on <html>, set before first paint in index.html). */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       color-scheme: dark;
       --paper: 18 17 14;
       --surface: 28 26 21;
@@ -56,6 +58,26 @@
       --chilli-ink: 245 150 130;
       --chilli-soft: 62 26 20;
     }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: 18 17 14;
+    --surface: 28 26 21;
+    --sunken: 37 34 28;
+    --ink: 241 236 225;
+    --muted: 166 157 140;
+    --line: 52 48 40;
+    --board: 10 9 7;
+    --board-ink: 245 184 46;
+    --leaf: 41 128 74;
+    --leaf-ink: 128 205 150;
+    --leaf-soft: 30 52 36;
+    --turmeric: 226 168 46;
+    --turmeric-ink: 245 205 120;
+    --turmeric-soft: 58 44 16;
+    --chilli: 196 58 36;
+    --chilli-ink: 245 150 130;
+    --chilli-soft: 62 26 20;
   }
 
   html {

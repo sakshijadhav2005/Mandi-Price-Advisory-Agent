@@ -109,7 +109,9 @@ def answer_query(
     crop = crop if crop in load_reference().crops else None
     crop = detect_crop(question) or crop
     quantity_qtl = detect_quantity_qtl(question) or quantity_qtl
-    district = detect_district(question) or (district if district in load_reference().districts else None)
+    ref = load_reference()
+    own = district if district in ref.districts else None
+    district = detect_district(question, prefer_state=ref.districts[own].state if own else ref.default_district.state) or own
 
     def new_context() -> ToolContext:
         return ToolContext(

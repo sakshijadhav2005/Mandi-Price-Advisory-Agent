@@ -37,9 +37,11 @@ function recorderSupported(): boolean {
 }
 
 /** A pause this long after the last recognised words ends the question. */
-const PAUSE_MS = 1800;
+const PAUSE_MS = 3000;
 /** No single question runs longer than this. */
-const MAX_LISTEN_MS = 20_000;
+const MAX_LISTEN_MS = 30_000;
+/** Recognition errors after which listening simply restarts (silence, or the engine dropping the session). */
+const RESTARTABLE = new Set(["no-speech", "aborted"]);
 
 /** Browsers only allow the microphone on https or localhost. */
 export function secureContext(): boolean {
@@ -74,6 +76,8 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
   const [state, dispatch] = useReducer(voiceReducer, { kind: "idle" } as VoiceState);
   const [interim, setInterim] = useState("");
   const recRef = useRef<Recognition | null>(null);
+  /** Ends the current browser-recognition question (pause, time limit or the stop button). */
+  const finishRef = useRef<(() => void) | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const cancelled = useRef(false);
 
@@ -88,6 +92,7 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
     }
     const Ctor = recognitionCtor();
     if (Ctor) {
+      recRef.current?.abort(); // never leave an older session open: start() would throw
       const rec = new Ctor();
       rec.lang = speechLocale(language);
       rec.interimResults = true;
@@ -96,12 +101,21 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
       // three words. Keep listening and end the question ourselves after a
       // longer pause, or when it has gone on long enough.
       rec.continuous = true;
-      let finalText = "";
-      let interimText = "";
+      // Browsers also end a session on their own: after a few seconds of
+      // silence ("no-speech"), and Chrome on Android or Edge often after the
+      // first phrase despite `continuous`. Until we decide the question is
+      // over, such an end just restarts listening and keeps the words so far.
+      const startedAt = Date.now();
+      let committed = ""; // text from earlier sessions of this question
+      let sessionFinal = "";
+      let sessionInterim = "";
       let confidence = 0;
       let errored = false;
+      let finishing = false;
       let pauseTimer: ReturnType<typeof setTimeout> | undefined;
+      const join = (a: string, b: string) => [a.trim(), b.trim()].filter(Boolean).join(" ");
       const finish = () => {
+        finishing = true;
         clearTimeout(pauseTimer);
         clearTimeout(maxTimer);
         try {
@@ -111,48 +125,65 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
         }
       };
       const maxTimer = setTimeout(finish, MAX_LISTEN_MS);
+      finishRef.current = finish;
       rec.onresult = (e) => {
         let text = "";
+        let final = "";
         for (let i = 0; i < e.results.length; i++) {
           const r = e.results[i];
           text += r[0].transcript;
           if (r.isFinal) {
-            finalText = text;
+            final = text;
             confidence = r[0].confidence || 0.5; // some engines report 0 when unknown
           }
         }
-        interimText = text;
-        setInterim(text);
+        sessionFinal = final;
+        sessionInterim = text;
+        setInterim(join(committed, text));
         clearTimeout(pauseTimer);
         pauseTimer = setTimeout(finish, PAUSE_MS);
       };
       rec.onerror = (e) => {
-        if (cancelled.current) return;
-        // "aborted" follows our own stop()/abort() and is not a failure.
-        if (e.error === "aborted") return;
+        if (cancelled.current || finishing || recRef.current !== rec) return;
+        // Silence or a dropped session: onend follows and restarts listening.
+        if (RESTARTABLE.has(e.error)) return;
         errored = true;
+        clearTimeout(pauseTimer);
+        clearTimeout(maxTimer);
         dispatch({ type: "fail", reason: recognitionFailure(e.error) });
       };
       rec.onend = () => {
+        // The browser fires onend after onerror; keep the real reason. A
+        // replaced session (a newer question started) just ends quietly.
+        if (cancelled.current || errored || recRef.current !== rec) {
+          clearTimeout(pauseTimer);
+          clearTimeout(maxTimer);
+          return;
+        }
+        committed = join(committed, sessionFinal || sessionInterim);
+        sessionFinal = sessionInterim = "";
+        if (!finishing && Date.now() - startedAt < MAX_LISTEN_MS) {
+          try {
+            rec.start();
+            return;
+          } catch {
+            /* could not restart: finish with what we have */
+          }
+        }
         clearTimeout(pauseTimer);
         clearTimeout(maxTimer);
-        // The browser fires onend after onerror; keep the real reason.
-        if (cancelled.current || errored) return;
-        if (finalText) {
-          dispatch({ type: "result", transcript: finalText, confidence });
-        } else {
-          // Stopped before the engine finalised: use what it heard so far,
-          // at low confidence so the farmer is asked to confirm it.
-          dispatch({ type: "result", transcript: interimText, confidence: interimText ? 0.5 : 0 });
-        }
+        if (finishRef.current === finish) finishRef.current = null;
+        // Words that were never finalised are sent at low confidence, so the
+        // farmer is asked to confirm them.
+        dispatch({ type: "result", transcript: committed, confidence: committed ? Math.min(confidence || 0.5, 1) : 0 });
       };
       recRef.current = rec;
       dispatch({ type: "start", at: Date.now() });
       try {
         rec.start();
       } catch {
-        // start() throws if a previous session is still open.
         errored = true;
+        clearTimeout(maxTimer);
         dispatch({ type: "fail", reason: "failed" });
       }
       return;
@@ -188,7 +219,8 @@ export function useVoiceInput(language: string, api: ApiClient, serverStt: boole
 
   const stop = useCallback(() => {
     dispatch({ type: "stop" });
-    recRef.current?.stop();
+    if (finishRef.current) finishRef.current();
+    else recRef.current?.stop();
     if (mediaRef.current?.state === "recording") mediaRef.current.stop();
   }, []);
 

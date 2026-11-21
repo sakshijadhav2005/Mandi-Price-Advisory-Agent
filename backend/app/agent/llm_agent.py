@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from dataclasses import dataclass
 
 import anthropic
@@ -19,7 +20,7 @@ from app.translation.glossary import SUPPORTED_LANGUAGES, glossary_for
 
 log = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are a mandi price and advisory assistant for small farmers in {district} district(s), {state}, India. Farmers ask whether to sell their produce now or hold it, and how to store or handle it.
+SYSTEM_PROMPT = """You are a mandi price and advisory assistant for small farmers across India; each question names the farmer's district and nearby markets. Farmers ask whether to sell their produce now or hold it, and how to store or handle it.
 
 How to work:
 - For any price or sell/hold question, call check_data_freshness, then compute_recommendation. Use get_mandi_prices, estimate_transport_cost or search_advisories only when they add something the farmer asked about. You have a small tool budget, so do not repeat calls.
@@ -67,21 +68,36 @@ def call_tool_within_budget(ctx: ToolContext, result: LLMResult, name: str, args
     return run_tool(ctx, name, complete_args(name, args if isinstance(args, dict) else {}))
 
 
+class Deadline:
+    """The time left for one answer (LLM_DEADLINE_S), shared by all its model calls."""
+
+    MIN_CALL_S = 3.0  # a model call with less time than this would only time out
+
+    def __init__(self, seconds: float | None = None) -> None:
+        self.seconds = get_settings().llm_deadline_s if seconds is None else seconds
+        self.end = time.monotonic() + self.seconds
+
+    def next_call_timeout(self, provider: str) -> float:
+        """Timeout for the next model call; LLMUnavailable once the time is used up."""
+        left = self.end - time.monotonic()
+        if left < self.MIN_CALL_S:
+            raise LLMUnavailable(f"{provider}: no answer within {self.seconds:.0f}s (LLM_DEADLINE_S)")
+        return left
+
+
 _client: anthropic.Anthropic | None = None
 
 
 def get_client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(timeout=60.0, max_retries=2)
+        _client = anthropic.Anthropic(timeout=60.0, max_retries=1)  # each call is also capped by Deadline
     return _client
 
 
 def build_system_prompt() -> str:
     ref = load_reference()
     return SYSTEM_PROMPT.format(
-        district=", ".join(d.name for d in ref.districts.values()),
-        state=", ".join(sorted({d.state for d in ref.districts.values()})),
         crops=", ".join(ref.crops),
         languages=", ".join(f"{code} ({name})" for code, name in SUPPORTED_LANGUAGES.items()),
     )
@@ -100,7 +116,7 @@ def build_user_turn(ctx: ToolContext, question: str) -> str:
     ref = load_reference()
     scope = ref.scope(ctx.district, ctx.farmer_lat, ctx.farmer_lon)
     parts.append(
-        f"Farmer's district: {ref.districts[scope.district].name}. Nearby markets: "
+        f"Farmer's district: {ref.districts[scope.district].name}, {ref.districts[scope.district].state}. Nearby markets: "
         + ", ".join(f"{ref.markets[m].name} ({m})" for m in scope.market_ids)
         + "."
     )
@@ -117,10 +133,13 @@ def run_llm_agent(ctx: ToolContext, question: str, history: list[dict] | None = 
     tools = tool_schemas()
     messages: list[dict] = [*(history or []), {"role": "user", "content": build_user_turn(ctx, question)}]
     result = LLMResult(text="", stop_reason=None, model=None)
+    deadline = Deadline()
 
     for _ in range(settings.tool_budget + 2):
+        timeout = deadline.next_call_timeout("claude")
         try:
             response = client.beta.messages.create(
+                timeout=timeout,
                 model=settings.llm_model,
                 max_tokens=settings.llm_max_tokens,
                 system=build_system_prompt(),

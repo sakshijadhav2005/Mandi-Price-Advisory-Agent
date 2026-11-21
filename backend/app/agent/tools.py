@@ -59,9 +59,10 @@ def check_data_freshness(ctx: ToolContext, crop: str | None = None) -> dict:
     settings = get_settings()
     ref = load_reference()
     c = _crop(ctx, crop)
-    series = load_series(ctx.session, c.id, ctx.as_of, lookback_days=30)
+    scope = _scope(ctx)
+    series = load_series(ctx.session, c.id, ctx.as_of, lookback_days=30, markets=scope.market_ids)
     markets = []
-    for m in (ref.markets[i] for i in _scope(ctx).market_ids):
+    for m in (ref.markets[i] for i in scope.market_ids):
         pts = series.get(m.id, [])
         if not pts:
             markets.append({"market": m.id, "status": "missing", "latest_date": None, "age_days": None})
@@ -93,10 +94,10 @@ def get_mandi_prices(ctx: ToolContext, crop: str | None = None, market: str | No
     ref = load_reference()
     c = _crop(ctx, crop)
     if market and market not in ref.markets:
-        raise ToolError(f"Unknown market {market!r}. Known markets: {', '.join(ref.markets)}.")
+        raise ToolError(f"Unknown market {market!r}. Nearby markets: {', '.join(_scope(ctx).market_ids)}.")
     days = max(1, min(days or 7, 30))
-    series = load_series(ctx.session, c.id, ctx.as_of, lookback_days=days, market=market)
     allowed = {market} if market else set(_scope(ctx).market_ids)
+    series = load_series(ctx.session, c.id, ctx.as_of, lookback_days=days, markets=allowed)
     out = []
     for m_id, pts in series.items():
         if m_id not in allowed:
@@ -150,9 +151,9 @@ def search_advisories(ctx: ToolContext, query: str, crop: str | None = None) -> 
 
 def estimate_transport_cost(ctx: ToolContext, market: str, quantity_qtl: float | None = None) -> dict:
     ref = load_reference()
-    if market not in ref.markets:
-        raise ToolError(f"Unknown market {market!r}. Known markets: {', '.join(ref.markets)}.")
     scope = _scope(ctx)
+    if market not in ref.markets:
+        raise ToolError(f"Unknown market {market!r}. Nearby markets: {', '.join(scope.market_ids)}.")
     km, per_qtl = decision_mod.transport_cost_per_qtl(ref, market, scope.lat, scope.lon)
     qty = quantity_qtl or ctx.default_quantity_qtl
     return {
@@ -175,7 +176,7 @@ def compute_recommendation(
     c = _crop(ctx, crop)
     # A year and a bit of history: the last 30 days for the trend, last year's
     # same window for the seasonal signal.
-    series = load_series(ctx.session, c.id, ctx.as_of, lookback_days=400)
+    series = load_series(ctx.session, c.id, ctx.as_of, lookback_days=400, markets=_scope(ctx).market_ids)
     rec = decision_mod.recommend(
         c,
         series,
@@ -221,7 +222,6 @@ def tool_schemas() -> list[dict]:
     """Tool definitions for the Messages API (strict mode: every field required, optional ones nullable)."""
     ref = load_reference()
     crops = list(ref.crops)
-    markets = list(ref.markets)
     crop_prop = _nullable("string", enum=[*crops, None], description="Crop id. Null uses the crop from the conversation.")
     return [
         {
@@ -243,7 +243,7 @@ def tool_schemas() -> list[dict]:
                 "type": "object",
                 "properties": {
                     "crop": crop_prop,
-                    "market": _nullable("string", enum=[*markets, None], description="One market id, or null for all nearby markets."),
+                    "market": _nullable("string", description="One market id from the nearby markets listed in the question, or null for all of them."),
                     "days": _nullable("integer", description="Days of history, 1-30. Null means 7."),
                 },
                 "required": ["crop", "market", "days"],
@@ -268,7 +268,7 @@ def tool_schemas() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "market": {"type": "string", "enum": markets},
+                    "market": {"type": "string", "description": "A market id from the nearby markets listed in the question."},
                     "quantity_qtl": _nullable("number", description="Quantity in quintals, or null."),
                 },
                 "required": ["market", "quantity_qtl"],

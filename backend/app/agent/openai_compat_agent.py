@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import httpx
 
-from app.agent.llm_agent import LLMResult, LLMUnavailable, build_system_prompt, build_user_turn, call_tool_within_budget
+from app.agent.llm_agent import Deadline, LLMResult, LLMUnavailable, build_system_prompt, build_user_turn, call_tool_within_budget
 from app.agent.tools import ToolContext, function_tools
 from app.config import get_settings
 
@@ -45,7 +45,7 @@ def configured_free_provider() -> str | None:
     return next((name for name, p in PRESETS.items() if getattr(s, p.key_setting)), None)
 
 
-def _chat(provider: str, messages: list[dict], tools: list[dict]) -> dict:
+def _chat(provider: str, messages: list[dict], tools: list[dict], timeout: float = 60.0) -> dict:
     s = get_settings()
     preset = PRESETS[provider]
     key = getattr(s, preset.key_setting)
@@ -62,7 +62,7 @@ def _chat(provider: str, messages: list[dict], tools: list[dict]) -> dict:
                 "temperature": 0.2,
                 "max_tokens": s.llm_max_tokens,
             },
-            timeout=60.0,
+            timeout=timeout,
         )
     except httpx.HTTPError as exc:
         raise LLMUnavailable(f"{provider}: connection error: {exc}") from exc
@@ -88,8 +88,9 @@ def run_openai_compat_agent(provider: str, ctx: ToolContext, question: str, hist
         {"role": "user", "content": build_user_turn(ctx, question)},
     ]
 
+    deadline = Deadline()
     for _ in range(s.tool_budget + 2):
-        data = _chat(provider, messages, tools)
+        data = _chat(provider, messages, tools, timeout=deadline.next_call_timeout(provider))
         usage = data.get("usage") or {}
         result.input_tokens += usage.get("prompt_tokens", 0) or 0
         result.output_tokens += usage.get("completion_tokens", 0) or 0

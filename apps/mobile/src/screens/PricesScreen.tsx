@@ -49,13 +49,14 @@ export function PricesScreen() {
   return (
     <ScrollView contentContainerStyle={s.pad} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load()} />}>
       <Text style={s.h1}>{t("prices.title")}</Text>
-      <View style={s.row}>
+      {/* Many vegetables: one scrolling strip instead of a block of buttons. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
         {(meta?.crops ?? []).map((c) => (
-          <Pressable key={c.id} style={crop === c.id ? s.btn : s.btnGhost} onPress={() => setCrop(c.id)}>
+          <Pressable key={c.id} style={crop === c.id ? s.btn : s.btnGhost} onPress={() => setCrop(c.id)} accessibilityState={{ selected: crop === c.id }}>
             <Text style={crop === c.id ? s.btnText : s.btnGhostText}>{displayName(c, lang)}</Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
       <Text style={s.small}>{t("prices.unit")}</Text>
       {cached && (
         <View style={s.banner}>

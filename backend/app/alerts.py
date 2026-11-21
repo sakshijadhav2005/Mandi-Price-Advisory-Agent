@@ -25,9 +25,9 @@ log = logging.getLogger(__name__)
 
 def _latest_price(session: Session, alert: PriceAlert, as_of: date) -> tuple[str, float, date] | None:
     stale_after = get_settings().stale_after_days
-    series = load_series(session, alert.crop, as_of, lookback_days=stale_after + 1, market=alert.market)
-    best = None
     allowed = {alert.market} if alert.market else set(load_reference().scope(alert.district).market_ids)
+    series = load_series(session, alert.crop, as_of, lookback_days=stale_after + 1, markets=allowed)
+    best = None
     for market, pts in series.items():
         if market not in allowed:
             continue

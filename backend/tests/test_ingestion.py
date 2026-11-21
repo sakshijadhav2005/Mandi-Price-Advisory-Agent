@@ -54,14 +54,16 @@ def test_published_market_names_match_exactly(published, expected):
 @pytest.mark.parametrize("published", ["Pune(Moshi)", "Pune(Pimpri)", "Pune(Khadiki)", "Nasik Road", "Solapur", ""])
 def test_other_markets_are_not_mistaken_for_pilot_markets(published):
     # The old substring matcher mapped every Pune(...) market onto Gultekdi.
-    assert ingest._match_market(published) is None
+    # (Solapur is now a district of its own with a main market, just not a pilot one.)
+    assert ingest._match_market(published, "Maharashtra") not in load_reference().curated_market_ids
 
 
-def test_every_pilot_market_lists_its_agmarknet_names():
+def test_every_market_lists_its_agmarknet_names():
     ref = load_reference()
     for m in ref.markets.values():
         assert m.agmarknet_names, m.id
-        assert ref.market_by_agmarknet_name(m.agmarknet_names[0]).id == m.id
+        # Within its state a market's published name finds it (names repeat across states).
+        assert ref.market_by_agmarknet_name(m.agmarknet_names[0], ref.districts[m.district].state).id == m.id, m.id
 
 
 # ----------------------------------------------------------------------------- varieties
@@ -122,10 +124,12 @@ def test_fetch_data_gov_in_filters_by_state_and_commodity_and_keeps_only_pilot_m
     monkeypatch.setattr(ingest.get_settings(), "data_gov_in_api_key", "test-key")
     try:
         n = ingest.fetch_data_gov_in(session)
-        assert n == 6  # (lasalgaon + pune) x 3 crops
-        assert len(calls) == 3  # one call per crop for the single pilot state
-        assert all("filters[district]" not in c for c in calls)
-        assert {c["filters[state.keyword]"] for c in calls} == {"Maharashtra"}
+        crops = load_reference().crops.values()
+        assert n == 2 * len(crops)  # (lasalgaon + pune) per crop; extra spellings of a crop merge into one row
+        assert len(calls) == sum(len(c.agmarknet_commodities) for c in crops)  # one call per published spelling
+        assert {"Bhindi(Ladies Finger)", "Peas Wet", "Green Peas"} <= {c["filters[commodity]"] for c in calls}
+        # All of India: neither district nor state filter (spellings vary); rows are matched by state and name.
+        assert all("filters[district]" not in c and "filters[state.keyword]" not in c for c in calls)
         rows = session.scalars(select(Price).where(Price.source == "data_gov_in")).all()
         assert {r.market for r in rows} == {"lasalgaon", "pune"}
         onion_lasalgaon = next(r for r in rows if r.crop == "onion" and r.market == "lasalgaon")
@@ -148,8 +152,9 @@ def test_fetch_retries_timeouts_then_succeeds(session, monkeypatch):
     monkeypatch.setattr(ingest, "RETRY_BACKOFF_S", 0)
     monkeypatch.setattr(ingest.get_settings(), "data_gov_in_api_key", "test-key")
     try:
-        assert ingest.fetch_data_gov_in(session) == 3
-        assert len(attempts) == 4  # 3 crops + 1 retry
+        crops = load_reference().crops.values()
+        assert ingest.fetch_data_gov_in(session) == len(crops)
+        assert len(attempts) == sum(len(c.agmarknet_commodities) for c in crops) + 1  # every call + 1 retry
     finally:
         session.execute(delete(Price).where(Price.source == "data_gov_in"))
         session.commit()
@@ -168,6 +173,39 @@ def test_fetch_gives_up_after_repeated_timeouts_and_records_the_failure(session,
 
     run = last_ingestion(session)
     assert run and run["status"] == "failed" and "ReadTimeout" in run["message"]
+
+
+def test_fetch_skips_a_commodity_that_keeps_timing_out(session, monkeypatch):
+    def get(url, params, timeout):
+        if params["filters[commodity]"] == "Brinjal":
+            raise httpx.ReadTimeout("slow", request=httpx.Request("GET", url))
+        return httpx.Response(200, json={"records": [_rec("Yeola", "Red", 2400, commodity=params["filters[commodity]"])]}, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(ingest.httpx, "get", get)
+    monkeypatch.setattr(ingest, "RETRY_BACKOFF_S", 0)
+    monkeypatch.setattr(ingest.get_settings(), "data_gov_in_api_key", "test-key")
+    try:
+        assert ingest.fetch_data_gov_in(session) == len(load_reference().crops) - 1
+        crops = {r.crop for r in session.scalars(select(Price).where(Price.source == "data_gov_in"))}
+        assert "brinjal" not in crops and {"onion", "okra"} <= crops
+    finally:
+        session.execute(delete(Price).where(Price.source == "data_gov_in"))
+        session.commit()
+
+
+def test_fetch_stops_early_when_data_gov_in_is_down(session, monkeypatch):
+    attempts: list[int] = []
+
+    def down(url, params, timeout):
+        attempts.append(1)
+        return httpx.Response(502, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(ingest.httpx, "get", down)
+    monkeypatch.setattr(ingest, "RETRY_BACKOFF_S", 0)
+    monkeypatch.setattr(ingest.get_settings(), "data_gov_in_api_key", "test-key")
+    with pytest.raises(httpx.HTTPStatusError):
+        ingest.fetch_data_gov_in(session)
+    assert len(attempts) == ingest.GIVE_UP_AFTER * ingest.FETCH_ATTEMPTS
 
 
 def test_fetch_does_not_retry_a_bad_key(session, monkeypatch):
