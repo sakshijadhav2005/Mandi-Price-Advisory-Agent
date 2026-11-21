@@ -2,7 +2,7 @@
 
 Status, 2026-11-21: **feature 1 (this week's farm advice) is built** (`backend/app/advisory/agromet.py`,
 `manage.py fetch-agromet`, tool `get_district_advisory`, tests in `backend/tests/test_agromet.py`).
-**Feature 3 (safe spraying) is built** (`backend/app/advisory/pesticides.py`, `manage.py import-pesticides` / `approve-pesticides` / `check-pesticide-list`, tool `lookup_pesticide`, tests in `backend/tests/test_pesticides.py`); it answers only once a reviewer has approved rows. **Feature 5 (government schemes) is built** (`backend/app/advisory/schemes.py`, entries in `backend/data/schemes/`, tools `list_schemes` / `get_scheme` / `check_scheme_eligibility`, `manage.py check-schemes`, tests in `backend/tests/test_schemes.py`); entries are drafts until reviewed. Feature 2 waits for the data.gov.in API; feature 4 waits for storage documents (ICAR sites unreachable on 2026-11-21). Other questions are pointed to the agriculture office or KVK.
+**Feature 3 (safe spraying) is built** (`backend/app/advisory/pesticides.py`, `manage.py import-pesticides` / `approve-pesticides` / `check-pesticide-list`, tool `lookup_pesticide`, tests in `backend/tests/test_pesticides.py`); it answers only once a reviewer has approved rows. **Feature 5 (government schemes) is built** (`backend/app/advisory/schemes.py`, entries in `backend/data/schemes/`, tools `list_schemes` / `get_scheme` / `check_scheme_eligibility`, `manage.py check-schemes`, tests in `backend/tests/test_schemes.py`); entries are drafts until reviewed. **Features 2 and 4 are built** (`backend/app/advisory/kcc.py`, `documents.py`, shared search in `search.py`; commands `import-kcc` / `fetch-kcc` and `add-document` / `approve-document`; tools `search_farmer_questions` and `search_storage_advice`; tests in `backend/tests/test_knowledge.py`) but have **no content yet**: KCC rows need the data.gov.in CSV or `KCC_RESOURCE_ID` (the API was timing out and the dataset page refuses automated access on 2026-11-22), and storage documents need to be obtained from ICAR-DOGR / CPRI / KVK (their sites refused connections). Other questions are pointed to the agriculture office or KVK.
 
 ## 1. Goal and scope
 
@@ -128,7 +128,7 @@ which is published by IMD and used as is).
 - **Marathi:** answer in Marathi from the English bulletin; switch to the Marathi bulletin
   once its link is known.
 
-### 4.2 Everyday crop questions (Kisan Call Centre)
+### 4.2 Everyday crop questions (Kisan Call Centre) (built; needs data)
 
 - **Source:** data.gov.in KCC transcripts API, filtered to state Maharashtra, district Pune,
   and the app's crops. Same API key as prices.
@@ -160,7 +160,7 @@ which is published by IMD and used as is).
 - **Safety:** no dose for a crop/chemical pair that is not in the list; mention protective
   equipment and following the label.
 
-### 4.4 Storage and post-harvest
+### 4.4 Storage and post-harvest (built; needs documents)
 
 - **Sources:** ICAR-DOGR onion storage material (English, Marathi newsletter), CPRI potato
   storage, KVK Narayangaon tomato handling. Collected by hand; no feed.

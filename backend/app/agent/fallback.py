@@ -98,6 +98,34 @@ def scheme_answer(ctx: ToolContext, question: str) -> str | None:
     return " ".join(lines)
 
 
+def _not_a_decision(question: str) -> bool:
+    """Not a sell/hold question. A storage question counts as not a decision even though
+    Marathi "साठव" (store) is also a hold word; is_advisory_question handles that overlap."""
+    return is_advisory_question(question) or not asks_sell_or_hold(question)
+
+
+def knowledge_answer(ctx: ToolContext, crop_id: str | None, question: str) -> str | None:
+    """A storage question from a reviewed document, or a crop question from a close Kisan
+    Call Centre answer, in the farmer's language. None when nothing matches well enough."""
+    lang = ctx.language
+    if is_advisory_question(question):
+        res, err = run_tool(ctx, "search_storage_advice", {"query": question, "crop": crop_id})
+        hit = None if err else next((h for h in res["results"] if h["language"] == lang), None)
+        if hit:
+            return t(lang, "document_answer", title=hit["title"], publisher=hit["publisher"], text=hit["text"])
+    res, err = run_tool(ctx, "search_farmer_questions", {"query": question, "crop": crop_id})
+    hit = None if err else next((h for h in res["results"] if h["language"] == lang), None)
+    if hit:
+        district = load_reference().districts[res["district"]]
+        return " ".join(
+            [
+                t(lang, "kcc_answer", district=district.names.get(lang, district.name), date=_day(hit["asked_on"]), question=hit["question"], answer=hit["answer"]),
+                t(lang, "kcc_note"),
+            ]
+        )
+    return None
+
+
 def named_chemical(ctx: ToolContext, question: str) -> str | None:
     """An approved chemical named in the question ("mancozeb"), if any."""
     from app.advisory.pesticides import approved_chemicals
@@ -204,6 +232,8 @@ def write_answer(
     if not crop_id or crop_id not in ref.crops:
         if question and (is_pesticide_question(question) or named_chemical(ctx, question)):
             return t(lang, "pesticide_which_crop", crops=", ".join(c.display(lang) for c in ref.crops.values()))
+        if question and _not_a_decision(question) and (found := knowledge_answer(ctx, None, question)):
+            return found
         if weather:
             return agromet_answer(ctx, None)
         # No crop: a general question (a scheme, storage of an unknown crop) is out of scope.
@@ -216,6 +246,10 @@ def write_answer(
     # Pesticide dose / waiting-period questions come first: harvesting too early is a safety issue.
     if question and (is_pesticide_question(question) or named_chemical(ctx, question)):
         return pesticide_answer(ctx, crop_id, question)
+    # Storage questions -> reviewed documents; other crop questions -> a close Kisan Call
+    # Centre answer. Both only in the farmer's language; otherwise carry on as before.
+    if question and _not_a_decision(question) and (found := knowledge_answer(ctx, crop_id, question)):
+        return found
     if weather and not asks_sell_or_hold(question):
         return agromet_answer(ctx, crop_id)
 

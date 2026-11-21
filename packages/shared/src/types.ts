@@ -88,7 +88,28 @@ export interface SchemeSource {
   origin: string;
 }
 
-export type Source = PriceSource | AgrometSource | PesticideSource | SchemeSource;
+/** A reviewed official storage / post-harvest document. */
+export interface DocumentSource {
+  id: string;
+  kind: "document";
+  title: string;
+  publisher: string;
+  url: string | null;
+  published: string | null;
+  origin: string;
+}
+
+/** A Kisan Call Centre answer to a similar farmer question in the district. */
+export interface KccSource {
+  id: string;
+  kind: "kcc";
+  title: string;
+  asked_on: string;
+  question: string;
+  origin: string;
+}
+
+export type Source = PriceSource | AgrometSource | PesticideSource | SchemeSource | DocumentSource | KccSource;
 
 export interface TraceStep {
   tool: string;

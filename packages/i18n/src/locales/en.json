@@ -124,7 +124,9 @@
     "agrometSource": "IMD district advisory, {{date}} (valid till {{until}})",
     "pesticideSource": "CIB&RC pesticide list, {{date}}",
     "schemeSource": "{{name}}, information as of {{date}}",
-    "schemeDraft": "not yet verified"
+    "schemeDraft": "not yet verified",
+    "documentSource": "{{title}} ({{publisher}})",
+    "kccSource": "Kisan Call Centre answer, {{date}}"
   },
   "prices": {
     "title": "Mandi prices",

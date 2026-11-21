@@ -9,6 +9,10 @@
     python manage.py approve-pesticides review.csv --reviewer "Name"   # make reviewed rows usable
     python manage.py check-pesticide-list      # is a newer CIB&RC list published?
     python manage.py check-schemes             # validate scheme entries; list unreviewed / outdated ones
+    python manage.py add-document FILE --title T --crop onion --language mr --publisher "ICAR-DOGR" [--url U]
+    python manage.py approve-document ID --reviewer "Name"   # (reject-document, list-documents)
+    python manage.py import-kcc kcc.csv        # Kisan Call Centre answers from a data.gov.in CSV export
+    python manage.py fetch-kcc                 # the same from the data.gov.in API (KCC_RESOURCE_ID)
     python manage.py purge-synthetic           # drop the demo prices once real ones arrive
     python manage.py purge-history             # delete chat history older than HISTORY_RETENTION_DAYS (30)
     python manage.py check-alerts              # evaluate price alerts, send push notifications
@@ -148,6 +152,55 @@ def cmd_check_schemes(_args) -> list[str]:
     return issues
 
 
+def cmd_add_document(args) -> None:
+    from app.advisory.documents import add_document
+
+    init_db()
+    with session_scope() as s:
+        doc = add_document(s, Path(args.file), title=args.title, crop=args.crop, language=args.language, publisher=args.publisher, url=args.url or "", published=args.published or "")
+        log.info("added document %d (%s) as pending; review it, then: approve-document %d --reviewer NAME", doc.id, doc.title, doc.id)
+
+
+def cmd_review_document(args) -> None:
+    from app.advisory.documents import review_document
+
+    init_db()
+    with session_scope() as s:
+        doc = review_document(s, args.id, args.reviewer, approve=args.approve)
+        log.info("document %d is now %s (reviewed by %s)", doc.id, doc.status, doc.reviewed_by)
+
+
+def cmd_list_documents(_args) -> None:
+    from sqlalchemy import func, select
+
+    from app.db.models import AdvisoryChunk, AdvisoryDocument
+
+    init_db()
+    with session_scope() as s:
+        for doc in s.scalars(select(AdvisoryDocument).order_by(AdvisoryDocument.id)):
+            n = s.scalar(select(func.count()).select_from(AdvisoryChunk).where(AdvisoryChunk.document_id == doc.id))
+            print(f"{doc.id:4} {doc.status:9} {doc.language} {doc.crop_id:12} {n:3} passages  {doc.title} ({doc.publisher})")
+
+
+def cmd_import_kcc(args) -> None:
+    from app.advisory.kcc import import_csv
+
+    init_db()
+    with session_scope() as s:
+        log.info("KCC import: %s", import_csv(s, Path(args.csv), today()))
+
+
+def cmd_fetch_kcc(_args) -> dict:
+    from app.advisory.kcc import fetch_api, purge_old
+
+    init_db()
+    with session_scope() as s:
+        out = fetch_api(s, today())
+        out["deleted_old"] = purge_old(s, today())
+    log.info("KCC fetch: %s", out)
+    return out
+
+
 def cmd_daily(args) -> None:
     """One daily run (for cron / Task Scheduler): fetch prices, check alerts, alert ops on failure."""
     from app.ops import run_daily
@@ -169,6 +222,13 @@ def cmd_daily(args) -> None:
                 ops_alert("Scheme entries need re-checking: " + "; ".join(issues))
         except Exception:
             log.exception("scheme check failed")
+        from app.config import get_settings
+
+        if get_settings().kcc_resource_id:  # new KCC answers once a month
+            try:
+                cmd_fetch_kcc(args)
+            except Exception:
+                log.exception("KCC fetch failed")
 
 
 def cmd_check_alerts(_args) -> None:
@@ -248,6 +308,25 @@ def main() -> None:
     sp.set_defaults(func=cmd_approve_pesticides)
     sub.add_parser("check-pesticide-list").set_defaults(func=cmd_check_pesticide_list)
     sub.add_parser("check-schemes").set_defaults(func=cmd_check_schemes)
+    sp = sub.add_parser("add-document")
+    sp.add_argument("file")
+    sp.add_argument("--title", required=True)
+    sp.add_argument("--crop", default="all")
+    sp.add_argument("--language", required=True, choices=["en", "hi", "mr"])
+    sp.add_argument("--publisher", required=True)
+    sp.add_argument("--url")
+    sp.add_argument("--published")
+    sp.set_defaults(func=cmd_add_document)
+    for name, approve in (("approve-document", True), ("reject-document", False)):
+        sp = sub.add_parser(name)
+        sp.add_argument("id", type=int)
+        sp.add_argument("--reviewer", required=True)
+        sp.set_defaults(func=cmd_review_document, approve=approve)
+    sub.add_parser("list-documents").set_defaults(func=cmd_list_documents)
+    sp = sub.add_parser("import-kcc")
+    sp.add_argument("csv")
+    sp.set_defaults(func=cmd_import_kcc)
+    sub.add_parser("fetch-kcc").set_defaults(func=cmd_fetch_kcc)
     sub.add_parser("purge-synthetic").set_defaults(func=cmd_purge_synthetic)
     sub.add_parser("purge-history").set_defaults(func=cmd_purge_history)
     sub.add_parser("check-alerts").set_defaults(func=cmd_check_alerts)

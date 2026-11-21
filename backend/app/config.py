@@ -111,6 +111,15 @@ class Settings(BaseSettings):
     agromet_url_template: str = (
         "https://mausam.imd.gov.in/imd_latest/contents/agromet/agromet-data/district/current/english-pdf/{name}.pdf"
     )
+    # Kisan Call Centre answers (data.gov.in "KCC transcripts"); empty resource id = CSV import only.
+    kcc_resource_id: str = ""
+    kcc_districts: str = "pune"  # comma-separated district ids
+    kcc_years: int = 3  # keep questions asked in the last N years
+
+    @property
+    def kcc_district_list(self) -> list[str]:
+        return [d.strip().lower() for d in self.kcc_districts.split(",") if d.strip()]
+
     agromet_retention_days: int = 30  # bulletins and their PDFs older than this are deleted
     agromet_dir: str = ""  # where bulletin PDFs are kept; default backend/data/agromet
 

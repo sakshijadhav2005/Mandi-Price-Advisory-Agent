@@ -240,3 +240,61 @@ class PesticideUse(Base):
     reviewed_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+
+class AdvisoryDocument(Base):
+    """A crop advisory document (storage, post-harvest, handling) from an official source.
+
+    Added as "pending"; answers use it only after a reviewer approves it.
+    """
+
+    __tablename__ = "advisory_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(300))
+    crop_id: Mapped[str] = mapped_column(String(32), index=True)  # an app crop id, or "all"
+    language: Mapped[str] = mapped_column(String(8))
+    publisher: Mapped[str] = mapped_column(String(200))
+    url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    published: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    sha256: Mapped[str] = mapped_column(String(64), unique=True)
+    file_name: Mapped[str] = mapped_column(String(300))
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)  # pending | approved | rejected
+    reviewed_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AdvisoryChunk(Base):
+    """One passage of an advisory document (split at headings / paragraphs)."""
+
+    __tablename__ = "advisory_chunks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("advisory_documents.id", ondelete="CASCADE"), index=True)
+    position: Mapped[int] = mapped_column(Integer)
+    heading: Mapped[str] = mapped_column(String(300), default="")
+    text: Mapped[str] = mapped_column(Text)
+
+
+class KccAnswer(Base):
+    """A Kisan Call Centre question and the expert's answer, for one district.
+
+    Imported from the data.gov.in KCC transcripts (API or CSV). Answers that name a
+    pesticide or dose are not imported: doses come only from the reviewed CIB&RC list.
+    """
+
+    __tablename__ = "kcc_answers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asked_on: Mapped[date] = mapped_column(Date, index=True)
+    state: Mapped[str] = mapped_column(String(60))
+    district: Mapped[str] = mapped_column(String(32), index=True)  # app district id
+    block: Mapped[str] = mapped_column(String(100), default="")
+    crop_raw: Mapped[str] = mapped_column(String(120), default="")
+    crop_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    query_type: Mapped[str] = mapped_column(String(120), default="")
+    question: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    language: Mapped[str] = mapped_column(String(8))
+    dedupe_key: Mapped[str] = mapped_column(String(64), unique=True)
+

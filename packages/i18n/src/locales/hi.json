@@ -124,7 +124,9 @@
     "agrometSource": "IMD ज़िला सलाह, {{date}} ({{until}} तक मान्य)",
     "pesticideSource": "CIB&RC कीटनाशक सूची, {{date}}",
     "schemeSource": "{{name}}, {{date}} तक की जानकारी",
-    "schemeDraft": "अभी सत्यापित नहीं"
+    "schemeDraft": "अभी सत्यापित नहीं",
+    "documentSource": "{{title}} ({{publisher}})",
+    "kccSource": "किसान कॉल सेंटर का जवाब, {{date}}"
   },
   "prices": {
     "title": "मंडी भाव",

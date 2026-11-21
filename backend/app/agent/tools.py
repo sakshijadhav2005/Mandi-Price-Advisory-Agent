@@ -306,6 +306,45 @@ def check_scheme_eligibility(ctx: ToolContext, scheme: str, **facts: bool | None
     return result | {"name": s.name(ctx.language), "url": s.url, "helpline": s.helpline, "source_id": _scheme_source(ctx, s)}
 
 
+def search_storage_advice(ctx: ToolContext, query: str, crop: str | None = None) -> dict:
+    """Passages from reviewed official storage / post-harvest documents for the crop."""
+    from app.advisory.documents import search
+
+    crop_id = _crop(ctx, crop).id if (crop or ctx.default_crop) else None
+    hits = search(ctx.session, query, crop_id)
+    for h in hits:
+        h["source_id"] = ctx.add_source(
+            f"document:{h['document_id']}",
+            kind="document",
+            title=h["title"],
+            publisher=h["publisher"],
+            url=h["url"],
+            published=h["published"],
+            origin=h["publisher"],
+        )
+    return {"query": query, "crop": crop_id, "results": hits}
+
+
+def search_farmer_questions(ctx: ToolContext, query: str, crop: str | None = None) -> dict:
+    """Similar questions from farmers in the district answered by Kisan Call Centre experts
+    (answers naming a pesticide or dose are never stored)."""
+    from app.advisory.kcc import search
+
+    crop_id = _crop(ctx, crop).id if (crop or ctx.default_crop) else None
+    district = _scope(ctx).district
+    hits = search(ctx.session, query, crop_id, district, ctx.language)
+    for h in hits:
+        h["source_id"] = ctx.add_source(
+            f"kcc:{h['id']}",
+            kind="kcc",
+            title="Kisan Call Centre",
+            asked_on=h["asked_on"],
+            question=h["question"][:200],
+            origin="Kisan Call Centre (data.gov.in)",
+        )
+    return {"query": query, "crop": crop_id, "district": district, "results": hits}
+
+
 def estimate_transport_cost(ctx: ToolContext, market: str, quantity_qtl: float | None = None) -> dict:
     ref = load_reference()
     scope = _scope(ctx)
@@ -369,6 +408,8 @@ TOOL_FUNCS: dict[str, Callable[..., dict]] = {
     "get_district_advisory": get_district_advisory,
     "lookup_pesticide": lookup_pesticide,
     "list_schemes": list_schemes,
+    "search_storage_advice": search_storage_advice,
+    "search_farmer_questions": search_farmer_questions,
     "get_scheme": get_scheme,
     "check_scheme_eligibility": check_scheme_eligibility,
     "compute_recommendation": compute_recommendation,
@@ -422,6 +463,28 @@ def tool_schemas() -> list[dict]:
                     "quantity_qtl": _nullable("number", description="Quantity in quintals, or null."),
                 },
                 "required": ["market", "quantity_qtl"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "search_storage_advice",
+            "description": "Search reviewed official documents (ICAR-DOGR, CPRI, KVK, agricultural universities) on storage, curing, grading and post-harvest handling of a crop. Answer storage questions only from the passages returned; an empty result means there is no reviewed document on it.",
+            "strict": True,
+            "input_schema": {
+                "type": "object",
+                "properties": {"query": {"type": "string"}, "crop": crop_prop},
+                "required": ["query", "crop"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "search_farmer_questions",
+            "description": "Find similar questions from farmers in the same district that Kisan Call Centre experts answered (crop care, varieties, nutrients, water, post-harvest). Answers that named a pesticide or dose were removed. Use for everyday crop questions no other tool covers; an empty result means no close match.",
+            "strict": True,
+            "input_schema": {
+                "type": "object",
+                "properties": {"query": {"type": "string"}, "crop": crop_prop},
+                "required": ["query", "crop"],
                 "additionalProperties": False,
             },
         },
@@ -555,6 +618,8 @@ def _summarise(name: str, result: dict) -> str:
         return f"{result['fresh_markets']}/{result['total_markets']} markets fresh"
     if name == "get_mandi_prices":
         return f"{len(result['markets'])} markets"
+    if name in ("search_storage_advice", "search_farmer_questions"):
+        return f"{len(result['results'])} passages"
     if name == "list_schemes":
         return f"{len(result['schemes'])} schemes for {result['state']}"
     if name == "get_scheme":

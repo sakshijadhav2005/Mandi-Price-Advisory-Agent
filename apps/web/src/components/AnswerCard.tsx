@@ -109,7 +109,22 @@ export function AnswerCard({
           <h3 className="eyebrow">{t("answer.sources")}</h3>
           <ul className="space-y-2">
             {answer.sources.map((s) =>
-              s.kind === "scheme" ? (
+              s.kind === "document" ? (
+                <li key={s.id} className="flex flex-wrap gap-x-2">
+                  {s.url ? (
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-medium text-leaf-ink underline underline-offset-2">
+                      {t("answer.documentSource", { title: s.title, publisher: s.publisher })}
+                    </a>
+                  ) : (
+                    <span className="font-medium">{t("answer.documentSource", { title: s.title, publisher: s.publisher })}</span>
+                  )}
+                </li>
+              ) : s.kind === "kcc" ? (
+                <li key={s.id} className="rounded-lg bg-sunken p-2.5">
+                  <p className="font-medium">{t("answer.kccSource", { date: formatDate(s.asked_on, lang) })}</p>
+                  <p className="text-muted">“{s.question}”</p>
+                </li>
+              ) : s.kind === "scheme" ? (
                 <li key={s.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-medium text-leaf-ink underline underline-offset-2">
                     {t("answer.schemeSource", { name: s.title, date: formatDate(s.info_as_of, lang) })}

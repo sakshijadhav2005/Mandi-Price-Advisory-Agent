@@ -124,7 +124,9 @@
     "agrometSource": "IMD जिल्हा सल्ला, {{date}} ({{until}} पर्यंत लागू)",
     "pesticideSource": "CIB&RC कीटकनाशक यादी, {{date}}",
     "schemeSource": "{{name}}, {{date}} पर्यंतची माहिती",
-    "schemeDraft": "अजून पडताळलेले नाही"
+    "schemeDraft": "अजून पडताळलेले नाही",
+    "documentSource": "{{title}} ({{publisher}})",
+    "kccSource": "किसान कॉल सेंटरचे उत्तर, {{date}}"
   },
   "prices": {
     "title": "बाजार दर",
