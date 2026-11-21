@@ -44,6 +44,26 @@ class Price(Base):
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class AgmarknetMarket(Base):
+    """A market found in the Agmarknet feed outside the hand-checked pilot markets.
+
+    Registered by the price ingestion under the district it reports; its position
+    is the district centre (Agmarknet publishes no coordinates).
+    """
+
+    __tablename__ = "agmarknet_markets"
+    __table_args__ = (UniqueConstraint("state", "agmarknet_name", name="uq_agmarknet_market"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    agmarknet_name: Mapped[str] = mapped_column(String(120))
+    state: Mapped[str] = mapped_column(String(80))
+    district: Mapped[str] = mapped_column(String(64), index=True)  # our district id
+    lat: Mapped[float] = mapped_column(Float)
+    lon: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class IngestionRun(Base):
     __tablename__ = "ingestion_runs"
 
@@ -65,6 +85,7 @@ class User(Base):
     google_sub: Mapped[str | None] = mapped_column(String(64), unique=True, index=True, nullable=True)  # Google account id
     email: Mapped[str | None] = mapped_column(String(254), nullable=True)
     name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)  # email/password accounts only
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

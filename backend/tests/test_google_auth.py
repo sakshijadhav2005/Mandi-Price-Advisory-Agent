@@ -97,3 +97,13 @@ def test_migration_makes_phone_nullable(tmp_path):
         assert conn.execute(text("SELECT phone, language FROM users WHERE id = 7")).one() == ("+919876543210", "hi")
         conn.execute(text("INSERT INTO users (google_sub, language, created_at) VALUES ('g-1', 'en', '2026-11-19 00:00:00')"))
     init_db(engine)  # running again is a no-op
+
+
+def test_mobile_client_id_accepted(google_on, monkeypatch):
+    android = "android-client.apps.googleusercontent.com"
+    with TestClient(app) as c:
+        assert c.post("/auth/google", json={"credential": google_token(aud=android, sub="mob-1")}).status_code == 401
+        monkeypatch.setattr(get_settings(), "google_extra_client_ids", f" {android} , ")
+        r = c.post("/auth/google", json={"credential": google_token(aud=android, sub="mob-1")})
+        assert r.status_code == 200, r.text
+        assert c.post("/auth/google", json={"credential": google_token(aud="someone-else", sub="mob-1")}).status_code == 401

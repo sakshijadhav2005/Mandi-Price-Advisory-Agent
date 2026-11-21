@@ -5,7 +5,7 @@ import { useApp } from "./lib/app-context";
 import { AskPage } from "./pages/Ask";
 import { HistoryPage } from "./pages/History";
 import { LanguageScreen } from "./pages/LanguageScreen";
-import { LoginPage } from "./pages/Login";
+import { LoginPage, SignupPage } from "./pages/Login";
 import { PricesPage } from "./pages/Prices";
 import { SettingsPage } from "./pages/Settings";
 
@@ -17,6 +17,7 @@ export function App() {
     <Layout>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/admin" element={<AdminPage />} />
         {mustLogin ? (
           <Route path="*" element={<Navigate to="/login" replace />} />

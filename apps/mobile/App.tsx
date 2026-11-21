@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { MobileProvider, useMobile } from "./src/context";
 import { AskScreen } from "./src/screens/AskScreen";
+import { AuthScreen } from "./src/screens/AuthScreen";
 import { HistoryScreen, LanguageScreen, SettingsScreen } from "./src/screens/OtherScreens";
 import { PricesScreen } from "./src/screens/PricesScreen";
 import { store } from "./src/store";
@@ -20,11 +21,18 @@ const TABS: { id: Tab; icon: string }[] = [
 
 function Shell() {
   const { t } = useTranslation();
-  const { language } = useMobile();
+  const { language, meta, loggedIn, guestChosen } = useMobile();
   const [tab, setTab] = useState<Tab>("ask");
   const [conversation, setConversation] = useState<{ id: number | null; nonce: number }>({ id: null, nonce: 0 });
 
   if (!language) return <LanguageScreen />;
+  if (!loggedIn && (meta?.auth_required || !guestChosen))
+    return (
+      <>
+        <StatusBar style="light" />
+        <AuthScreen />
+      </>
+    );
 
   return (
     <View style={{ flex: 1 }}>

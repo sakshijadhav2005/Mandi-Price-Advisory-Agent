@@ -179,6 +179,26 @@ export class ApiClient {
     return res.user;
   }
 
+  /** Create an email + password account; stores our own JWT. */
+  async signup(body: { name: string; email: string; phone?: string; password: string; language?: string }) {
+    const res = await this.request<{
+      token: string;
+      user: { id: number; phone: string | null; email: string | null; name: string | null; language: string };
+    }>("/auth/signup", { method: "POST", body: JSON.stringify(body) });
+    this.setToken(res.token);
+    return res.user;
+  }
+
+  /** Sign in with an email address (or mobile number) and password; stores our own JWT. */
+  async passwordLogin(identifier: string, password: string, language?: string) {
+    const res = await this.request<{
+      token: string;
+      user: { id: number; phone: string | null; email: string | null; name: string | null; language: string };
+    }>("/auth/login", { method: "POST", body: JSON.stringify({ identifier, password, language }) });
+    this.setToken(res.token);
+    return res.user;
+  }
+
   /** Sign in (or sign up) with a Google ID token from Google Identity Services; stores our own JWT. */
   async googleLogin(credential: string, language?: string) {
     const res = await this.request<{
@@ -188,6 +208,13 @@ export class ApiClient {
     }>("/auth/google", { method: "POST", body: JSON.stringify({ credential, language }) });
     this.setToken(res.token);
     return res.user;
+  }
+
+  /** The signed-in account, or `{ guest_id }` when using the app without login. */
+  me() {
+    return this.request<{ id?: number; phone?: string | null; email?: string | null; name?: string | null; language?: string; guest_id?: string }>(
+      "/auth/me",
+    );
   }
 
   /** `consent`: the farmer agreed to let the server keep this recording (deleted otherwise). */

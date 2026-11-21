@@ -1,6 +1,6 @@
 import { LANGUAGES, resources, type LanguageCode } from "@mandi/i18n";
-import { displayName, type ConversationSummary } from "@mandi/shared";
-import { useEffect, useState } from "react";
+import { displayName, type ConversationSummary, type DistrictInfo } from "@mandi/shared";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { useMobile } from "../context";
@@ -65,7 +65,7 @@ export function HistoryScreen({ onOpen }: { onOpen: (id: number) => void }) {
 
 export function SettingsScreen() {
   const { t } = useTranslation();
-  const { api, meta, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase, district, setDistrict } = useMobile();
+  const { api, meta, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase, district, setDistrict, loggedIn, logout, chooseGuest } = useMobile();
   const [server, setServer] = useState(apiBase);
   const [pushOk, setPushOk] = useState<boolean | null>(null);
 
@@ -96,19 +96,7 @@ export function SettingsScreen() {
         )}
       </View>
       {meta?.districts && meta.districts.length > 1 && (
-        <View style={s.card}>
-          <Text style={s.h2}>{t("settings.district")}</Text>
-          <View style={[s.row, { flexWrap: "wrap" }]}>
-            {meta.districts.map((d) => {
-              const active = (district ?? meta.districts![0].id) === d.id;
-              return (
-                <Pressable key={d.id} style={[active ? s.btn : s.btnGhost, { flexGrow: 1 }]} onPress={() => setDistrict(d.id)}>
-                  <Text style={active ? s.btnText : s.btnGhostText}>{displayName(d, language ?? "en")}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        <DistrictPicker districts={meta.districts} states={meta.states} value={district ?? meta.districts[0].id} onChange={setDistrict} lang={language ?? "en"} />
       )}
       <View style={s.card}>
         <Text style={s.h2}>{t("alerts.title")}</Text>
@@ -118,6 +106,23 @@ export function SettingsScreen() {
         {pushOk !== null && <Text style={s.small}>{pushOk ? "✓" : "✗"}</Text>}
       </View>
       <View style={s.card}>
+        {loggedIn ? (
+          <Pressable
+            style={s.btnGhost}
+            onPress={() => {
+              logout();
+              chooseGuest(false);
+            }}
+          >
+            <Text style={s.btnGhostText}>{t("login.logout")}</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={s.btn} onPress={() => chooseGuest(false)}>
+            <Text style={s.btnText}>{t("auth.signIn")}</Text>
+          </Pressable>
+        )}
+      </View>
+      <View style={s.card}>
         <Text style={s.small}>{t("settings.server")}</Text>
         <TextInput style={s.input} value={server} onChangeText={setServer} autoCapitalize="none" keyboardType="url" />
         <Pressable style={s.btnGhost} onPress={() => setApiBase(server.trim())}>
@@ -125,5 +130,51 @@ export function SettingsScreen() {
         </Pressable>
       </View>
     </ScrollView>
+  );
+}
+
+/** State first (a scrolling strip), then that state's districts: India has ~790 districts. */
+function DistrictPicker({
+  districts,
+  states,
+  value,
+  onChange,
+  lang,
+}: {
+  districts: DistrictInfo[];
+  states?: string[];
+  value: string;
+  onChange: (id: string) => void;
+  lang: string;
+}) {
+  const { t } = useTranslation();
+  const current = districts.find((d) => d.id === value) ?? districts[0]!;
+  const [state, setState] = useState(current.state);
+  useEffect(() => setState(current.state), [current.state]);
+  const allStates = useMemo(() => states ?? [...new Set(districts.map((d) => d.state))].sort(), [states, districts]);
+  const inState = useMemo(
+    () => districts.filter((d) => d.state === state).sort((a, b) => displayName(a, lang).localeCompare(displayName(b, lang))),
+    [districts, state, lang],
+  );
+  return (
+    <View style={s.card}>
+      <Text style={s.h2}>{t("settings.state")}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
+        {allStates.map((st) => (
+          <Pressable key={st} style={st === state ? s.btn : s.btnGhost} onPress={() => setState(st)} accessibilityState={{ selected: st === state }}>
+            <Text style={st === state ? s.btnText : s.btnGhostText}>{st}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+      <Text style={s.h2}>{t("settings.district")}</Text>
+      <Text style={s.small}>{t("settings.districtHelp")}</Text>
+      <View style={[s.row, { flexWrap: "wrap" }]}>
+        {inState.map((d) => (
+          <Pressable key={d.id} style={[d.id === value ? s.btn : s.btnGhost, { flexGrow: 1 }]} onPress={() => onChange(d.id)} accessibilityState={{ selected: d.id === value }}>
+            <Text style={d.id === value ? s.btnText : s.btnGhostText}>{displayName(d, lang)}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
   );
 }

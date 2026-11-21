@@ -41,12 +41,20 @@ class Settings(BaseSettings):
     llm_model: str = "claude-opus-5-5"
     llm_effort: str = "low"  # low | medium | high | xhigh | max
     llm_max_tokens: int = 4000
+    # Total time a hosted LLM (Claude, Gemini, Groq, OpenRouter) gets to write one answer,
+    # across all its tool rounds. Past it the offline writer answers from the same
+    # prices and decision, so a slow connection never leaves the farmer waiting.
+    llm_deadline_s: float = 15.0
 
     # Agent guardrails (plan section 6)
     tool_budget: int = 6
     stale_after_days: int = 3
     min_price_points: int = 5
 
+    # Districts outside the pilot get demo (synthetic) prices the first time they are
+    # opened, labelled as demo data, until real Agmarknet prices arrive for them.
+    # Set to false in production once the daily data.gov.in fetch is running.
+    demo_prices: bool = True
     # Prices. "today" can be pinned for demos and tests; empty means the real date.
     as_of_override: str = ""
     data_gov_in_api_key: str = ""
@@ -58,6 +66,14 @@ class Settings(BaseSettings):
     auth_required: bool = False  # dev default: guests may chat without OTP login
     otp_dev_mode: bool = True  # logs the OTP instead of sending an SMS
     google_client_id: str = ""  # OAuth 2.0 web client ID; enables "Sign in with Google" when set
+    # Extra OAuth client IDs whose Google ID tokens are accepted (comma-separated): the Android and
+    # iOS client IDs used by the mobile app. Tokens are addressed to the client that asked for them.
+    google_extra_client_ids: str = ""
+
+    @property
+    def google_audiences(self) -> list[str]:
+        ids = [self.google_client_id, *self.google_extra_client_ids.split(",")]
+        return [i.strip() for i in ids if i.strip()]
 
     # Voice (server-side providers are optional; the web app can use browser speech)
     stt_provider: str = "none"  # none | whisper

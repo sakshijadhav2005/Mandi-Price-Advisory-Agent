@@ -1,4 +1,4 @@
-"""Login and signup: phone-number OTP or Google sign-in (OAuth 2.0 / OpenID Connect).
+"""Login and signup: email + password, phone-number OTP, or Google sign-in (OAuth 2.0 / OpenID Connect).
 
 Both end with the server issuing its own JWT access token (HS256, JWT_SECRET).
 The first successful login creates the account, so login and signup are one step.
@@ -6,8 +6,9 @@ The first successful login creates the account, so login and signup are one step
 - Phone: in OTP dev mode the code is logged (and returned in the response)
   instead of being sent by SMS; an SMS gateway plugs into `send_sms`.
 - Google: the web app gets an ID token from Google Identity Services and posts
-  it to /auth/google. The server checks its RS256 signature against Google's
-  published keys, the audience (GOOGLE_CLIENT_ID), issuer, expiry and that the
+  it to /auth/google (the mobile app does the same via expo-auth-session). The server
+  checks its RS256 signature against Google's published keys, the audience
+  (GOOGLE_CLIENT_ID or one of GOOGLE_EXTRA_CLIENT_IDS), issuer, expiry and that the
   email is verified. Enabled only when GOOGLE_CLIENT_ID is set.
 """
 
@@ -115,6 +116,86 @@ def verify_otp(body: OtpVerify, db: Session = Depends(get_db)) -> dict:
     return {"token": issue_token(user), "user": user_out(user)}
 
 
+# --- Email + password -----------------------------------------------------------
+
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+SCRYPT_N, SCRYPT_R, SCRYPT_P = 2**14, 8, 1
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.scrypt(password.encode(), salt=salt, n=SCRYPT_N, r=SCRYPT_R, p=SCRYPT_P, dklen=32)
+    return f"scrypt${SCRYPT_N}${SCRYPT_R}${SCRYPT_P}${salt.hex()}${digest.hex()}"
+
+
+def check_password(password: str, stored: str | None) -> bool:
+    try:
+        algo, n, r, p, salt, digest = (stored or "").split("$")
+        if algo != "scrypt":
+            return False
+        got = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt), n=int(n), r=int(r), p=int(p), dklen=len(digest) // 2)
+    except ValueError:
+        return False
+    return hmac.compare_digest(got.hex(), digest)
+
+
+def normalise_email(email: str) -> str:
+    email = email.strip().lower()
+    if len(email) > 254 or not EMAIL_RE.match(email):
+        raise HTTPException(422, "Enter a valid email address")
+    return email
+
+
+class Signup(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    email: str = Field(max_length=254)
+    phone: str | None = None
+    password: str = Field(min_length=6, max_length=128)
+    language: str | None = None
+
+
+class PasswordLogin(BaseModel):
+    identifier: str = Field(min_length=3, max_length=254)  # email address or mobile number
+    password: str = Field(min_length=1, max_length=128)
+    language: str | None = None
+
+
+@router.post("/signup", status_code=201)
+def signup(body: Signup, db: Session = Depends(get_db)) -> dict:
+    email = normalise_email(body.email)
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(422, "Enter your name")
+    phone = normalise_phone(body.phone) if body.phone and body.phone.strip() else None
+    if db.scalars(select(User).where(User.email == email)).first():
+        raise HTTPException(409, "An account with this email already exists. Sign in instead.")
+    if phone and db.scalars(select(User).where(User.phone == phone)).first():
+        raise HTTPException(409, "This mobile number is already registered. Sign in instead.")
+    user = User(email=email, name=name, phone=phone, password_hash=hash_password(body.password), language=body.language or "en")
+    db.add(user)
+    db.commit()
+    return {"token": issue_token(user), "user": user_out(user), "created": True}
+
+
+@router.post("/login")
+def password_login(body: PasswordLogin, db: Session = Depends(get_db)) -> dict:
+    ident = body.identifier.strip()
+    if "@" in ident:
+        user = db.scalars(select(User).where(User.email == ident.lower(), User.password_hash.is_not(None))).first()
+    else:
+        try:
+            phone = normalise_phone(ident)
+        except HTTPException:
+            raise HTTPException(401, "Incorrect email/mobile or password") from None
+        user = db.scalars(select(User).where(User.phone == phone)).first()
+    if not user or not check_password(body.password, user.password_hash):
+        raise HTTPException(401, "Incorrect email/mobile or password")
+    if body.language:
+        user.language = body.language
+    db.commit()
+    return {"token": issue_token(user), "user": user_out(user)}
+
+
 # --- Google sign-in -------------------------------------------------------------
 
 GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs"
@@ -132,8 +213,8 @@ def _google_signing_key(id_token: str):
 
 
 def verify_google_id_token(id_token: str) -> dict:
-    client_id = get_settings().google_client_id
-    if not client_id:
+    audiences = get_settings().google_audiences
+    if not audiences:
         raise HTTPException(404, "Google sign-in is not enabled on this server")
     try:
         key = _google_signing_key(id_token)
@@ -147,7 +228,7 @@ def verify_google_id_token(id_token: str) -> dict:
             id_token,
             key,
             algorithms=["RS256"],
-            audience=client_id,
+            audience=audiences,
             options={"require": ["exp", "iat", "iss", "aud", "sub"]},
             leeway=30,
         )

@@ -31,6 +31,13 @@ interface MobileState {
   setApiBase: (url: string) => void;
   district: string | null;
   setDistrict: (d: string) => void;
+  /** Signed in with an account (our JWT is stored). */
+  loggedIn: boolean;
+  refreshAuth: () => void;
+  logout: () => void;
+  /** The farmer chose "continue without login" (only allowed when the server does not require login). */
+  guestChosen: boolean;
+  chooseGuest: (v: boolean) => void;
 }
 
 const Ctx = createContext<MobileState | null>(null);
@@ -85,8 +92,27 @@ export function MobileProvider({ children }: { children: ReactNode }) {
     setDistrictState(d);
   }, []);
 
+  const [loggedIn, setLoggedIn] = useState(() => !!api.token);
+  useEffect(() => setLoggedIn(!!api.token), [api]);
+  const refreshAuth = useCallback(() => setLoggedIn(!!api.token), [api]);
+  const logout = useCallback(() => {
+    api.setToken(null);
+    setLoggedIn(false);
+  }, [api]);
+  const [guestChosen, setGuestChosen] = useState(() => store.get("mandi.guestChosen") === "1");
+  const chooseGuest = useCallback((v: boolean) => {
+    if (v) store.set("mandi.guestChosen", "1");
+    else store.remove("mandi.guestChosen");
+    setGuestChosen(v);
+  }, []);
+
   return (
-    <Ctx.Provider value={{ api, meta, metaCached, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase, district, setDistrict }}>
+    <Ctx.Provider
+      value={{
+        api, meta, metaCached, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase,
+        district, setDistrict, loggedIn, refreshAuth, logout, guestChosen, chooseGuest,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );
