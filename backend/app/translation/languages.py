@@ -27,6 +27,7 @@ class LanguagePack:
     decision_words: dict[str, list[str]]  # decision -> word stems that express it (for consistency checks)
     advisory_words: list[str]  # stems that mark a storage / handling question
     weather_words: list[str] = ()  # stems that mark a weather / spraying / crop-care question
+    pesticide_words: list[str] = ()  # stems that mark a pesticide dose / waiting-period question
 
 
 @lru_cache
@@ -44,24 +45,42 @@ def load_languages() -> dict[str, LanguagePack]:
             decision_words=raw.get("decision_words", {}),
             advisory_words=raw.get("advisory_words", []),
             weather_words=raw.get("weather_words", []),
+            pesticide_words=raw.get("pesticide_words", []),
         )
     if "en" not in packs:
         raise RuntimeError("English language pack (en.json) is required as the fallback")
     return packs
 
 
-_WORD_START = r"\b"  # a Latin weather word must start a word
+_WORD_START = r"\b"  # a Latin keyword must start a word
+_DEVANAGARI_DIGITS = str.maketrans("०१२३४५६७८९", "0123456789")
+_DAYS_AGO = re.compile(r"(\d{1,3})\s*(?:days?|din|दिवस|दिवसां|दिन)", re.I)
+
+
+def _mentions(text: str, words: list[str]) -> bool:
+    lowered = text.lower()
+    for word in (w.lower() for w in words):
+        # Latin words must start a word ("rain" but not "grain", "heat" but not "wheat").
+        if re.search(_WORD_START + re.escape(word), lowered) if word.isascii() else word in lowered:
+            return True
+    return False
 
 
 def is_weather_question(text: str) -> bool:
     """True for weather, rain, spraying, irrigation and crop-care questions (any language).
     These are answered from the district's IMD agromet bulletin."""
-    lowered = text.lower()
-    for word in (w.lower() for p in load_languages().values() for w in p.weather_words):
-        # Latin words must start a word ("rain" but not "grain", "heat" but not "wheat").
-        if (re.search(_WORD_START + re.escape(word), lowered) if word.isascii() else word in lowered):
-            return True
-    return False
+    return _mentions(text, [w for p in load_languages().values() for w in p.weather_words])
+
+
+def is_pesticide_question(text: str) -> bool:
+    """True for pesticide dose / waiting-period questions ("how many days after spraying ...")."""
+    return _mentions(text, [w for p in load_languages().values() for w in p.pesticide_words])
+
+
+def days_since_spray(text: str) -> int | None:
+    """'I sprayed 3 days ago', '३ दिवसांपूर्वी फवारले' -> 3."""
+    m = _DAYS_AGO.search(text.translate(_DEVANAGARI_DIGITS))
+    return int(m.group(1)) if m else None
 
 
 def is_advisory_question(text: str) -> bool:

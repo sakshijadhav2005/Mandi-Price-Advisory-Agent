@@ -175,6 +175,57 @@ def get_district_advisory(ctx: ToolContext, crop: str | None = None) -> dict:
     }
 
 
+def lookup_pesticide(
+    ctx: ToolContext, crop: str | None = None, chemical: str | None = None, pest: str | None = None, days_since_spray: int | None = None
+) -> dict:
+    """Approved uses of a pesticide on a crop from the reviewed CIB&RC list: dose and the
+    waiting period between the last spray and harvest. Only reviewer-approved rows are used."""
+    from datetime import timedelta
+
+    from app.advisory.pesticides import PPQS_PAGE, find_uses
+
+    c = _crop(ctx, crop)
+    list_date, rows = find_uses(ctx.session, c.id, chemical, pest)
+    if list_date is None:
+        return {"available": False, "crop": c.id, "reason": "No reviewed pesticide list yet: follow the waiting period on the product label."}
+    source_id = ctx.add_source(
+        f"pesticide:{list_date.isoformat()}:{c.id}",
+        kind="pesticide",
+        title="CIB&RC major uses of pesticides",
+        list_date=list_date.isoformat(),
+        url=PPQS_PAGE,
+        origin="CIB&RC, Ministry of Agriculture",
+    )
+    out: dict = {"available": True, "crop": c.id, "chemical_asked": chemical, "list_date": list_date.isoformat(), "source_id": source_id}
+    if not rows:
+        return out | {"found": False, "reason": "Not listed for this crop in the reviewed list."}
+    waits = [r.waiting_days for r in rows if r.waiting_days is not None]
+    longest = max(waits) if waits else None
+    out |= {
+        "found": True,
+        "uses": [
+            {
+                "chemical": r.chemical,
+                "pest": r.pest,
+                "dose_ai_per_ha": r.dose_ai_per_ha,
+                "dose_formulation_per_ha": r.dose_formulation_per_ha,
+                "dilution_l_per_ha": r.dilution_l_per_ha,
+                "waiting_days": r.waiting_days,
+            }
+            for r in rows
+        ],
+        "longest_waiting_days": longest,  # the safe waiting period when several uses match
+    }
+    if days_since_spray is not None and longest is not None:
+        days = max(0, int(days_since_spray))
+        out |= {
+            "days_since_spray": days,
+            "days_left": max(0, longest - days),
+            "harvest_from": (ctx.as_of - timedelta(days=days) + timedelta(days=longest)).isoformat(),
+        }
+    return out
+
+
 def estimate_transport_cost(ctx: ToolContext, market: str, quantity_qtl: float | None = None) -> dict:
     ref = load_reference()
     scope = _scope(ctx)
@@ -236,6 +287,7 @@ TOOL_FUNCS: dict[str, Callable[..., dict]] = {
     "get_mandi_prices": get_mandi_prices,
     "estimate_transport_cost": estimate_transport_cost,
     "get_district_advisory": get_district_advisory,
+    "lookup_pesticide": lookup_pesticide,
     "compute_recommendation": compute_recommendation,
 }
 
@@ -287,6 +339,22 @@ def tool_schemas() -> list[dict]:
                     "quantity_qtl": _nullable("number", description="Quantity in quintals, or null."),
                 },
                 "required": ["market", "quantity_qtl"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "lookup_pesticide",
+            "description": "Approved uses of a pesticide on a crop from the official, reviewed CIB&RC list: pest, dose per hectare and the waiting period (days between the last spray and harvest). Use it for any question about which chemical, what dose, or when sprayed produce can be harvested or sold. With days_since_spray it returns days_left and harvest_from. Returns available=false when no reviewed list exists.",
+            "strict": True,
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "crop": crop_prop,
+                    "chemical": _nullable("string", description="Chemical name as the farmer said it, in English letters (e.g. mancozeb), or null."),
+                    "pest": _nullable("string", description="Pest or disease in English (e.g. late blight), or null."),
+                    "days_since_spray": _nullable("integer", description="Days since the last spray, if the farmer said, else null."),
+                },
+                "required": ["crop", "chemical", "pest", "days_since_spray"],
                 "additionalProperties": False,
             },
         },
@@ -373,6 +441,10 @@ def _summarise(name: str, result: dict) -> str:
         return f"{result['fresh_markets']}/{result['total_markets']} markets fresh"
     if name == "get_mandi_prices":
         return f"{len(result['markets'])} markets"
+    if name == "lookup_pesticide":
+        if not result.get("available"):
+            return "no reviewed pesticide list"
+        return f"{len(result.get('uses', []))} approved uses, list of {result['list_date']}"
     if name == "get_district_advisory":
         return f"IMD bulletin of {result['issued_on']}" if result.get("available") else "no valid district bulletin"
     if name == "estimate_transport_cost":

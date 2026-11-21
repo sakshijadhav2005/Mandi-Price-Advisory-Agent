@@ -1,7 +1,7 @@
 """Deterministic answer writer: runs the tools in a fixed order and fills templates.
 
-It answers price and sell/hold questions, and weather / spraying / crop-care questions from
-the district's IMD agromet bulletin (forecast in the farmer's language; the crop advice text
+It answers price and sell/hold questions, pesticide waiting-period questions from the reviewed
+CIB&RC list, and weather / spraying / crop-care questions from the district's IMD agromet bulletin (forecast in the farmer's language; the crop advice text
 itself only in English, with a link). Storage, scheme and other questions get a short reply
 pointing to the local agriculture office or KVK.
 
@@ -15,7 +15,13 @@ from datetime import date
 
 from app.agent.tools import ToolContext, run_tool
 from app.reference import load_reference
-from app.translation.languages import asks_sell_or_hold, is_advisory_question, is_weather_question
+from app.translation.languages import (
+    asks_sell_or_hold,
+    days_since_spray,
+    is_advisory_question,
+    is_pesticide_question,
+    is_weather_question,
+)
 from app.translation.templates import inr, t
 
 
@@ -48,6 +54,69 @@ def agromet_answer(ctx: ToolContext, crop_id: str | None) -> str:
     if res["crop_advice"] and lang == "en":  # the bulletin is in English; no machine translation offline
         lines.append(t(lang, "agromet_crop", crop=load_reference().crops[res["crop"]].display(lang), advice=res["crop_advice"]))
     lines.append(t(lang, "agromet_more", url=res["url"]))
+    return " ".join(lines)
+
+
+def named_chemical(ctx: ToolContext, question: str) -> str | None:
+    """An approved chemical named in the question ("mancozeb"), if any."""
+    from app.advisory.pesticides import approved_chemicals
+
+    lowered = question.lower()
+    return next((c for c in sorted(approved_chemicals(ctx.session), key=len, reverse=True) if c in lowered), None)
+
+
+def pesticide_answer(ctx: ToolContext, crop_id: str, question: str) -> str:
+    """Waiting period (and dose, when one use matches) from the reviewed CIB&RC list."""
+    from app.advisory.pesticides import base_name
+
+    lang = ctx.language
+    crop_name = load_reference().crops[crop_id].display(lang)
+    chemical = named_chemical(ctx, question)
+    days = days_since_spray(question)
+    res, err = run_tool(ctx, "lookup_pesticide", {"crop": crop_id, "chemical": chemical, "pest": None, "days_since_spray": days})
+    if err:
+        return res["error"]
+    if not res["available"]:
+        return t(lang, "pesticide_none")
+    if chemical is None:
+        if not res.get("found"):
+            return t(lang, "pesticide_none")
+        examples = list(dict.fromkeys(base_name(u["chemical"]) for u in res["uses"]))[:3]
+        return t(lang, "pesticide_ask_name", crop=crop_name, examples=", ".join(examples))
+    if not res["found"]:
+        return t(lang, "pesticide_not_listed", chemical=chemical, crop=crop_name, date=_day(res["list_date"]))
+    uses = res["uses"]
+    longest = res["longest_waiting_days"]
+    listed = _day(res["list_date"])
+    # Several products can contain the named chemical (e.g. mancozeb alone or mixed with
+    # azoxystrobin), each with its own waiting period: never mix one product's name with
+    # another's waiting period.
+    products: dict[str, int | None] = {}
+    for u in uses:
+        days_for = u["waiting_days"]
+        if u["chemical"] not in products or (days_for is not None and (products[u["chemical"]] or 0) < days_for):
+            products[u["chemical"]] = days_for
+    if len(products) > 1:
+        items = "; ".join(
+            t(lang, "pesticide_item_days", product=p, days=d) if d is not None else t(lang, "pesticide_item_none", product=p)
+            for p, d in products.items()
+        )
+        lines = [t(lang, "pesticide_products", crop=crop_name, chemical=chemical, items=items, date=listed)]
+        if longest is not None:
+            lines.append(t(lang, "pesticide_longest", days=longest))
+    elif longest is None:
+        lines = [t(lang, "pesticide_no_wait", chemical=uses[0]["chemical"], crop=crop_name, date=listed)]
+    else:
+        lines = [t(lang, "pesticide_wait", chemical=uses[0]["chemical"], crop=crop_name, days=longest, date=listed)]
+    if len(uses) == 1 and uses[0]["dose_formulation_per_ha"] and uses[0]["dilution_l_per_ha"]:
+        u = uses[0]
+        lines.append(t(lang, "pesticide_dose", pest=u["pest"], formulation=u["dose_formulation_per_ha"], dilution=u["dilution_l_per_ha"]))
+    if "days_left" in res:
+        if res["days_left"] == 0:
+            lines.append(t(lang, "pesticide_over", n=res["days_since_spray"]))
+        else:
+            lines.append(t(lang, "pesticide_left", n=res["days_since_spray"], left=res["days_left"], date=_day(res["harvest_from"])))
+    lines.append(t(lang, "pesticide_safety"))
     return " ".join(lines)
 
 
@@ -89,6 +158,8 @@ def write_answer(
     lang = ctx.language
     weather = bool(question) and is_weather_question(question)
     if not crop_id or crop_id not in ref.crops:
+        if question and (is_pesticide_question(question) or named_chemical(ctx, question)):
+            return t(lang, "pesticide_which_crop", crops=", ".join(c.display(lang) for c in ref.crops.values()))
         if weather:
             return agromet_answer(ctx, None)
         # No crop: a general question (a scheme, storage of an unknown crop) is out of scope.
@@ -98,6 +169,9 @@ def write_answer(
         return t(lang, "unsupported_crop", crops=crops)
     crop = ref.crops[crop_id]
     crop_name = crop.display(lang)
+    # Pesticide dose / waiting-period questions come first: harvesting too early is a safety issue.
+    if question and (is_pesticide_question(question) or named_chemical(ctx, question)):
+        return pesticide_answer(ctx, crop_id, question)
     if weather and not asks_sell_or_hold(question):
         return agromet_answer(ctx, crop_id)
 

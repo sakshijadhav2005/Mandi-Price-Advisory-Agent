@@ -66,7 +66,17 @@ export interface AgrometSource {
   origin: string;
 }
 
-export type Source = PriceSource | AgrometSource;
+/** The reviewed CIB&RC "major uses of pesticides" list (dose, waiting period before harvest). */
+export interface PesticideSource {
+  id: string;
+  kind: "pesticide";
+  title: string;
+  list_date: string;
+  url: string;
+  origin: string;
+}
+
+export type Source = PriceSource | AgrometSource | PesticideSource;
 
 export interface TraceStep {
   tool: string;

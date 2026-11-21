@@ -121,7 +121,8 @@
     "offline": "Basic answer (AI writer unavailable)",
     "steps": "Steps the assistant took",
     "perQtl": "₹{{value}}/qtl",
-    "agrometSource": "IMD district advisory, {{date}} (valid till {{until}})"
+    "agrometSource": "IMD district advisory, {{date}} (valid till {{until}})",
+    "pesticideSource": "CIB&RC pesticide list, {{date}}"
   },
   "prices": {
     "title": "Mandi prices",

@@ -121,7 +121,8 @@
     "offline": "साधे उत्तर (AI लेखक उपलब्ध नाही)",
     "steps": "सहाय्यकाने घेतलेल्या पायऱ्या",
     "perQtl": "₹{{value}}/क्विंटल",
-    "agrometSource": "IMD जिल्हा सल्ला, {{date}} ({{until}} पर्यंत लागू)"
+    "agrometSource": "IMD जिल्हा सल्ला, {{date}} ({{until}} पर्यंत लागू)",
+    "pesticideSource": "CIB&RC कीटकनाशक यादी, {{date}}"
   },
   "prices": {
     "title": "बाजार दर",

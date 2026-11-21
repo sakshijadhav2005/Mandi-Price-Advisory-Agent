@@ -20,3 +20,5 @@ token.txt
 backend/data/rag-sources/**/*.pdf
 # Downloaded IMD agromet bulletins (deleted automatically after AGROMET_RETENTION_DAYS)
 backend/data/agromet/
+# Generated pesticide review CSVs (from manage.py import-pesticides)
+backend/data/pesticides/

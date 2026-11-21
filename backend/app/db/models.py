@@ -211,3 +211,32 @@ class AgrometBulletin(Base):
     data: Mapped[dict] = mapped_column(JSON)  # parsed forecast table and sections
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
+
+class PesticideUse(Base):
+    """One approved use of a pesticide on an app crop, from the CIB&RC "Major uses" lists.
+
+    Imported as "pending"; only rows a reviewer marked "approved" are used in answers.
+    `waiting_days` is the days between the last spray and harvest.
+    """
+
+    __tablename__ = "pesticide_uses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    list_kind: Mapped[str] = mapped_column(String(40))  # insecticides, fungicides, herbicides, ...
+    list_date: Mapped[date] = mapped_column(Date, index=True)  # the list's "as on" date
+    chemical: Mapped[str] = mapped_column(String(200))
+    crop_id: Mapped[str] = mapped_column(String(32), index=True)
+    pest: Mapped[str] = mapped_column(String(300), default="")
+    dose_ai_per_ha: Mapped[str] = mapped_column(String(120), default="")
+    dose_formulation_per_ha: Mapped[str] = mapped_column(String(120), default="")
+    dilution_l_per_ha: Mapped[str] = mapped_column(String(120), default="")
+    waiting_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    waiting_raw: Mapped[str] = mapped_column(String(60), default="")
+    flag: Mapped[str | None] = mapped_column(String(200), nullable=True)  # why a reviewer should look closely
+    source_file: Mapped[str] = mapped_column(String(200))
+    page: Mapped[int] = mapped_column(Integer)
+    original: Mapped[list | None] = mapped_column(JSON, nullable=True)  # the row's cells as printed
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)  # pending | approved | rejected
+    reviewed_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+

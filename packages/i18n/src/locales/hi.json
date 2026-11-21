@@ -121,7 +121,8 @@
     "offline": "साधारण जवाब (AI लेखक उपलब्ध नहीं)",
     "steps": "सहायक ने ये कदम उठाए",
     "perQtl": "₹{{value}}/क्विंटल",
-    "agrometSource": "IMD ज़िला सलाह, {{date}} ({{until}} तक मान्य)"
+    "agrometSource": "IMD ज़िला सलाह, {{date}} ({{until}} तक मान्य)",
+    "pesticideSource": "CIB&RC कीटनाशक सूची, {{date}}"
   },
   "prices": {
     "title": "मंडी भाव",

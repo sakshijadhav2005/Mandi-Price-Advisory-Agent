@@ -37,7 +37,21 @@
     "agromet_crop": "Advice for {crop}: {advice}",
     "agromet_more": "Full crop-wise advice: {url}",
     "agromet_unavailable": "There is no current IMD district advisory for {district}. Check the Meghdoot app or ask your KVK.",
-    "agromet_rain_note": "IMD forecast: rain on {dates}. Plan harvest, storage and transport around it."
+    "agromet_rain_note": "IMD forecast: rain on {dates}. Plan harvest, storage and transport around it.",
+    "pesticide_none": "I don't have a reviewed pesticide list yet. Follow the waiting period printed on the pesticide label, or ask your KVK.",
+    "pesticide_ask_name": "Tell me the name of the chemical you sprayed on {crop} (for example {examples}), and how many days ago.",
+    "pesticide_not_listed": "{chemical} is not listed for {crop} in the official CIB&RC list ({date}). Use only chemicals approved for this crop; ask your KVK.",
+    "pesticide_wait": "{chemical} on {crop}: wait at least {days} days after the last spray before harvesting (official CIB&RC list, {date}).",
+    "pesticide_no_wait": "{chemical} on {crop}: the official CIB&RC list ({date}) gives no waiting period; follow the label.",
+    "pesticide_dose": "Dose for {pest}: {formulation} of the product in {dilution} litres of water per hectare.",
+    "pesticide_left": "You sprayed {n} days ago: wait {left} more days, then harvest and sell from {date}.",
+    "pesticide_over": "You sprayed {n} days ago, so the waiting period is over.",
+    "pesticide_safety": "Follow the label and wear protective clothing while spraying.",
+    "pesticide_which_crop": "Which crop did you spray? I can answer for: {crops}.",
+    "pesticide_products": "Several approved products for {crop} contain {chemical}: {items} (official CIB&RC list, {date}). Check the product name on your bottle.",
+    "pesticide_longest": "If you are not sure which one you used, wait {days} days after the last spray.",
+    "pesticide_item_days": "{product}: {days} days",
+    "pesticide_item_none": "{product}: not stated"
   },
   "glossary": {
     "onion": [
@@ -231,5 +245,19 @@
     "pest",
     "disease",
     "this week"
+  ],
+  "pesticide_words": [
+    "waiting period",
+    "days after spray",
+    "after spraying",
+    "after the spray",
+    "harvest after",
+    "residue",
+    "pesticide",
+    "insecticide",
+    "fungicide",
+    "which chemical",
+    "how much chemical",
+    "dose"
   ]
 }

@@ -5,6 +5,9 @@
     python manage.py import-csv path/to/agmarknet_export.csv [--source pilot_ground_truth]
     python manage.py fetch-data-gov            # needs DATA_GOV_IN_API_KEY
     python manage.py fetch-agromet             # this week's IMD district advice (AGROMET_DISTRICTS)
+    python manage.py import-pesticides [folder]           # CIB&RC lists -> pending rows + review CSV
+    python manage.py approve-pesticides review.csv --reviewer "Name"   # make reviewed rows usable
+    python manage.py check-pesticide-list      # is a newer CIB&RC list published?
     python manage.py purge-synthetic           # drop the demo prices once real ones arrive
     python manage.py purge-history             # delete chat history older than HISTORY_RETENTION_DAYS (30)
     python manage.py check-alerts              # evaluate price alerts, send push notifications
@@ -97,6 +100,40 @@ def cmd_fetch_agromet(_args) -> list[dict]:
     return results
 
 
+PESTICIDE_DIR = Path(__file__).parent / "data" / "rag-sources" / "3-pesticides"
+PESTICIDE_REVIEW = Path(__file__).parent / "data" / "pesticides" / "review.csv"
+
+
+def cmd_import_pesticides(args) -> None:
+    from app.advisory.pesticides import import_lists
+
+    init_db()
+    with session_scope() as s:
+        out = import_lists(s, Path(args.folder), Path(args.review))
+    log.info("imported %s; review the rows in %s, then run approve-pesticides", out, args.review)
+
+
+def cmd_approve_pesticides(args) -> None:
+    from app.advisory.pesticides import approve_from_csv
+
+    init_db()
+    with session_scope() as s:
+        log.info("pesticide review applied: %s", approve_from_csv(s, Path(args.csv), args.reviewer))
+
+
+def cmd_check_pesticide_list(_args) -> dict:
+    from app.advisory.pesticides import check_for_newer_list
+    from app.ops import ops_alert
+
+    init_db()
+    with session_scope() as s:
+        out = check_for_newer_list(s)
+    log.info("pesticide list check: %s", out)
+    if out["newer"]:
+        ops_alert(f"A newer CIB&RC pesticide list ({out['published']}) is published; stored: {out['stored']}. Download it, run import-pesticides and review.")
+    return out
+
+
 def cmd_daily(args) -> None:
     """One daily run (for cron / Task Scheduler): fetch prices, check alerts, alert ops on failure."""
     from app.ops import run_daily
@@ -106,6 +143,11 @@ def cmd_daily(args) -> None:
         cmd_fetch_agromet(args)
     except Exception:  # district advice must never break the price job
         log.exception("agromet fetch failed")
+    if date.today().day == 1:  # the CIB&RC lists change a few times a year: check monthly
+        try:
+            cmd_check_pesticide_list(args)
+        except Exception:
+            log.exception("pesticide list check failed")
 
 
 def cmd_check_alerts(_args) -> None:
@@ -175,6 +217,15 @@ def main() -> None:
     sp.set_defaults(func=cmd_import_csv)
     sub.add_parser("fetch-data-gov").set_defaults(func=cmd_fetch_data_gov)
     sub.add_parser("fetch-agromet").set_defaults(func=cmd_fetch_agromet)
+    sp = sub.add_parser("import-pesticides")
+    sp.add_argument("folder", nargs="?", default=str(PESTICIDE_DIR))
+    sp.add_argument("--review", default=str(PESTICIDE_REVIEW))
+    sp.set_defaults(func=cmd_import_pesticides)
+    sp = sub.add_parser("approve-pesticides")
+    sp.add_argument("csv")
+    sp.add_argument("--reviewer", required=True)
+    sp.set_defaults(func=cmd_approve_pesticides)
+    sub.add_parser("check-pesticide-list").set_defaults(func=cmd_check_pesticide_list)
     sub.add_parser("purge-synthetic").set_defaults(func=cmd_purge_synthetic)
     sub.add_parser("purge-history").set_defaults(func=cmd_purge_history)
     sub.add_parser("check-alerts").set_defaults(func=cmd_check_alerts)

@@ -2,7 +2,7 @@
 
 Status, 2026-11-21: **feature 1 (this week's farm advice) is built** (`backend/app/advisory/agromet.py`,
 `manage.py fetch-agromet`, tool `get_district_advisory`, tests in `backend/tests/test_agromet.py`).
-Features 2-5 are planned. Other questions are pointed to the agriculture office or KVK.
+**Feature 3 (safe spraying) is built** (`backend/app/advisory/pesticides.py`, `manage.py import-pesticides` / `approve-pesticides` / `check-pesticide-list`, tool `lookup_pesticide`, tests in `backend/tests/test_pesticides.py`); it answers only once a reviewer has approved rows. Features 2, 4 and 5 are planned. Other questions are pointed to the agriculture office or KVK.
 
 ## 1. Goal and scope
 
@@ -144,7 +144,7 @@ which is published by IMD and used as is).
 - **Unknown until the API responds:** how many Pune rows exist and how good they are. Check
   this before building.
 
-### 4.3 Safe spraying and waiting period before harvest
+### 4.3 Safe spraying and waiting period before harvest (built; needs a reviewer)
 
 - **Source:** the five CIB&RC "major uses" PDFs as on 30.09.2026 (downloaded).
 - **Convert:** text extraction works but table rows span several lines, so use a table

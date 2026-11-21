@@ -73,7 +73,11 @@ export function AnswerCard({
       {open && (
         <View style={{ gap: 6 }}>
           {answer.sources.map((src) =>
-            src.kind === "agromet" ? (
+            src.kind === "pesticide" ? (
+              <Text key={src.id} style={[s.small, { color: colors.leaf }]} onPress={() => void Linking.openURL(src.url)} accessibilityRole="link">
+                {t("answer.pesticideSource", { date: formatDate(src.list_date, lang) })}
+              </Text>
+            ) : src.kind === "agromet" ? (
               <Text key={src.id} style={[s.small, { color: colors.leaf }]} onPress={() => void Linking.openURL(src.url)} accessibilityRole="link">
                 {t("answer.agrometSource", { date: formatDate(src.issued_on, lang), until: formatDate(src.valid_until, lang) })}
               </Text>
