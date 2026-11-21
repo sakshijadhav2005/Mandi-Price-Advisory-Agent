@@ -2,7 +2,7 @@
 
 Status, 2026-11-21: **feature 1 (this week's farm advice) is built** (`backend/app/advisory/agromet.py`,
 `manage.py fetch-agromet`, tool `get_district_advisory`, tests in `backend/tests/test_agromet.py`).
-**Feature 3 (safe spraying) is built** (`backend/app/advisory/pesticides.py`, `manage.py import-pesticides` / `approve-pesticides` / `check-pesticide-list`, tool `lookup_pesticide`, tests in `backend/tests/test_pesticides.py`); it answers only once a reviewer has approved rows. Features 2, 4 and 5 are planned. Other questions are pointed to the agriculture office or KVK.
+**Feature 3 (safe spraying) is built** (`backend/app/advisory/pesticides.py`, `manage.py import-pesticides` / `approve-pesticides` / `check-pesticide-list`, tool `lookup_pesticide`, tests in `backend/tests/test_pesticides.py`); it answers only once a reviewer has approved rows. **Feature 5 (government schemes) is built** (`backend/app/advisory/schemes.py`, entries in `backend/data/schemes/`, tools `list_schemes` / `get_scheme` / `check_scheme_eligibility`, `manage.py check-schemes`, tests in `backend/tests/test_schemes.py`); entries are drafts until reviewed. Feature 2 waits for the data.gov.in API; feature 4 waits for storage documents (ICAR sites unreachable on 2026-11-21). Other questions are pointed to the agriculture office or KVK.
 
 ## 1. Goal and scope
 
@@ -171,7 +171,7 @@ which is published by IMD and used as is).
 - **Use:** hybrid search, crop filter, relevance threshold. Supports the hold decision
   ("storage loss per week", "curing before storage").
 
-### 4.5 Government schemes
+### 4.5 Government schemes (built; entries are drafts until reviewed)
 
 - **Structured entries** (one per scheme, en/hi/mr): who is eligible, benefit, documents,
   how to apply, official link, helpline, information-as-of date, review status.

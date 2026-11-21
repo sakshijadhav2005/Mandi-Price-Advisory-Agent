@@ -8,6 +8,7 @@
     python manage.py import-pesticides [folder]           # CIB&RC lists -> pending rows + review CSV
     python manage.py approve-pesticides review.csv --reviewer "Name"   # make reviewed rows usable
     python manage.py check-pesticide-list      # is a newer CIB&RC list published?
+    python manage.py check-schemes             # validate scheme entries; list unreviewed / outdated ones
     python manage.py purge-synthetic           # drop the demo prices once real ones arrive
     python manage.py purge-history             # delete chat history older than HISTORY_RETENTION_DAYS (30)
     python manage.py check-alerts              # evaluate price alerts, send push notifications
@@ -134,6 +135,19 @@ def cmd_check_pesticide_list(_args) -> dict:
     return out
 
 
+def cmd_check_schemes(_args) -> list[str]:
+    """Validate data/schemes/*.json (exits with an error on a broken file) and list entries
+    that need a person: not reviewed yet, or information older than about six months."""
+    from app.advisory.schemes import load_schemes, problems_report
+
+    schemes = load_schemes()
+    issues = problems_report(today())
+    log.info("%d scheme entries are valid", len(schemes))
+    for line in issues:
+        log.info("needs attention: %s", line)
+    return issues
+
+
 def cmd_daily(args) -> None:
     """One daily run (for cron / Task Scheduler): fetch prices, check alerts, alert ops on failure."""
     from app.ops import run_daily
@@ -143,11 +157,18 @@ def cmd_daily(args) -> None:
         cmd_fetch_agromet(args)
     except Exception:  # district advice must never break the price job
         log.exception("agromet fetch failed")
-    if date.today().day == 1:  # the CIB&RC lists change a few times a year: check monthly
+    if date.today().day == 1:  # the CIB&RC lists and scheme rules change a few times a year: check monthly
         try:
             cmd_check_pesticide_list(args)
         except Exception:
             log.exception("pesticide list check failed")
+        try:
+            from app.ops import ops_alert
+
+            if issues := [i for i in cmd_check_schemes(args) if "older than" in i]:
+                ops_alert("Scheme entries need re-checking: " + "; ".join(issues))
+        except Exception:
+            log.exception("scheme check failed")
 
 
 def cmd_check_alerts(_args) -> None:
@@ -226,6 +247,7 @@ def main() -> None:
     sp.add_argument("--reviewer", required=True)
     sp.set_defaults(func=cmd_approve_pesticides)
     sub.add_parser("check-pesticide-list").set_defaults(func=cmd_check_pesticide_list)
+    sub.add_parser("check-schemes").set_defaults(func=cmd_check_schemes)
     sub.add_parser("purge-synthetic").set_defaults(func=cmd_purge_synthetic)
     sub.add_parser("purge-history").set_defaults(func=cmd_purge_history)
     sub.add_parser("check-alerts").set_defaults(func=cmd_check_alerts)

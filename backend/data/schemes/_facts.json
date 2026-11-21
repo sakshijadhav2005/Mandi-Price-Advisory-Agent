@@ -1,0 +1,135 @@
+{
+  "_note": "Yes/no facts used by scheme eligibility rules. 'question' is asked when the fact is unknown; 'reason_true' / 'reason_false' explain a failed rule (shown when the farmer's answer is true / false).",
+  "owns_land": {
+    "question": {
+      "en": "Is cultivable farmland recorded in your family's name (7/12 extract)?",
+      "hi": "क्या खेती की ज़मीन आपके परिवार के नाम पर दर्ज है?",
+      "mr": "लागवडीयोग्य शेतजमीन तुमच्या कुटुंबाच्या नावावर (सातबाऱ्यावर) आहे का?"
+    },
+    "reason_false": {
+      "en": "it needs farmland recorded in your family's name",
+      "hi": "इसके लिए परिवार के नाम पर दर्ज खेती की ज़मीन चाहिए",
+      "mr": "यासाठी कुटुंबाच्या नावावर नोंदलेली शेतजमीन हवी"
+    }
+  },
+  "cultivates": {
+    "question": {
+      "en": "Do you farm (as owner, tenant or sharecropper), or keep animals or fish?",
+      "hi": "क्या आप खेती करते हैं (मालिक, किरायेदार या बटाईदार के रूप में), या पशुपालन या मछली पालन करते हैं?",
+      "mr": "तुम्ही शेती करता का (मालक, कुळ किंवा वाटेकरी म्हणून), किंवा पशुपालन किंवा मत्स्यपालन करता का?"
+    },
+    "reason_false": {
+      "en": "it is only for people who farm, keep animals or fish",
+      "hi": "यह केवल खेती, पशुपालन या मछली पालन करने वालों के लिए है",
+      "mr": "हे फक्त शेती, पशुपालन किंवा मत्स्यपालन करणाऱ्यांसाठी आहे"
+    }
+  },
+  "income_tax_payer": {
+    "question": {
+      "en": "Did anyone in your family pay income tax last year?",
+      "hi": "क्या पिछले साल आपके परिवार में किसी ने आयकर भरा?",
+      "mr": "मागील वर्षी तुमच्या कुटुंबातील कोणी आयकर भरला का?"
+    },
+    "reason_true": {
+      "en": "families that paid income tax last year are excluded",
+      "hi": "पिछले साल आयकर भरने वाले परिवार इससे बाहर हैं",
+      "mr": "मागील वर्षी आयकर भरलेली कुटुंबे यातून वगळली आहेत"
+    }
+  },
+  "govt_employee": {
+    "question": {
+      "en": "Is anyone in your family a serving or retired government or PSU employee (other than Class IV / Group D / Multi Tasking Staff)?",
+      "hi": "क्या आपके परिवार में कोई सरकारी या सरकारी उपक्रम का कार्यरत या सेवानिवृत्त कर्मचारी है (चतुर्थ श्रेणी / ग्रुप डी को छोड़कर)?",
+      "mr": "तुमच्या कुटुंबातील कोणी सरकारी किंवा सरकारी उपक्रमातील कार्यरत किंवा निवृत्त कर्मचारी आहे का (चतुर्थ श्रेणी / गट ड सोडून)?"
+    },
+    "reason_true": {
+      "en": "families with a serving or retired government employee (other than Class IV / Group D) are excluded",
+      "hi": "कार्यरत या सेवानिवृत्त सरकारी कर्मचारी (चतुर्थ श्रेणी / ग्रुप डी को छोड़कर) वाले परिवार इससे बाहर हैं",
+      "mr": "कार्यरत किंवा निवृत्त सरकारी कर्मचारी (चतुर्थ श्रेणी / गट ड सोडून) असलेली कुटुंबे यातून वगळली आहेत"
+    }
+  },
+  "pension_10k": {
+    "question": {
+      "en": "Does anyone in your family get a pension of ₹10,000 or more a month (other than Class IV / Group D)?",
+      "hi": "क्या आपके परिवार में किसी को हर महीने ₹10,000 या उससे ज़्यादा पेंशन मिलती है (चतुर्थ श्रेणी / ग्रुप डी को छोड़कर)?",
+      "mr": "तुमच्या कुटुंबातील कोणाला दरमहा ₹10,000 किंवा जास्त पेन्शन मिळते का (चतुर्थ श्रेणी / गट ड सोडून)?"
+    },
+    "reason_true": {
+      "en": "families with a pension of ₹10,000 or more a month are excluded",
+      "hi": "हर महीने ₹10,000 या उससे ज़्यादा पेंशन वाले परिवार इससे बाहर हैं",
+      "mr": "दरमहा ₹10,000 किंवा जास्त पेन्शन असलेली कुटुंबे यातून वगळली आहेत"
+    }
+  },
+  "professional": {
+    "question": {
+      "en": "Is anyone in your family a practising doctor, engineer, lawyer, chartered accountant or architect?",
+      "hi": "क्या आपके परिवार में कोई प्रैक्टिस करने वाला डॉक्टर, इंजीनियर, वकील, चार्टर्ड अकाउंटेंट या आर्किटेक्ट है?",
+      "mr": "तुमच्या कुटुंबातील कोणी व्यवसाय करणारे डॉक्टर, इंजिनिअर, वकील, सीए किंवा आर्किटेक्ट आहे का?"
+    },
+    "reason_true": {
+      "en": "families with a practising doctor, engineer, lawyer, CA or architect are excluded",
+      "hi": "प्रैक्टिस करने वाले डॉक्टर, इंजीनियर, वकील, सीए या आर्किटेक्ट वाले परिवार इससे बाहर हैं",
+      "mr": "व्यवसाय करणारे डॉक्टर, इंजिनिअर, वकील, सीए किंवा आर्किटेक्ट असलेली कुटुंबे यातून वगळली आहेत"
+    }
+  },
+  "public_office": {
+    "question": {
+      "en": "Does anyone in your family hold (or has held) a constitutional post, or is (or was) a minister, MP, MLA, MLC, mayor or district panchayat chairperson?",
+      "hi": "क्या आपके परिवार में कोई संवैधानिक पद पर है या रहा है, या मंत्री, सांसद, विधायक, महापौर या ज़िला पंचायत अध्यक्ष है या रहा है?",
+      "mr": "तुमच्या कुटुंबातील कोणी संवैधानिक पदावर आहे किंवा होते, किंवा मंत्री, खासदार, आमदार, महापौर किंवा जिल्हा परिषद अध्यक्ष आहे किंवा होते का?"
+    },
+    "reason_true": {
+      "en": "families of present or former holders of constitutional posts and elected office are excluded",
+      "hi": "संवैधानिक पद और निर्वाचित पद वाले मौजूदा या पूर्व पदधारकों के परिवार इससे बाहर हैं",
+      "mr": "संवैधानिक व निवडून आलेल्या पदांवरील आजी-माजी व्यक्तींची कुटुंबे यातून वगळली आहेत"
+    }
+  },
+  "pm_kisan_beneficiary": {
+    "question": {
+      "en": "Do you already get PM-KISAN instalments?",
+      "hi": "क्या आपको पहले से पीएम-किसान की किस्तें मिलती हैं?",
+      "mr": "तुम्हाला आधीपासून पीएम-किसानचे हप्ते मिळतात का?"
+    },
+    "reason_false": {
+      "en": "it goes to PM-KISAN beneficiaries; register for PM-KISAN first",
+      "hi": "यह पीएम-किसान लाभार्थियों को मिलता है; पहले पीएम-किसान में पंजीकरण करें",
+      "mr": "हे पीएम-किसान लाभार्थ्यांना मिळते; आधी पीएम-किसानमध्ये नोंदणी करा"
+    }
+  },
+  "grows_notified_crop": {
+    "question": {
+      "en": "Is your crop notified for crop insurance in your area this season (ask your bank or agriculture office)?",
+      "hi": "क्या इस मौसम में आपके क्षेत्र में आपकी फसल बीमा के लिए अधिसूचित है (बैंक या कृषि कार्यालय से पूछें)?",
+      "mr": "या हंगामात तुमच्या भागात तुमचे पीक विम्यासाठी अधिसूचित आहे का (बँक किंवा कृषी कार्यालयात विचारा)?"
+    },
+    "reason_false": {
+      "en": "only crops notified for your area and season can be insured",
+      "hi": "केवल आपके क्षेत्र और मौसम के लिए अधिसूचित फसलों का ही बीमा होता है",
+      "mr": "फक्त तुमच्या भागासाठी व हंगामासाठी अधिसूचित पिकांचाच विमा होतो"
+    }
+  },
+  "had_solar_pump_before": {
+    "question": {
+      "en": "Did you already get a solar pump under the earlier Atal or Mukhyamantri solar pump schemes?",
+      "hi": "क्या आपको पहले अटल या मुख्यमंत्री सौर पंप योजना में सौर पंप मिल चुका है?",
+      "mr": "तुम्हाला आधी अटल किंवा मुख्यमंत्री सौर कृषी पंप योजनेत सौर पंप मिळाला आहे का?"
+    },
+    "reason_true": {
+      "en": "farmers who already got a pump under the earlier Atal or Mukhyamantri schemes cannot apply again",
+      "hi": "पहले की अटल या मुख्यमंत्री योजना में पंप पा चुके किसान दोबारा आवेदन नहीं कर सकते",
+      "mr": "आधीच्या अटल किंवा मुख्यमंत्री योजनेत पंप मिळालेले शेतकरी पुन्हा अर्ज करू शकत नाहीत"
+    }
+  },
+  "micro_irrigation_subsidy_last_7_years": {
+    "question": {
+      "en": "Did you get a drip or sprinkler subsidy for the same land in the last 7 years?",
+      "hi": "क्या पिछले 7 साल में उसी ज़मीन के लिए ड्रिप या स्प्रिंकलर पर अनुदान मिला है?",
+      "mr": "मागील 7 वर्षांत त्याच जमिनीसाठी ठिबक किंवा तुषार सिंचनाचे अनुदान मिळाले आहे का?"
+    },
+    "reason_true": {
+      "en": "the same land can get the subsidy again only after 7 years",
+      "hi": "उसी ज़मीन को 7 साल बाद ही दोबारा अनुदान मिल सकता है",
+      "mr": "त्याच जमिनीला 7 वर्षांनंतरच पुन्हा अनुदान मिळू शकते"
+    }
+  }
+}

@@ -1,8 +1,10 @@
 """Deterministic answer writer: runs the tools in a fixed order and fills templates.
 
-It answers price and sell/hold questions, pesticide waiting-period questions from the reviewed
-CIB&RC list, and weather / spraying / crop-care questions from the district's IMD agromet bulletin (forecast in the farmer's language; the crop advice text
-itself only in English, with a link). Storage, scheme and other questions get a short reply
+It answers price and sell/hold questions; government-scheme questions from the structured
+scheme entries (with rule-based eligibility questions); pesticide waiting-period questions
+from the reviewed CIB&RC list; and weather / spraying / crop-care questions from the
+district's IMD agromet bulletin (forecast in the farmer's language; the crop advice text
+itself only in English, with a link). Storage and other questions get a short reply
 pointing to the local agriculture office or KVK.
 
 Used when no LLM is configured, when the LLM call fails, and when an LLM answer
@@ -16,10 +18,12 @@ from datetime import date
 from app.agent.tools import ToolContext, run_tool
 from app.reference import load_reference
 from app.translation.languages import (
+    asks_eligibility,
     asks_sell_or_hold,
     days_since_spray,
     is_advisory_question,
     is_pesticide_question,
+    is_scheme_question,
     is_weather_question,
 )
 from app.translation.templates import inr, t
@@ -54,6 +58,43 @@ def agromet_answer(ctx: ToolContext, crop_id: str | None) -> str:
     if res["crop_advice"] and lang == "en":  # the bulletin is in English; no machine translation offline
         lines.append(t(lang, "agromet_crop", crop=load_reference().crops[res["crop"]].display(lang), advice=res["crop_advice"]))
     lines.append(t(lang, "agromet_more", url=res["url"]))
+    return " ".join(lines)
+
+
+def scheme_answer(ctx: ToolContext, question: str) -> str | None:
+    """A named scheme: what you get, who can get it and how to apply (or, for "am I eligible?",
+    the yes/no questions that decide it), with the official link and helpline. A general
+    scheme question lists the schemes for the farmer's state. None when no scheme is meant."""
+    from app.advisory.schemes import detect_scheme
+
+    lang = ctx.language
+    scheme = detect_scheme(question)
+    if scheme is None:
+        if not is_scheme_question(question):
+            return None
+        res, err = run_tool(ctx, "list_schemes", {})
+        if err:
+            return res["error"]
+        return t(lang, "scheme_list", state=res["state"], names=", ".join(s["name"] for s in res["schemes"]))
+    res, err = run_tool(ctx, "get_scheme", {"scheme": scheme.id})
+    if err:
+        return res["error"]
+    if not res["applies_to_farmer"]:
+        return t(lang, "scheme_other_state", name=res["name"], state=res["scheme_state"], farmer_state=res["farmer_state"])
+    lines = [t(lang, "scheme_summary", name=res["name"], benefit=res["benefit"])]
+    if asks_eligibility(question):
+        check, err = run_tool(ctx, "check_scheme_eligibility", {"scheme": scheme.id})
+        if not err and check["questions"]:
+            lines.append(t(lang, "scheme_check", questions=" ".join(check["questions"])))
+        else:
+            lines.append(t(lang, "scheme_who", who=res["who"]))
+    else:
+        # Exclusions are long; they come with "am I eligible?" (as questions) and in the full entry.
+        lines.append(t(lang, "scheme_who", who=res["who"]))
+        lines.append(t(lang, "scheme_apply", apply=res["apply"]))
+    lines.append(t(lang, "scheme_contact", url=res["url"], helpline=res["helpline"]))
+    key = "scheme_reviewed" if res["review_status"] == "reviewed" and not res["stale"] else "scheme_draft"
+    lines.append(t(lang, key, date=_day(res["info_as_of"])))
     return " ".join(lines)
 
 
@@ -156,6 +197,9 @@ def write_answer(
 ) -> str:
     ref = load_reference()
     lang = ctx.language
+    # Government schemes first: "onion crop insurance" is about insurance, not onion prices.
+    if question and (scheme := scheme_answer(ctx, question)):
+        return scheme
     weather = bool(question) and is_weather_question(question)
     if not crop_id or crop_id not in ref.crops:
         if question and (is_pesticide_question(question) or named_chemical(ctx, question)):

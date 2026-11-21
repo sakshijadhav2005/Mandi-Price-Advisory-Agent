@@ -1,0 +1,40 @@
+{
+  "id": "pmfby",
+  "state": "all",
+  "category": "insurance",
+  "names": {"en": "PMFBY crop insurance", "hi": "प्रधानमंत्री फसल बीमा योजना", "mr": "प्रधानमंत्री पीक विमा योजना"},
+  "aliases": ["pmfby", "fasal bima", "crop insurance", "pik vima", "peek vima", "फसल बीमा", "पीक विमा", "पिक विमा", "पीकविमा"],
+  "url": "https://pmfby.gov.in",
+  "helpline": "14447",
+  "info_as_of": "2026-11-21",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "sources": ["https://pmfby.gov.in", "PMFBY revamped operational guidelines (17 Aug 2020)"],
+  "text": {
+    "en": {
+      "benefit": "Insurance for notified crops against drought, flood, hail, pests, disease and unseasonal rain, from sowing to after harvest. The farmer pays at most 2% of the sum insured for kharif food and oilseed crops, 1.5% for rabi food and oilseed crops, and 5% for annual commercial and horticultural crops; the government pays the rest.",
+      "who": "All farmers growing a notified crop in a notified area, including tenant farmers and sharecroppers. Joining is voluntary; farmers with a crop loan are enrolled through their bank unless they opt out in writing before the cut-off date.",
+      "not_eligible": "Crops or areas not notified for the season.",
+      "documents": "Aadhaar, bank account, land record or tenancy / sowing certificate, and sowing details.",
+      "apply": "Through your bank, a Common Service Centre, an insurance company agent, pmfby.gov.in or the Crop Insurance app, before the state's cut-off date for the season. If the crop is damaged by a local disaster (hail, field flooding, cloudburst) or after harvest, report it within 72 hours on the Crop Insurance app or helpline 14447, and keep the complaint number."
+    },
+    "hi": {
+      "benefit": "अधिसूचित फसलों का सूखा, बाढ़, ओले, कीट, रोग और बेमौसम बारिश से बीमा, बुवाई से कटाई के बाद तक। किसान बीमा राशि का ज़्यादा से ज़्यादा 2% (खरीफ अनाज व तिलहन), 1.5% (रबी अनाज व तिलहन) और 5% (सालाना व्यावसायिक व बागवानी फसलें) भरता है; बाकी सरकार भरती है।",
+      "who": "अधिसूचित क्षेत्र में अधिसूचित फसल उगाने वाले सभी किसान, किरायेदार और बटाईदार भी। योजना स्वैच्छिक है; फसल ऋण वाले किसान बैंक के ज़रिए जुड़ जाते हैं, जब तक वे अंतिम तारीख से पहले लिखकर मना न करें।",
+      "not_eligible": "जो फसल या क्षेत्र उस मौसम के लिए अधिसूचित नहीं हैं।",
+      "documents": "आधार, बैंक खाता, ज़मीन का रिकॉर्ड या बटाई / बुवाई प्रमाणपत्र, और बुवाई की जानकारी।",
+      "apply": "मौसम की अंतिम तारीख से पहले अपने बैंक, कॉमन सर्विस सेंटर, बीमा कंपनी के एजेंट, pmfby.gov.in या क्रॉप इंश्योरेंस ऐप से। स्थानीय आपदा (ओले, खेत में पानी भरना, बादल फटना) या कटाई के बाद नुकसान हो तो 72 घंटे में क्रॉप इंश्योरेंस ऐप या हेल्पलाइन 14447 पर बताएं और शिकायत नंबर रखें।"
+    },
+    "mr": {
+      "benefit": "अधिसूचित पिकांचा दुष्काळ, पूर, गारपीट, कीड, रोग आणि अवकाळी पावसापासून विमा, पेरणीपासून काढणीनंतरपर्यंत. शेतकरी विमा रकमेच्या जास्तीत जास्त 2% (खरीप अन्नधान्य व तेलबिया), 1.5% (रब्बी अन्नधान्य व तेलबिया) आणि 5% (वार्षिक व्यापारी व फळबाग पिके) भरतो; उरलेला हप्ता सरकार भरते.",
+      "who": "अधिसूचित क्षेत्रात अधिसूचित पीक घेणारे सर्व शेतकरी, कुळ आणि वाटेकरीसुद्धा. योजना ऐच्छिक आहे; पीक कर्ज असलेले शेतकरी बँकेमार्फत सहभागी होतात, जोपर्यंत ते अंतिम तारखेपूर्वी लेखी नकार देत नाहीत.",
+      "not_eligible": "त्या हंगामासाठी अधिसूचित नसलेली पिके किंवा क्षेत्रे.",
+      "documents": "आधार, बँक खाते, सातबारा किंवा कुळाचा / पेरणीचा दाखला, आणि पेरणीची माहिती.",
+      "apply": "हंगामाच्या अंतिम तारखेपूर्वी आपली बँक, आपले सरकार सेवा केंद्र / CSC, विमा कंपनीचे प्रतिनिधी, pmfby.gov.in किंवा क्रॉप इन्शुरन्स ॲपद्वारे. स्थानिक आपत्ती (गारपीट, शेतात पाणी साचणे, ढगफुटी) किंवा काढणीनंतर नुकसान झाले तर 72 तासांच्या आत क्रॉप इन्शुरन्स ॲप किंवा हेल्पलाइन 14447 वर कळवा आणि तक्रार क्रमांक जपून ठेवा."
+    }
+  },
+  "eligibility": [
+    {"fact": "cultivates", "must_be": true},
+    {"fact": "grows_notified_crop", "must_be": true}
+  ]
+}

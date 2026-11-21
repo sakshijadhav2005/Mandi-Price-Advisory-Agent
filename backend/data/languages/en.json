@@ -29,7 +29,7 @@
     "alert.above": "{crop} at {market} is now ₹{price}/quintal (reported {date}), above your ₹{threshold} alert.",
     "alert.below": "{crop} at {market} is now ₹{price}/quintal (reported {date}), below your ₹{threshold} alert.",
     "reason.seasonal_rise": "Last year, prices rose about {season}% over the same {h} days.",
-    "out_of_scope": "I can't advise on that yet. For storage, pests, fertiliser or government schemes, please ask your agriculture office or Krishi Vigyan Kendra (KVK).",
+    "out_of_scope": "I can't advise on that yet. For storage, fertiliser or loans from lenders, please ask your agriculture office or Krishi Vigyan Kendra (KVK).",
     "agromet_header": "IMD advisory for {district}, issued {issued} (valid till {valid}).",
     "agromet_dry": "No rain is expected in the next {days} days.",
     "agromet_rain": "Rain is expected on {dates} ({mm} mm in total).",
@@ -51,7 +51,16 @@
     "pesticide_products": "Several approved products for {crop} contain {chemical}: {items} (official CIB&RC list, {date}). Check the product name on your bottle.",
     "pesticide_longest": "If you are not sure which one you used, wait {days} days after the last spray.",
     "pesticide_item_days": "{product}: {days} days",
-    "pesticide_item_none": "{product}: not stated"
+    "pesticide_item_none": "{product}: not stated",
+    "scheme_summary": "{name}: {benefit}",
+    "scheme_who": "Who can get it: {who}",
+    "scheme_apply": "How to apply: {apply}",
+    "scheme_check": "To check if you can get it, answer these: {questions}",
+    "scheme_contact": "Official site {url}, helpline {helpline}.",
+    "scheme_draft": "This summary was last checked on {date} and is not yet verified by an officer; confirm the rules on the official site.",
+    "scheme_reviewed": "Information as of {date}; rules change, so confirm on the official site.",
+    "scheme_other_state": "{name} is a {state} scheme, so it does not apply in {farmer_state}.",
+    "scheme_list": "Schemes I can explain for {state}: {names}. Ask about one by name."
   },
   "glossary": {
     "onion": [
@@ -259,5 +268,18 @@
     "which chemical",
     "how much chemical",
     "dose"
+  ],
+  "scheme_words": [
+    "scheme",
+    "yojana",
+    "subsidy",
+    "government help",
+    "sarkari"
+  ],
+  "eligibility_words": [
+    "eligible",
+    "can i get",
+    "will i get",
+    "am i"
   ]
 }

@@ -73,7 +73,12 @@ export function AnswerCard({
       {open && (
         <View style={{ gap: 6 }}>
           {answer.sources.map((src) =>
-            src.kind === "pesticide" ? (
+            src.kind === "scheme" ? (
+              <Text key={src.id} style={[s.small, { color: colors.leaf }]} onPress={() => void Linking.openURL(src.url)} accessibilityRole="link">
+                {t("answer.schemeSource", { name: src.title, date: formatDate(src.info_as_of, lang) })}
+                {src.review_status !== "reviewed" ? ` (${t("answer.schemeDraft")})` : ""} · ☎ {src.helpline}
+              </Text>
+            ) : src.kind === "pesticide" ? (
               <Text key={src.id} style={[s.small, { color: colors.leaf }]} onPress={() => void Linking.openURL(src.url)} accessibilityRole="link">
                 {t("answer.pesticideSource", { date: formatDate(src.list_date, lang) })}
               </Text>

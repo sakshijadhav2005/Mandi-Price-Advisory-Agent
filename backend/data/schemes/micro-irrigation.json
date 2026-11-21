@@ -1,0 +1,40 @@
+{
+  "id": "micro-irrigation",
+  "state": "all",
+  "category": "irrigation",
+  "names": {"en": "Drip and sprinkler subsidy (Per Drop More Crop)", "hi": "ड्रिप और स्प्रिंकलर अनुदान (पर ड्रॉप मोर क्रॉप)", "mr": "ठिबक व तुषार सिंचन अनुदान (प्रति थेंब अधिक पीक)"},
+  "aliases": ["drip", "sprinkler", "micro irrigation", "per drop more crop", "pdmc", "ड्रिप", "स्प्रिंकलर", "ठिबक", "तुषार", "सूक्ष्म सिंचन", "सूक्ष्म सिंचाई"],
+  "url": "https://mahadbt.maharashtra.gov.in",
+  "helpline": "Taluka agriculture office",
+  "info_as_of": "2026-11-21",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "sources": ["https://pib.gov.in/PressReleasePage.aspx?PRID=2279431", "Revised PDMC operational guidelines 2023"],
+  "text": {
+    "en": {
+      "benefit": "A subsidy on drip and sprinkler systems, which save water and fertiliser: 55% of the unit cost for small and marginal farmers and 45% for other farmers, for up to 5 hectares per farmer. Some states add a top-up.",
+      "who": "Farmers with land, who buy the system from a registered manufacturer or dealer.",
+      "not_eligible": "Land that already got this subsidy in the last 7 years (the system's expected life).",
+      "documents": "7/12 extract, Aadhaar, bank account, and the dealer's quotation and bill.",
+      "apply": "In Maharashtra, apply on the MahaDBT farmer portal under the micro-irrigation component; beneficiaries are usually picked by lottery. Buy only from a registered dealer, or the subsidy can be refused. (Per Drop More Crop now runs under PM-RKVY.)"
+    },
+    "hi": {
+      "benefit": "पानी और खाद बचाने वाले ड्रिप और स्प्रिंकलर पर अनुदान: छोटे और सीमांत किसानों को लागत का 55% और बाकी किसानों को 45%, प्रति किसान 5 हेक्टेयर तक। कुछ राज्य ऊपर से और देते हैं।",
+      "who": "ज़मीन वाले किसान, जो पंजीकृत निर्माता या डीलर से सिस्टम खरीदें।",
+      "not_eligible": "वह ज़मीन जिसे पिछले 7 साल (सिस्टम की अनुमानित उम्र) में यह अनुदान मिल चुका है।",
+      "documents": "ज़मीन का रिकॉर्ड, आधार, बैंक खाता, और डीलर का कोटेशन व बिल।",
+      "apply": "महाराष्ट्र में महाडीबीटी किसान पोर्टल पर सूक्ष्म सिंचाई घटक में आवेदन करें; लाभार्थी आमतौर पर लॉटरी से चुने जाते हैं। केवल पंजीकृत डीलर से खरीदें, नहीं तो अनुदान रुक सकता है। (पर ड्रॉप मोर क्रॉप अब PM-RKVY के तहत चलता है।)"
+    },
+    "mr": {
+      "benefit": "पाणी व खत वाचवणाऱ्या ठिबक आणि तुषार सिंचनावर अनुदान: अल्प व अत्यल्प भूधारक शेतकऱ्यांना खर्चाच्या 55% आणि इतर शेतकऱ्यांना 45%, प्रति शेतकरी 5 हेक्टरपर्यंत. काही राज्ये वरून अतिरिक्त अनुदान देतात.",
+      "who": "जमीन असलेले शेतकरी, जे नोंदणीकृत उत्पादक किंवा विक्रेत्याकडून संच खरेदी करतात.",
+      "not_eligible": "ज्या जमिनीला मागील 7 वर्षांत (संचाचे अपेक्षित आयुष्य) हे अनुदान मिळाले आहे.",
+      "documents": "सातबारा, आधार, बँक खाते, आणि विक्रेत्याचे कोटेशन व बिल.",
+      "apply": "महाराष्ट्रात महाडीबीटी शेतकरी पोर्टलवर सूक्ष्म सिंचन घटकात अर्ज करा; लाभार्थी सहसा सोडतीने निवडले जातात. फक्त नोंदणीकृत विक्रेत्याकडून खरेदी करा, नाहीतर अनुदान नाकारले जाऊ शकते. (प्रति थेंब अधिक पीक आता PM-RKVY अंतर्गत राबवली जाते.)"
+    }
+  },
+  "eligibility": [
+    {"fact": "owns_land", "must_be": true},
+    {"fact": "micro_irrigation_subsidy_last_7_years", "must_be": false}
+  ]
+}

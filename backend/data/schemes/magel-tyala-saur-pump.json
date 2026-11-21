@@ -1,0 +1,40 @@
+{
+  "id": "magel-tyala-saur-pump",
+  "state": "Maharashtra",
+  "category": "irrigation",
+  "names": {"en": "Magel Tyala Saur Krushi Pump (solar pump)", "hi": "मागेल त्याला सौर कृषि पंप", "mr": "मागेल त्याला सौर कृषी पंप"},
+  "aliases": ["magel tyala", "saur krushi pump", "saur pump", "solar pump", "मागेल त्याला", "सौर कृषी पंप", "सौर कृषि पंप", "सौर पंप", "सोलर पंप"],
+  "url": "https://www.mahadiscom.in/solar_MTSKPY/",
+  "helpline": "1800-233-3435 / 1912 (Mahavitaran)",
+  "info_as_of": "2026-11-21",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "sources": ["https://www.mahadiscom.in/solar_MTSKPY/scheme_info.php"],
+  "text": {
+    "en": {
+      "benefit": "An off-grid solar irrigation pump. The farmer pays 10% of the pump cost (5% for Scheduled Caste and Scheduled Tribe farmers); the government pays the rest. Pump size follows land: about 3 HP up to 2.5 acres, 5 HP for 2.5 to 5 acres, 7.5 HP above 5 acres.",
+      "who": "Maharashtra farmers with farmland.",
+      "not_eligible": "Farmers who already got a pump under the earlier Atal or Mukhyamantri solar pump schemes.",
+      "documents": "7/12 extract, Aadhaar, bank passbook, caste certificate for SC / ST farmers, and a no-objection letter from co-owners if the land is jointly owned.",
+      "apply": "Online on the Mahavitaran solar pump portal. Pay your share only through the portal, after your application is approved."
+    },
+    "hi": {
+      "benefit": "बिना ग्रिड वाला सौर सिंचाई पंप। किसान पंप की लागत का 10% भरता है (अनुसूचित जाति / जनजाति के किसान 5%); बाकी सरकार भरती है। पंप का आकार ज़मीन के अनुसार: 2.5 एकड़ तक लगभग 3 HP, 2.5 से 5 एकड़ के लिए 5 HP, 5 एकड़ से ज़्यादा पर 7.5 HP।",
+      "who": "खेती की ज़मीन वाले महाराष्ट्र के किसान।",
+      "not_eligible": "जिन्हें पहले की अटल या मुख्यमंत्री सौर पंप योजना में पंप मिल चुका है।",
+      "documents": "ज़मीन का रिकॉर्ड, आधार, बैंक पासबुक, अनुसूचित जाति / जनजाति के किसानों के लिए जाति प्रमाणपत्र, और साझा ज़मीन हो तो सह-मालिकों का अनापत्ति पत्र।",
+      "apply": "महावितरण के सौर पंप पोर्टल पर ऑनलाइन। अपना हिस्सा आवेदन मंज़ूर होने के बाद केवल पोर्टल से ही भरें।"
+    },
+    "mr": {
+      "benefit": "ग्रिडशिवाय चालणारा सौर सिंचन पंप. शेतकरी पंपाच्या किमतीच्या 10% भरतो (अनुसूचित जाती / जमातीचे शेतकरी 5%); उरलेले सरकार भरते. पंपाचा आकार जमिनीनुसार: 2.5 एकरपर्यंत सुमारे 3 HP, 2.5 ते 5 एकरसाठी 5 HP, 5 एकरपेक्षा जास्त असल्यास 7.5 HP.",
+      "who": "शेतजमीन असलेले महाराष्ट्रातील शेतकरी.",
+      "not_eligible": "आधीच्या अटल किंवा मुख्यमंत्री सौर कृषी पंप योजनेत पंप मिळालेले शेतकरी.",
+      "documents": "सातबारा, आधार, बँक पासबुक, अनुसूचित जाती / जमातीच्या शेतकऱ्यांसाठी जातीचा दाखला, आणि जमीन सामायिक असल्यास सहमालकांचे ना-हरकत पत्र.",
+      "apply": "महावितरणच्या सौर पंप पोर्टलवर ऑनलाइन अर्ज करा. अर्ज मंजूर झाल्यानंतरच तुमचा हिस्सा फक्त पोर्टलवरूनच भरा."
+    }
+  },
+  "eligibility": [
+    {"fact": "owns_land", "must_be": true},
+    {"fact": "had_solar_pump_before", "must_be": false}
+  ]
+}

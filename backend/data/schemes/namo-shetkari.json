@@ -1,0 +1,41 @@
+{
+  "id": "namo-shetkari",
+  "state": "Maharashtra",
+  "category": "income_support",
+  "names": {"en": "Namo Shetkari Mahasanman Nidhi", "hi": "नमो शेतकरी महासन्मान निधि", "mr": "नमो शेतकरी महासन्मान निधी"},
+  "aliases": ["namo shetkari", "namo shetkari mahasanman", "nsmny", "नमो शेतकरी", "नमो किसान", "महासन्मान"],
+  "url": "https://nsmny.mahait.org",
+  "helpline": "155261 (PM-KISAN) / taluka agriculture office",
+  "info_as_of": "2026-11-21",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "sources": ["https://www.myscheme.gov.in/schemes/namo-shetkari-mahasanman-nidhi-yojana", "https://nsmny.mahait.org"],
+  "text": {
+    "en": {
+      "benefit": "Maharashtra's own ₹6,000 a year for farmer families, on top of PM-KISAN's ₹6,000, so ₹12,000 a year in all, paid in instalments to the Aadhaar-linked bank account.",
+      "who": "Maharashtra farmer families who are PM-KISAN beneficiaries.",
+      "not_eligible": "The same groups as PM-KISAN (income tax payers, government employees, and so on), and people who are not residents of Maharashtra.",
+      "documents": "The state uses the PM-KISAN list: keep PM-KISAN e-KYC done, Aadhaar linked to the bank account, and the 7/12 extract up to date.",
+      "apply": "Usually no separate form: register for PM-KISAN and keep its details correct. Check your status on nsmny.mahait.org or at the taluka agriculture office."
+    },
+    "hi": {
+      "benefit": "महाराष्ट्र की अपनी ओर से किसान परिवारों को साल में ₹6,000, पीएम-किसान के ₹6,000 के अलावा, यानी कुल ₹12,000 साल में, किस्तों में आधार से जुड़े बैंक खाते में।",
+      "who": "महाराष्ट्र के वे किसान परिवार जो पीएम-किसान के लाभार्थी हैं।",
+      "not_eligible": "पीएम-किसान वाले ही समूह (आयकर भरने वाले, सरकारी कर्मचारी आदि), और जो महाराष्ट्र के निवासी नहीं हैं।",
+      "documents": "राज्य पीएम-किसान की सूची का उपयोग करता है: पीएम-किसान का ई-केवाईसी पूरा रखें, आधार बैंक खाते से जुड़ा रखें और ज़मीन का रिकॉर्ड सही रखें।",
+      "apply": "आमतौर पर अलग फ़ॉर्म नहीं: पीएम-किसान में पंजीकरण करें और उसकी जानकारी सही रखें। स्थिति nsmny.mahait.org पर या तालुका कृषि कार्यालय में देखें।"
+    },
+    "mr": {
+      "benefit": "महाराष्ट्र राज्याकडून शेतकरी कुटुंबांना वर्षाला ₹6,000, पीएम-किसानच्या ₹6,000 व्यतिरिक्त, म्हणजे एकूण वर्षाला ₹12,000, हप्त्यांत आधारशी जोडलेल्या बँक खात्यात.",
+      "who": "पीएम-किसानचे लाभार्थी असलेली महाराष्ट्रातील शेतकरी कुटुंबे.",
+      "not_eligible": "पीएम-किसानप्रमाणेच गट (आयकर भरणारे, सरकारी कर्मचारी इत्यादी), आणि महाराष्ट्राचे रहिवासी नसलेले.",
+      "documents": "राज्य पीएम-किसानची यादी वापरते: पीएम-किसानची ई-केवायसी पूर्ण ठेवा, आधार बँक खात्याशी जोडलेले ठेवा आणि सातबारा अद्ययावत ठेवा.",
+      "apply": "सहसा वेगळा अर्ज लागत नाही: पीएम-किसानमध्ये नोंदणी करा आणि त्याची माहिती बरोबर ठेवा. स्थिती nsmny.mahait.org वर किंवा तालुका कृषी कार्यालयात तपासा."
+    }
+  },
+  "eligibility": [
+    {"fact": "pm_kisan_beneficiary", "must_be": true},
+    {"fact": "income_tax_payer", "must_be": false},
+    {"fact": "govt_employee", "must_be": false}
+  ]
+}

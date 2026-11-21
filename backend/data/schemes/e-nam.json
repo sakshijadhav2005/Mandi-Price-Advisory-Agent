@@ -1,0 +1,37 @@
+{
+  "id": "e-nam",
+  "state": "all",
+  "category": "market",
+  "names": {"en": "e-NAM (online mandi trading)", "hi": "ई-नाम (ऑनलाइन मंडी व्यापार)", "mr": "ई-नाम (ऑनलाइन बाजार व्यापार)"},
+  "aliases": ["e-nam", "enam", "e nam", "national agriculture market", "ई-नाम", "ई नाम", "ईनाम", "राष्ट्रीय कृषि बाजार"],
+  "url": "https://enam.gov.in",
+  "helpline": "1800-270-0224",
+  "info_as_of": "2026-11-21",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "sources": ["https://enam.gov.in"],
+  "text": {
+    "en": {
+      "benefit": "An online trading platform that links APMC mandis, so traders in other markets can bid for your produce, and payment comes to your bank account.",
+      "who": "Farmers selling at a mandi that is connected to e-NAM.",
+      "not_eligible": "",
+      "documents": "Name, mobile number, Aadhaar and bank details.",
+      "apply": "Register on enam.gov.in or the e-NAM app, or at the e-NAM desk of an integrated mandi. Bring your produce to the mandi; it is weighed and graded, traders bid online, and you can accept the best bid. Ask your APMC whether it is on e-NAM and which crops are traded online."
+    },
+    "hi": {
+      "benefit": "एक ऑनलाइन व्यापार मंच जो APMC मंडियों को जोड़ता है, ताकि दूसरी मंडियों के व्यापारी भी आपकी उपज पर बोली लगा सकें, और भुगतान आपके बैंक खाते में आता है।",
+      "who": "ई-नाम से जुड़ी मंडी में बेचने वाले किसान।",
+      "not_eligible": "",
+      "documents": "नाम, मोबाइल नंबर, आधार और बैंक की जानकारी।",
+      "apply": "enam.gov.in या ई-नाम ऐप पर, या जुड़ी मंडी के ई-नाम काउंटर पर पंजीकरण करें। उपज मंडी लाएं; तौल और गुणवत्ता जांच के बाद व्यापारी ऑनलाइन बोली लगाते हैं, और आप सबसे अच्छी बोली मान सकते हैं। अपनी APMC से पूछें कि वह ई-नाम पर है या नहीं।"
+    },
+    "mr": {
+      "benefit": "APMC बाजार समित्यांना जोडणारा ऑनलाइन व्यापार मंच, ज्यामुळे इतर बाजारांतील व्यापारीही तुमच्या मालावर बोली लावू शकतात, आणि पैसे तुमच्या बँक खात्यात येतात.",
+      "who": "ई-नामशी जोडलेल्या बाजार समितीत माल विकणारे शेतकरी.",
+      "not_eligible": "",
+      "documents": "नाव, मोबाइल नंबर, आधार आणि बँकेची माहिती.",
+      "apply": "enam.gov.in किंवा ई-नाम ॲपवर, किंवा जोडलेल्या बाजार समितीतील ई-नाम कक्षात नोंदणी करा. माल बाजारात आणा; वजन व प्रतवारी झाल्यावर व्यापारी ऑनलाइन बोली लावतात, आणि तुम्ही सर्वात चांगली बोली स्वीकारू शकता. तुमची बाजार समिती ई-नामवर आहे का ते विचारा."
+    }
+  },
+  "eligibility": []
+}

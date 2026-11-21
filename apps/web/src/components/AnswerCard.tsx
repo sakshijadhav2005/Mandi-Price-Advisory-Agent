@@ -109,7 +109,17 @@ export function AnswerCard({
           <h3 className="eyebrow">{t("answer.sources")}</h3>
           <ul className="space-y-2">
             {answer.sources.map((s) =>
-              s.kind === "pesticide" ? (
+              s.kind === "scheme" ? (
+                <li key={s.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-medium text-leaf-ink underline underline-offset-2">
+                    {t("answer.schemeSource", { name: s.title, date: formatDate(s.info_as_of, lang) })}
+                  </a>
+                  <a href={`tel:${s.helpline.split(/[/,;(]/)[0].replace(/[^\d+]/g, "")}`} className="text-leaf-ink">
+                    ☎ {s.helpline}
+                  </a>
+                  {s.review_status !== "reviewed" && <span className="chip bg-turmeric-soft text-turmeric-ink">{t("answer.schemeDraft")}</span>}
+                </li>
+              ) : s.kind === "pesticide" ? (
                 <li key={s.id} className="flex flex-wrap gap-x-2">
                   <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-medium text-leaf-ink underline underline-offset-2">
                     {t("answer.pesticideSource", { date: formatDate(s.list_date, lang) })}

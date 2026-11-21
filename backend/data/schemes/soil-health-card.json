@@ -1,0 +1,37 @@
+{
+  "id": "soil-health-card",
+  "state": "all",
+  "category": "soil",
+  "names": {"en": "Soil Health Card", "hi": "मृदा स्वास्थ्य कार्ड", "mr": "मृदा आरोग्य पत्रिका"},
+  "aliases": ["soil health card", "soil test", "soil testing", "मृदा स्वास्थ्य", "मिट्टी जांच", "मिट्टी की जांच", "माती परीक्षण", "मृदा आरोग्य", "जमीन आरोग्य"],
+  "url": "https://soilhealth.dac.gov.in",
+  "helpline": "1800-180-1551 (Kisan Call Centre)",
+  "info_as_of": "2026-11-21",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "sources": ["https://soilhealth.dac.gov.in"],
+  "text": {
+    "en": {
+      "benefit": "Free testing of your field's soil and a card showing its nutrients (nitrogen, phosphorus, potassium, organic carbon, pH and micronutrients) with fertiliser advice for your crops, so you do not spend on fertiliser the soil does not need.",
+      "who": "All farmers.",
+      "not_eligible": "",
+      "documents": "Usually only your name, village and survey number; the sample is taken from your field.",
+      "apply": "Ask the village agriculture assistant, the taluka agriculture office, the nearest soil-testing laboratory or Krishi Vigyan Kendra. Check your card on soilhealth.dac.gov.in."
+    },
+    "hi": {
+      "benefit": "आपके खेत की मिट्टी की मुफ़्त जांच और एक कार्ड जिसमें पोषक तत्व (नाइट्रोजन, फॉस्फोरस, पोटाश, जैविक कार्बन, pH और सूक्ष्म पोषक तत्व) और आपकी फसलों के लिए खाद की सलाह होती है, ताकि बेवजह खाद पर खर्च न हो।",
+      "who": "सभी किसान।",
+      "not_eligible": "",
+      "documents": "आमतौर पर केवल नाम, गांव और सर्वे नंबर; नमूना आपके खेत से लिया जाता है।",
+      "apply": "गांव के कृषि सहायक, तालुका कृषि कार्यालय, नज़दीकी मिट्टी जांच प्रयोगशाला या कृषि विज्ञान केंद्र से पूछें। अपना कार्ड soilhealth.dac.gov.in पर देखें।"
+    },
+    "mr": {
+      "benefit": "तुमच्या शेतातील मातीची मोफत तपासणी आणि एक पत्रिका ज्यात अन्नद्रव्ये (नत्र, स्फुरद, पालाश, सेंद्रिय कर्ब, pH आणि सूक्ष्म अन्नद्रव्ये) आणि तुमच्या पिकांसाठी खताचा सल्ला असतो, म्हणजे गरज नसलेल्या खतावर खर्च होत नाही.",
+      "who": "सर्व शेतकरी.",
+      "not_eligible": "",
+      "documents": "सहसा फक्त नाव, गाव आणि गट नंबर; नमुना तुमच्या शेतातून घेतला जातो.",
+      "apply": "गावातील कृषी सहाय्यक, तालुका कृषी कार्यालय, जवळची माती परीक्षण प्रयोगशाळा किंवा कृषी विज्ञान केंद्राकडे विचारा. तुमची पत्रिका soilhealth.dac.gov.in वर पाहा."
+    }
+  },
+  "eligibility": []
+}

@@ -122,7 +122,9 @@
     "steps": "Steps the assistant took",
     "perQtl": "₹{{value}}/qtl",
     "agrometSource": "IMD district advisory, {{date}} (valid till {{until}})",
-    "pesticideSource": "CIB&RC pesticide list, {{date}}"
+    "pesticideSource": "CIB&RC pesticide list, {{date}}",
+    "schemeSource": "{{name}}, information as of {{date}}",
+    "schemeDraft": "not yet verified"
   },
   "prices": {
     "title": "Mandi prices",

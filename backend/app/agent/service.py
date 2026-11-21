@@ -12,6 +12,7 @@ from functools import partial
 
 from sqlalchemy.orm import Session
 
+from app.advisory.schemes import detect_scheme
 from app.agent import fallback
 from app.agent.data import today
 from app.agent.guardrails import decision_consistent, language_ok, ungrounded_numbers
@@ -165,7 +166,7 @@ def answer_query(
             ctx.trace = [{"tool": "(rejected llm attempt)", "args": {}, "is_error": True, "summary": f"{len(llm_trace)} tool calls"}] + ctx.trace
 
     # Always attach a structured recommendation when a crop is known, so the UI card is grounded.
-    if ctx.recommendation is None and crop:
+    if ctx.recommendation is None and crop and not detect_scheme(question):
         compute_recommendation(ctx, crop=crop, quantity_qtl=quantity_qtl)
     rec = ctx.recommendation
 

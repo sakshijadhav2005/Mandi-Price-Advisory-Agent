@@ -1,0 +1,39 @@
+{
+  "id": "kcc",
+  "state": "all",
+  "category": "credit",
+  "names": {"en": "Kisan Credit Card (KCC)", "hi": "किसान क्रेडिट कार्ड", "mr": "किसान क्रेडिट कार्ड"},
+  "aliases": ["kisan credit card", "kcc", "crop loan", "किसान क्रेडिट कार्ड", "केसीसी", "पीक कर्ज", "फसल ऋण", "फसल लोन"],
+  "url": "https://www.myscheme.gov.in/schemes/kcc",
+  "helpline": "1800-180-1551 (Kisan Call Centre)",
+  "info_as_of": "2026-11-21",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "sources": ["https://www.myscheme.gov.in/schemes/kcc", "RBI circular on collateral-free agricultural loans (6 Dec 2024)", "Cabinet decision on Modified Interest Subvention Scheme 2025-26 (28 May 2025)"],
+  "text": {
+    "en": {
+      "benefit": "A revolving loan limit for crop cultivation, post-harvest expenses, farm upkeep, and animal husbandry and fisheries. Short-term crop loans up to ₹3 lakh are given at 7% interest, and farmers who repay on time get 3% more off, so 4% in effect. Banks ask for no collateral on farm loans up to ₹2 lakh. The card is valid for 5 years.",
+      "who": "Owner cultivators, tenant farmers, oral lessees, sharecroppers, self-help groups and joint liability groups of farmers, and farmers in animal husbandry and fisheries.",
+      "not_eligible": "People who do not farm, keep animals or fish.",
+      "documents": "KCC application form, Aadhaar, land record or tenancy document, photo, and your cropping plan.",
+      "apply": "At any commercial bank, regional rural bank or cooperative bank. PM-KISAN beneficiaries can use the simple one-page KCC form at their bank. The 2025-26 Budget announced raising the ₹3 lakh limit to ₹5 lakh; ask your bank whether it applies yet."
+    },
+    "hi": {
+      "benefit": "खेती, कटाई के बाद के खर्च, खेत के रखरखाव, और पशुपालन व मछली पालन के लिए घूमती ऋण सीमा। ₹3 लाख तक का अल्पकालिक फसल ऋण 7% ब्याज पर मिलता है, और समय पर चुकाने वालों को 3% और छूट, यानी असल में 4%। ₹2 लाख तक के कृषि ऋण पर बैंक कोई गिरवी नहीं मांगते। कार्ड 5 साल के लिए होता है।",
+      "who": "खुद खेती करने वाले, किरायेदार किसान, मौखिक पट्टेदार, बटाईदार, किसानों के स्वयं सहायता समूह और संयुक्त देयता समूह, और पशुपालन व मछली पालन करने वाले किसान।",
+      "not_eligible": "जो खेती, पशुपालन या मछली पालन नहीं करते।",
+      "documents": "केसीसी आवेदन फ़ॉर्म, आधार, ज़मीन का रिकॉर्ड या पट्टे का प्रमाण, फ़ोटो और फसल की योजना।",
+      "apply": "किसी भी व्यावसायिक बैंक, ग्रामीण बैंक या सहकारी बैंक में। पीएम-किसान लाभार्थी बैंक में एक पेज का आसान केसीसी फ़ॉर्म भर सकते हैं। बजट 2025-26 में ₹3 लाख की सीमा ₹5 लाख करने की घोषणा हुई थी; बैंक से पूछें कि यह लागू हुई या नहीं।"
+    },
+    "mr": {
+      "benefit": "पीक लागवड, काढणीनंतरचा खर्च, शेतीची देखभाल, आणि पशुपालन व मत्स्यपालनासाठी फिरती कर्ज मर्यादा. ₹3 लाखांपर्यंतचे अल्पमुदतीचे पीक कर्ज 7% व्याजाने मिळते, आणि वेळेवर परतफेड करणाऱ्यांना आणखी 3% सवलत, म्हणजे प्रत्यक्षात 4%. ₹2 लाखांपर्यंतच्या शेती कर्जासाठी बँक तारण मागत नाही. कार्ड 5 वर्षांसाठी असते.",
+      "who": "स्वतः शेती करणारे, कुळ, तोंडी भाडेपट्टेदार, वाटेकरी, शेतकऱ्यांचे बचत गट व संयुक्त दायित्व गट, आणि पशुपालन व मत्स्यपालन करणारे शेतकरी.",
+      "not_eligible": "जे शेती, पशुपालन किंवा मत्स्यपालन करत नाहीत.",
+      "documents": "केसीसी अर्ज, आधार, सातबारा किंवा भाडेपट्ट्याचा पुरावा, फोटो आणि पीक नियोजन.",
+      "apply": "कोणत्याही व्यापारी बँक, ग्रामीण बँक किंवा सहकारी बँकेत. पीएम-किसान लाभार्थी बँकेत एका पानाचा सोपा केसीसी अर्ज भरू शकतात. अर्थसंकल्प 2025-26 मध्ये ₹3 लाखांची मर्यादा ₹5 लाख करण्याची घोषणा झाली होती; ती लागू झाली का ते बँकेत विचारा."
+    }
+  },
+  "eligibility": [
+    {"fact": "cultivates", "must_be": true}
+  ]
+}

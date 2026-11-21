@@ -122,7 +122,9 @@
     "steps": "सहायक ने ये कदम उठाए",
     "perQtl": "₹{{value}}/क्विंटल",
     "agrometSource": "IMD ज़िला सलाह, {{date}} ({{until}} तक मान्य)",
-    "pesticideSource": "CIB&RC कीटनाशक सूची, {{date}}"
+    "pesticideSource": "CIB&RC कीटनाशक सूची, {{date}}",
+    "schemeSource": "{{name}}, {{date}} तक की जानकारी",
+    "schemeDraft": "अभी सत्यापित नहीं"
   },
   "prices": {
     "title": "मंडी भाव",

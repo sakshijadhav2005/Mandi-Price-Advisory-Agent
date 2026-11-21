@@ -1,0 +1,44 @@
+{
+  "id": "pm-kisan",
+  "state": "all",
+  "category": "income_support",
+  "names": {"en": "PM-KISAN", "hi": "पीएम-किसान", "mr": "पीएम-किसान"},
+  "aliases": ["pm-kisan", "pm kisan", "pmkisan", "kisan samman", "kisan sanman", "samman nidhi", "पीएम किसान", "पीएम-किसान", "पी एम किसान", "किसान सम्मान", "किसान सन्मान", "सन्मान निधी", "सम्मान निधि"],
+  "url": "https://pmkisan.gov.in",
+  "helpline": "155261 / 011-24300606",
+  "info_as_of": "2026-11-21",
+  "review_status": "draft",
+  "reviewed_by": null,
+  "sources": ["https://pmkisan.gov.in", "https://www.myscheme.gov.in/schemes/pm-kisan"],
+  "text": {
+    "en": {
+      "benefit": "₹6,000 a year for landholding farmer families, paid in three instalments of ₹2,000 straight into the Aadhaar-linked bank account.",
+      "who": "Farmer families (husband, wife and minor children) with cultivable land recorded in their name.",
+      "not_eligible": "Families where someone paid income tax last year, is a serving or retired government employee (other than Class IV / Group D), gets a pension of ₹10,000 or more a month, is a practising doctor, engineer, lawyer, CA or architect, or holds or held a constitutional or elected office; and institutional landholders.",
+      "documents": "Aadhaar, land record (7/12 extract) and bank account. e-KYC is compulsory.",
+      "apply": "Register on pmkisan.gov.in (New Farmer Registration), at a Common Service Centre, or through the talathi or agriculture office. If an instalment has not come, check 'Beneficiary Status' on the portal; the usual reasons are e-KYC not done, Aadhaar not linked to the bank account, or land not verified."
+    },
+    "hi": {
+      "benefit": "ज़मीन वाले किसान परिवारों को साल में ₹6,000, ₹2,000 की तीन किस्तों में, सीधे आधार से जुड़े बैंक खाते में।",
+      "who": "किसान परिवार (पति, पत्नी और नाबालिग बच्चे) जिनके नाम पर खेती की ज़मीन दर्ज है।",
+      "not_eligible": "वे परिवार जिनमें किसी ने पिछले साल आयकर भरा, कोई कार्यरत या सेवानिवृत्त सरकारी कर्मचारी है (चतुर्थ श्रेणी / ग्रुप डी को छोड़कर), किसी को ₹10,000 या ज़्यादा मासिक पेंशन मिलती है, कोई प्रैक्टिस करने वाला डॉक्टर, इंजीनियर, वकील, सीए या आर्किटेक्ट है, या कोई संवैधानिक या निर्वाचित पद पर है या रहा है; और संस्थागत ज़मीन वाले।",
+      "documents": "आधार, ज़मीन का रिकॉर्ड और बैंक खाता। ई-केवाईसी ज़रूरी है।",
+      "apply": "pmkisan.gov.in पर (New Farmer Registration), कॉमन सर्विस सेंटर पर, या पटवारी या कृषि कार्यालय से पंजीकरण करें। किस्त नहीं आई तो पोर्टल पर 'Beneficiary Status' देखें; आम कारण हैं ई-केवाईसी न होना, आधार बैंक खाते से न जुड़ा होना, या ज़मीन का सत्यापन बाकी होना।"
+    },
+    "mr": {
+      "benefit": "जमीन असलेल्या शेतकरी कुटुंबांना वर्षाला ₹6,000, ₹2,000 च्या तीन हप्त्यांत, थेट आधारशी जोडलेल्या बँक खात्यात.",
+      "who": "शेतकरी कुटुंबे (पती, पत्नी आणि अल्पवयीन मुले) ज्यांच्या नावावर लागवडीयोग्य जमीन नोंदलेली आहे.",
+      "not_eligible": "ज्या कुटुंबातील कोणी मागील वर्षी आयकर भरला, कोणी कार्यरत किंवा निवृत्त सरकारी कर्मचारी आहे (चतुर्थ श्रेणी / गट ड सोडून), कोणाला दरमहा ₹10,000 किंवा जास्त पेन्शन मिळते, कोणी व्यवसाय करणारे डॉक्टर, इंजिनिअर, वकील, सीए किंवा आर्किटेक्ट आहे, किंवा कोणी संवैधानिक किंवा निवडून आलेल्या पदावर आहे किंवा होते; आणि संस्थांच्या नावावरील जमीन.",
+      "documents": "आधार, सातबारा उतारा आणि बँक खाते. ई-केवायसी आवश्यक आहे.",
+      "apply": "pmkisan.gov.in वर (New Farmer Registration), आपले सरकार सेवा केंद्र / CSC वर, किंवा तलाठी किंवा कृषी कार्यालयामार्फत नोंदणी करा. हप्ता आला नाही तर पोर्टलवर 'Beneficiary Status' तपासा; नेहमीची कारणे: ई-केवायसी झालेली नाही, आधार बँक खात्याशी जोडलेले नाही, किंवा जमिनीची पडताळणी बाकी आहे."
+    }
+  },
+  "eligibility": [
+    {"fact": "owns_land", "must_be": true},
+    {"fact": "income_tax_payer", "must_be": false},
+    {"fact": "govt_employee", "must_be": false},
+    {"fact": "pension_10k", "must_be": false},
+    {"fact": "professional", "must_be": false},
+    {"fact": "public_office", "must_be": false}
+  ]
+}

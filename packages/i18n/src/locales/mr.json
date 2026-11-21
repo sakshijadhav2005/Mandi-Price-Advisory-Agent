@@ -122,7 +122,9 @@
     "steps": "सहाय्यकाने घेतलेल्या पायऱ्या",
     "perQtl": "₹{{value}}/क्विंटल",
     "agrometSource": "IMD जिल्हा सल्ला, {{date}} ({{until}} पर्यंत लागू)",
-    "pesticideSource": "CIB&RC कीटकनाशक यादी, {{date}}"
+    "pesticideSource": "CIB&RC कीटकनाशक यादी, {{date}}",
+    "schemeSource": "{{name}}, {{date}} पर्यंतची माहिती",
+    "schemeDraft": "अजून पडताळलेले नाही"
   },
   "prices": {
     "title": "बाजार दर",

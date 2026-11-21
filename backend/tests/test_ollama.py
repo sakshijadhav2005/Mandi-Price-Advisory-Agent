@@ -127,13 +127,13 @@ def test_ollama_skipped_for_languages_not_enabled(session, ollama):
     assert ans.mode == "offline" and calls == [] and ans.warnings == []
 
 
-def test_offline_out_of_scope_questions_point_to_kvk(session):
+def test_offline_storage_questions_point_to_kvk(session):
     en = answer_query(session, "How should I store onions so they do not rot?", language="en", as_of=AS_OF, use_llm=False)
     assert en.text.startswith("I can't advise on that yet.")
     mr = answer_query(session, "कांदा साठवण कशी करावी?", language="mr", as_of=AS_OF, use_llm=False)
     assert mr.text.startswith("यावर मी अजून सल्ला देऊ शकत नाही.")
     scheme = answer_query(session, "पीएम किसान योजनेचा हप्ता कधी येईल?", language="mr", as_of=AS_OF, use_llm=False)
-    assert scheme.text.startswith("यावर मी अजून सल्ला देऊ शकत नाही.") and scheme.recommendation is None
+    assert scheme.text.startswith("पीएम-किसान:") and scheme.recommendation is None  # schemes are answered now
     assert all(src["kind"] == "price" for src in en.sources + mr.sources)
     plain = answer_query(session, "Should I sell onion now?", language="en", as_of=AS_OF, use_llm=False)
     assert plain.text.startswith(("Sell now", "Hold"))

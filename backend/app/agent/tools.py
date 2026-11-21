@@ -226,6 +226,86 @@ def lookup_pesticide(
     return out
 
 
+def _farmer_state(ctx: ToolContext) -> str:
+    return load_reference().districts[_scope(ctx).district].state
+
+
+def _scheme(ctx: ToolContext, scheme: str):
+    from app.advisory.schemes import detect_scheme, load_schemes
+
+    found = load_schemes().get((scheme or "").strip().lower()) or detect_scheme(scheme or "")
+    if found is None:
+        raise ToolError(f"Unknown scheme {scheme!r}. Known schemes: {', '.join(load_schemes())}.")
+    return found
+
+
+def _scheme_source(ctx: ToolContext, s) -> str:
+    return ctx.add_source(
+        f"scheme:{s.id}",
+        kind="scheme",
+        title=s.name(ctx.language),
+        info_as_of=s.info_as_of.isoformat(),
+        review_status=s.review_status,
+        url=s.url,
+        helpline=s.helpline,
+        origin="Official scheme guidelines",
+    )
+
+
+def list_schemes(ctx: ToolContext) -> dict:
+    """Government schemes that apply to the farmer: central ones and the farmer's state's."""
+    from app.advisory.schemes import schemes_for_state
+
+    state = _farmer_state(ctx)
+    return {
+        "state": state,
+        "schemes": [
+            {"id": s.id, "name": s.name(ctx.language), "category": s.category, "benefit": s.texts(ctx.language)["benefit"]}
+            for s in schemes_for_state(state)
+        ],
+    }
+
+
+def get_scheme(ctx: ToolContext, scheme: str) -> dict:
+    """One scheme's details in the farmer's language, with the official link and helpline."""
+    s = _scheme(ctx, scheme)
+    state = _farmer_state(ctx)
+    return {
+        "id": s.id,
+        "name": s.name(ctx.language),
+        "applies_to_farmer": s.applies_to(state),
+        "scheme_state": s.state,
+        "farmer_state": state,
+        **s.texts(ctx.language),
+        "url": s.url,
+        "helpline": s.helpline,
+        "info_as_of": s.info_as_of.isoformat(),
+        "review_status": s.review_status,
+        "stale": s.is_stale(ctx.as_of),
+        "source_id": _scheme_source(ctx, s),
+    }
+
+
+ELIGIBILITY_FACTS = (
+    "owns_land", "cultivates", "income_tax_payer", "govt_employee", "pension_10k", "professional", "public_office",
+    "pm_kisan_beneficiary", "grows_notified_crop", "had_solar_pump_before", "micro_irrigation_subsidy_last_7_years",
+)
+
+
+def check_scheme_eligibility(ctx: ToolContext, scheme: str, **facts: bool | None) -> dict:
+    """Rule-based eligibility: eligible / not_eligible (reasons) / depends (questions to ask)."""
+    from app.advisory.schemes import check_eligibility
+
+    s = _scheme(ctx, scheme)
+    unknown = set(facts) - set(ELIGIBILITY_FACTS)
+    if unknown:
+        raise ToolError(f"Unknown facts: {', '.join(sorted(unknown))}")
+    result = check_eligibility(s, facts, ctx.language)
+    if not s.applies_to(_farmer_state(ctx)):
+        result = result | {"verdict": "not_eligible", "reasons": [f"{s.name(ctx.language)} is only for {s.state}"], "questions": []}
+    return result | {"name": s.name(ctx.language), "url": s.url, "helpline": s.helpline, "source_id": _scheme_source(ctx, s)}
+
+
 def estimate_transport_cost(ctx: ToolContext, market: str, quantity_qtl: float | None = None) -> dict:
     ref = load_reference()
     scope = _scope(ctx)
@@ -288,6 +368,9 @@ TOOL_FUNCS: dict[str, Callable[..., dict]] = {
     "estimate_transport_cost": estimate_transport_cost,
     "get_district_advisory": get_district_advisory,
     "lookup_pesticide": lookup_pesticide,
+    "list_schemes": list_schemes,
+    "get_scheme": get_scheme,
+    "check_scheme_eligibility": check_scheme_eligibility,
     "compute_recommendation": compute_recommendation,
 }
 
@@ -339,6 +422,37 @@ def tool_schemas() -> list[dict]:
                     "quantity_qtl": _nullable("number", description="Quantity in quintals, or null."),
                 },
                 "required": ["market", "quantity_qtl"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "list_schemes",
+            "description": "Government schemes the farmer can use: central schemes and their own state's, with a one-line benefit each. Use it when the farmer asks about schemes in general.",
+            "strict": True,
+            "input_schema": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+        },
+        {
+            "name": "get_scheme",
+            "description": "One government scheme's details in the farmer's language: benefit, who can get it, who cannot, documents, how to apply, official url and helpline, info_as_of and review_status.",
+            "strict": True,
+            "input_schema": {
+                "type": "object",
+                "properties": {"scheme": {"type": "string", "description": "Scheme id from list_schemes, or its name."}},
+                "required": ["scheme"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "check_scheme_eligibility",
+            "description": "Rule-based eligibility for a scheme. Pass what the farmer told you as true/false and null for anything unknown. Returns verdict eligible / not_eligible (with reasons) / depends (with the exact questions to ask) / open.",
+            "strict": True,
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "scheme": {"type": "string", "description": "Scheme id or name."},
+                    **{f: _nullable("boolean") for f in ELIGIBILITY_FACTS},
+                },
+                "required": ["scheme", *ELIGIBILITY_FACTS],
                 "additionalProperties": False,
             },
         },
@@ -441,6 +555,12 @@ def _summarise(name: str, result: dict) -> str:
         return f"{result['fresh_markets']}/{result['total_markets']} markets fresh"
     if name == "get_mandi_prices":
         return f"{len(result['markets'])} markets"
+    if name == "list_schemes":
+        return f"{len(result['schemes'])} schemes for {result['state']}"
+    if name == "get_scheme":
+        return f"{result['id']} ({result['review_status']}, as of {result['info_as_of']})"
+    if name == "check_scheme_eligibility":
+        return f"{result['scheme']}: {result['verdict']}"
     if name == "lookup_pesticide":
         if not result.get("available"):
             return "no reviewed pesticide list"

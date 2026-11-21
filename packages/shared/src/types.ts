@@ -76,7 +76,19 @@ export interface PesticideSource {
   origin: string;
 }
 
-export type Source = PriceSource | AgrometSource | PesticideSource;
+/** A government scheme entry (official link and helpline; "draft" until an officer reviews it). */
+export interface SchemeSource {
+  id: string;
+  kind: "scheme";
+  title: string;
+  info_as_of: string;
+  review_status: "draft" | "reviewed";
+  url: string;
+  helpline: string;
+  origin: string;
+}
+
+export type Source = PriceSource | AgrometSource | PesticideSource | SchemeSource;
 
 export interface TraceStep {
   tool: string;
