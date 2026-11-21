@@ -30,7 +30,8 @@
     "alert.above": "{market} में {crop} का भाव अब ₹{price}/क्विंटल है ({date} की रिपोर्ट), आपकी ₹{threshold} की सूचना से ज़्यादा।",
     "alert.below": "{market} में {crop} का भाव अब ₹{price}/क्विंटल है ({date} की रिपोर्ट), आपकी ₹{threshold} की सूचना से कम।",
     "advice_from": "फसल सलाह से ({title}):",
-    "reason.seasonal_rise": "पिछले साल इन्हीं {h} दिनों में भाव लगभग {season}% बढ़े थे।"
+    "reason.seasonal_rise": "पिछले साल इन्हीं {h} दिनों में भाव लगभग {season}% बढ़े थे।",
+    "official_contact": "ताज़ा नियम पक्का करने के लिए: {contact}।"
   },
   "glossary": {
     "onion": [

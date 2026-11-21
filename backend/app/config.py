@@ -78,7 +78,12 @@ class Settings(BaseSettings):
     # Voice (server-side providers are optional; the web app can use browser speech)
     stt_provider: str = "none"  # none | whisper
     whisper_model: str = "small"
-    tts_provider: str = "none"  # none | google | azure
+    tts_provider: str = "none"  # none | sarvam | google | azure
+    # Sarvam AI (Bulbul): natural Indian-language voices, the clearest Marathi of the three.
+    sarvam_api_key: str = ""
+    sarvam_tts_model: str = "bulbul:v3"
+    sarvam_tts_speaker: str = ""  # empty = the model's default voice; e.g. "ritu", "priya", "shubh" for bulbul:v3
+    sarvam_tts_pace: float = 0.95  # 0.5-2.0; slightly slower than normal reads more clearly to farmers
     google_tts_api_key: str = ""
     azure_speech_key: str = ""
     azure_speech_region: str = "centralindia"

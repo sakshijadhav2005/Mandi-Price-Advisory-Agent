@@ -55,6 +55,18 @@ def _crop(ctx: ToolContext, crop: str | None):
     return ref.crops[crop_id]
 
 
+def farmer_state(ctx: ToolContext) -> str:
+    """The farmer's state, from their district (or the nearest one to their location)."""
+    ref = load_reference()
+    return ref.districts[_scope(ctx).district].state
+
+
+def applies_to_state(meta: dict, state: str) -> bool:
+    """National documents (state all / central / missing) apply everywhere; state ones only there."""
+    doc_state = (meta.get("state") or "all").strip().lower()
+    return doc_state in ("all", "central", "india") or doc_state == state.lower()
+
+
 def check_data_freshness(ctx: ToolContext, crop: str | None = None) -> dict:
     settings = get_settings()
     ref = load_reference()
@@ -135,8 +147,14 @@ def search_advisories(ctx: ToolContext, query: str, crop: str | None = None) -> 
     crop_id = None
     if crop or ctx.default_crop:
         crop_id = _crop(ctx, crop).id
-    hits = get_index().search(query, crop=crop_id, language=ctx.language, k=3)
+    state = farmer_state(ctx)
+    hits = get_index().search(query, crop=crop_id, language=ctx.language, k=3, where=lambda c: applies_to_state(c.meta, state))
     for h in hits:
+        meta = h.pop("meta", {})
+        # Scheme documents carry the official link and helpline; the answer should point the farmer to them.
+        for key in ("url", "helpline", "state"):
+            if meta.get(key):
+                h[key] = meta[key]
         h["source_id"] = ctx.add_source(
             f"advisory:{h['chunk_id']}",
             kind="advisory",
@@ -145,6 +163,8 @@ def search_advisories(ctx: ToolContext, query: str, crop: str | None = None) -> 
             published=h["published"],
             origin=h["source"],
             excerpt=h["text"][:280],
+            url=meta.get("url"),
+            helpline=meta.get("helpline"),
         )
     return {"query": query, "results": hits}
 
@@ -252,7 +272,7 @@ def tool_schemas() -> list[dict]:
         },
         {
             "name": "search_advisories",
-            "description": "Search crop advisory bulletins (storage, quality, handling, market practice). Bulletins exist in English, Hindi and Marathi; write the query in English for best coverage.",
+            "description": "Search the advisory documents: crop bulletins (storage, quality, handling, market practice) and government scheme documents (eligibility, benefits, how to apply), already limited to national documents and the farmer's own state. Results may include the official url and helpline. Documents exist in English, Hindi and Marathi; write the query in English for best coverage.",
             "strict": True,
             "input_schema": {
                 "type": "object",

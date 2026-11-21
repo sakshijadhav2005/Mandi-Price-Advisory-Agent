@@ -239,7 +239,7 @@ export class ApiClient {
   uploadDocument(adminToken: string, doc: DocumentUpload) {
     const form = new FormData();
     form.append("file", doc.file, doc.filename);
-    for (const key of ["title", "crop", "language", "source", "published"] as const) {
+    for (const key of ["title", "crop", "language", "source", "published", "state", "url", "helpline"] as const) {
       const v = doc[key];
       if (v) form.append(key, v);
     }

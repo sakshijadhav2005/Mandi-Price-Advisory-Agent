@@ -131,6 +131,9 @@ function UploadForm({ token, onUploaded }: { token: string; onUploaded: (d: Admi
   const [language, setLanguage] = useState("en");
   const [source, setSource] = useState("");
   const [published, setPublished] = useState("");
+  const [state, setState] = useState("all");
+  const [url, setUrl] = useState("");
+  const [helpline, setHelpline] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [inputKey, setInputKey] = useState(0);
@@ -141,13 +144,15 @@ function UploadForm({ token, onUploaded }: { token: string; onUploaded: (d: Admi
     setBusy(true);
     setMessage(null);
     try {
-      const doc = await api.uploadDocument(token, { file, filename: file.name, title, crop, language, source, published });
+      const doc = await api.uploadDocument(token, { file, filename: file.name, title, crop, language, source, published, state, url, helpline });
       onUploaded(doc);
       setMessage({ ok: true, text: `Added “${doc.title}” (${doc.chunks} passages). The assistant can answer from it now.` });
       setFile(null);
       setTitle("");
       setSource("");
       setPublished("");
+      setUrl("");
+      setHelpline("");
       setInputKey((k) => k + 1);
     } catch (err) {
       setMessage({ ok: false, text: errorText(err) });
@@ -223,6 +228,34 @@ function UploadForm({ token, onUploaded }: { token: string; onUploaded: (d: Admi
           <input id="doc-date" className="input" type="date" value={published} onChange={(e) => setPublished(e.target.value)} />
         </div>
       </div>
+      <div>
+        <label className="label" htmlFor="doc-state">
+          Applies to
+        </label>
+        <select id="doc-state" className="input" value={state} onChange={(e) => setState(e.target.value)}>
+          <option value="all">All of India (central scheme or general advice)</option>
+          {meta?.states?.map((st) => (
+            <option key={st} value={st}>
+              {st} only
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-muted">Farmers in other states never get answers from a state-only document.</p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="label" htmlFor="doc-url">
+            Official link (optional)
+          </label>
+          <input id="doc-url" className="input" type="url" placeholder="https://pmkisan.gov.in" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={200} />
+        </div>
+        <div>
+          <label className="label" htmlFor="doc-helpline">
+            Helpline (optional)
+          </label>
+          <input id="doc-helpline" className="input" inputMode="tel" placeholder="155261" value={helpline} onChange={(e) => setHelpline(e.target.value)} maxLength={60} />
+        </div>
+      </div>
       {message && <p className={`text-sm ${message.ok ? "text-leaf" : "text-chilli-ink"}`}>{message.text}</p>}
       <button type="submit" className="btn-primary w-full" disabled={busy || !file}>
         {busy ? "Uploading and indexing…" : "Upload"}
@@ -262,6 +295,8 @@ function DocumentList({ token, docs, onDeleted }: { token: string; docs: AdminDo
               <p className="text-sm text-muted break-words">
                 {d.crop === "all" ? "All crops" : d.crop} · {d.language} · {d.format.toUpperCase()} · {d.chunks} passages
                 {d.source ? ` · ${d.source}` : ""}
+                {d.state && d.state !== "all" ? ` · ${d.state} only` : ""}
+                {d.helpline ? ` · ☎ ${d.helpline}` : ""}
               </p>
               {!d.deletable && <span className="chip mt-1 bg-sunken text-muted">Built-in</span>}
             </div>

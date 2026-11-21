@@ -30,7 +30,8 @@
     "alert.above": "{market} येथे {crop} चा दर आता ₹{price}/क्विंटल आहे ({date} चा अहवाल), तुमच्या ₹{threshold} सूचनेपेक्षा जास्त.",
     "alert.below": "{market} येथे {crop} चा दर आता ₹{price}/क्विंटल आहे ({date} चा अहवाल), तुमच्या ₹{threshold} सूचनेपेक्षा कमी.",
     "advice_from": "पीक सल्ल्यातून ({title}):",
-    "reason.seasonal_rise": "मागील वर्षी याच {h} दिवसांत दर सुमारे {season}% वाढले होते."
+    "reason.seasonal_rise": "मागील वर्षी याच {h} दिवसांत दर सुमारे {season}% वाढले होते.",
+    "official_contact": "नवीन नियमांची खात्री करण्यासाठी: {contact}."
   },
   "glossary": {
     "onion": [

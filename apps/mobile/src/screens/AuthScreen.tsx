@@ -1,3 +1,4 @@
+import { LANGUAGES, type LanguageCode } from "@mandi/i18n";
 import { ApiError } from "@mandi/shared";
 import Constants from "expo-constants";
 import * as Google from "expo-auth-session/providers/google";
@@ -17,6 +18,7 @@ import {
   type TextInputProps,
 } from "react-native";
 import { useMobile } from "../context";
+import { colors, s } from "../theme";
 
 // Closes the browser tab Google sign-in opened once it redirects back to the app.
 WebBrowser.maybeCompleteAuthSession();
@@ -26,28 +28,31 @@ const extra = (Constants.expoConfig?.extra ?? {}) as { googleAndroidClientId?: s
 const NATIVE_GOOGLE_ID = (Platform.OS === "ios" ? extra.googleIosClientId : extra.googleAndroidClientId) || "";
 
 /*
- * Sign in / sign up, in the same look as the web app: a dark green card with
- * turmeric buttons. Phone-code (OTP) sign-in stays available for farmers
+ * Sign in / sign up, in the app's own colours (cream background, white card,
+ * leaf-green buttons, amber accent). Phone-code (OTP) sign-in stays available for farmers
  * without an email address.
  */
 
+/** Only colours from the app theme (src/theme.ts), so this screen matches the rest of the app. */
 const c = {
-  bg: "#101a15",
-  card: "#1b2e25",
-  cardEdge: "rgba(255,255,255,0.10)",
-  field: "rgba(255,255,255,0.06)",
-  fieldEdge: "rgba(255,255,255,0.12)",
-  fieldFocus: "#34d399",
-  accent: "#6ee7b7",
-  accentStrong: "#34d399",
-  text: "#ffffff",
-  textSoft: "rgba(255,255,255,0.85)",
-  placeholder: "rgba(255,255,255,0.40)",
-  turmeric: "#e9b10a",
-  turmericText: "#1c1a12",
-  errorBg: "rgba(239,68,68,0.12)",
-  errorEdge: "rgba(248,113,113,0.35)",
-  errorText: "#fecaca",
+  bg: colors.bg,
+  card: colors.card,
+  cardEdge: colors.border,
+  field: "#fff",
+  fieldEdge: "#d6d3d1", // same edge as s.input
+  fieldFocus: colors.leaf,
+  accent: colors.leaf,
+  accentStrong: colors.leafDark,
+  text: colors.text,
+  muted: colors.muted,
+  placeholder: colors.muted,
+  primary: colors.leaf,
+  primaryText: "#fff",
+  amber: colors.amber,
+  amberText: colors.amberText,
+  errorBg: colors.card,
+  errorEdge: colors.danger,
+  errorText: colors.danger,
 };
 
 function Field({ label, icon, trailing, ...input }: { label: string; icon: string; trailing?: ReactNode } & TextInputProps) {
@@ -103,22 +108,23 @@ function PasswordField({ label, placeholder, value, onChangeText, isNew }: { lab
   );
 }
 
-function PrimaryButton({ label, onPress, disabled, busy, leading, trailing }: { label: string; onPress: () => void; disabled?: boolean; busy?: boolean; leading?: string; trailing?: string }) {
+function PrimaryButton({ label, onPress, disabled, busy, leading, trailing, accent }: { label: string; onPress: () => void; disabled?: boolean; busy?: boolean; leading?: string; trailing?: string; accent?: boolean }) {
+  const textStyle = [st.primaryText, accent && { color: c.amberText }];
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || busy}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!(disabled || busy), busy: !!busy }}
-      style={({ pressed }) => [st.primary, (disabled || busy) && { opacity: 0.55 }, pressed && { transform: [{ translateY: 1 }], opacity: 0.9 }]}
+      style={({ pressed }) => [st.primary, accent && st.accentBtn, (disabled || busy) && { opacity: 0.55 }, pressed && { transform: [{ translateY: 1 }], opacity: 0.9 }]}
     >
       {busy ? (
-        <ActivityIndicator color={c.turmericText} />
+        <ActivityIndicator color={accent ? c.amberText : c.primaryText} />
       ) : (
         <>
-          {leading ? <Text style={st.primaryText}>{leading}</Text> : null}
-          <Text style={st.primaryText}>{label}</Text>
-          {trailing ? <Text style={st.primaryText}>{trailing}</Text> : null}
+          {leading ? <Text style={textStyle}>{leading}</Text> : null}
+          <Text style={textStyle}>{label}</Text>
+          {trailing ? <Text style={textStyle}>{trailing}</Text> : null}
         </>
       )}
     </Pressable>
@@ -129,8 +135,31 @@ function Divider({ label }: { label: string }) {
   return (
     <View style={st.divider}>
       <View style={st.rule} />
-      <Text style={{ color: c.accent, fontSize: 14 }}>{label}</Text>
+      <Text style={{ color: c.muted, fontSize: 14 }}>{label}</Text>
       <View style={st.rule} />
+    </View>
+  );
+}
+
+/** English / हिंदी / मराठी, the same setting as in Settings (saved, switches the whole app). */
+function LanguageSwitch() {
+  const { language, setLanguage } = useMobile();
+  return (
+    <View style={st.langRow} accessibilityRole="radiogroup" accessibilityLabel="Language / भाषा">
+      {LANGUAGES.map((l) => {
+        const on = language === l.code;
+        return (
+          <Pressable
+            key={l.code}
+            onPress={() => setLanguage(l.code as LanguageCode)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: on }}
+            style={[st.langBtn, on && st.langBtnOn]}
+          >
+            <Text style={[st.langText, on && { color: c.accentStrong }]}>{l.label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -139,7 +168,7 @@ function Header({ icon, title, subtitle }: { icon: string; title: string; subtit
   return (
     <View style={{ alignItems: "center", marginBottom: 20 }}>
       <View style={st.logo}>
-        <Text style={{ fontSize: 28 }}>{icon}</Text>
+        <Text style={{ fontSize: icon === "₹" ? 30 : 28, color: "#fff", fontWeight: "700" }}>{icon}</Text>
       </View>
       <Text style={st.title}>{title}</Text>
       <Text style={st.subtitle}>{subtitle}</Text>
@@ -271,7 +300,7 @@ function LoginForm({ onSignup }: { onSignup: () => void }) {
 
   return (
     <>
-      <Header icon="🚜" title={t("auth.welcome")} subtitle={t("auth.signInSub")} />
+      <Header icon="₹" title={t("auth.welcome")} subtitle={t("auth.signInSub")} />
       <View style={{ gap: 16 }}>
         {otpMode ? (
           <>
@@ -299,7 +328,7 @@ function LoginForm({ onSignup }: { onSignup: () => void }) {
                   onChangeText={(v) => setCode(v.replace(/\D/g, ""))}
                   style={{ letterSpacing: 6 }}
                 />
-                {devCode && <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>{t("login.devCode", { code: devCode })}</Text>}
+                {devCode && <Text style={{ color: c.muted, fontSize: 13 }}>{t("login.devCode", { code: devCode })}</Text>}
               </View>
             )}
           </>
@@ -330,11 +359,11 @@ function LoginForm({ onSignup }: { onSignup: () => void }) {
       <GoogleBlock run={run} setError={setError} busy={busy} />
 
       <Divider label={t("auth.noAccount")} />
-      <PrimaryButton label={t("auth.signUp")} leading="✨" onPress={onSignup} />
+      <PrimaryButton label={t("auth.signUp")} leading="✨" onPress={onSignup} accent />
 
       {!meta?.auth_required && (
-        <Pressable onPress={() => chooseGuest(true)} style={st.ghost} accessibilityRole="button">
-          <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 15, fontWeight: "500" }}>{t("login.guest")}</Text>
+        <Pressable onPress={() => chooseGuest(true)} style={[s.btnGhost, { marginTop: 12 }]} accessibilityRole="button">
+          <Text style={s.btnGhostText}>{t("login.guest")}</Text>
         </Pressable>
       )}
 
@@ -361,7 +390,7 @@ function SignupForm({ onLogin }: { onLogin: () => void }) {
 
   return (
     <>
-      <Header icon="👤" title={t("auth.createAccount")} subtitle={t("auth.joinSub", { app: t("app.name") })} />
+      <Header icon="₹" title={t("auth.createAccount")} subtitle={t("auth.joinSub", { app: t("app.name") })} />
       <View style={{ gap: 16 }}>
         <Field label={t("auth.fullName")} icon="👤" placeholder={t("auth.namePh")} autoComplete="name" textContentType="name" autoCapitalize="words" value={name} onChangeText={setName} />
         <Field
@@ -383,7 +412,7 @@ function SignupForm({ onLogin }: { onLogin: () => void }) {
       </View>
       <GoogleBlock run={run} setError={setError} busy={busy} />
       <View style={st.footer}>
-        <Text style={{ color: c.accent, fontSize: 15, textAlign: "center" }}>
+        <Text style={{ color: c.muted, fontSize: 15, textAlign: "center" }}>
           {t("auth.haveAccount")}{" "}
           <Text onPress={onLogin} style={{ color: c.accentStrong, fontWeight: "700" }} accessibilityRole="link">
             {t("auth.signIn")}
@@ -400,8 +429,7 @@ export function AuthScreen() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={st.scroll} keyboardShouldPersistTaps="handled">
         <View style={st.card}>
-          <View style={[st.glow, { top: -90, left: -80, backgroundColor: "rgba(52,211,153,0.10)" }]} />
-          <View style={[st.glow, { bottom: -90, right: -70, backgroundColor: "rgba(245,158,11,0.10)" }]} />
+          <LanguageSwitch />
           {mode === "login" ? <LoginForm onSignup={() => setMode("signup")} /> : <SignupForm onLogin={() => setMode("login")} />}
         </View>
       </ScrollView>
@@ -411,61 +439,21 @@ export function AuthScreen() {
 
 const st = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: "center", padding: 16 },
-  card: {
-    backgroundColor: c.card,
-    borderColor: c.cardEdge,
-    borderWidth: 1,
-    borderRadius: 24,
-    padding: 22,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
-  },
-  glow: { position: "absolute", width: 220, height: 220, borderRadius: 110 },
-  logo: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    backgroundColor: "#059669",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-    shadowColor: "#064e3b",
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  title: { color: c.text, fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
-  subtitle: { color: c.accent, fontSize: 16, marginTop: 10 },
-  label: { color: c.textSoft, fontSize: 15, fontWeight: "600" },
+  card: { backgroundColor: c.card, borderColor: c.cardEdge, borderWidth: 1, borderRadius: 20, padding: 22 },
+  logo: { width: 60, height: 60, borderRadius: 16, backgroundColor: c.primary, alignItems: "center", justifyContent: "center", marginBottom: 14 },
+  title: { color: c.text, fontSize: 26, fontWeight: "700", letterSpacing: -0.3 },
+  subtitle: { color: c.muted, fontSize: 16, marginTop: 6 },
+  label: { color: c.text, fontSize: 15, fontWeight: "600" },
   field: { flexDirection: "row", alignItems: "center", minHeight: 50, borderRadius: 14, borderWidth: 1, borderColor: c.fieldEdge, backgroundColor: c.field, paddingLeft: 12 },
-  fieldIcon: { fontSize: 16, width: 26, color: c.accent },
+  fieldIcon: { fontSize: 16, width: 26, color: c.muted },
   input: { flex: 1, color: c.text, fontSize: 16, paddingVertical: 12, paddingRight: 12 },
   eye: { paddingHorizontal: 12, height: 48, justifyContent: "center" },
-  primary: {
-    minHeight: 50,
-    borderRadius: 14,
-    backgroundColor: c.turmeric,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-    shadowColor: c.turmeric,
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  primaryText: { color: c.turmericText, fontSize: 17, fontWeight: "700" },
+  primary: { minHeight: 50, borderRadius: 12, backgroundColor: c.primary, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 16 },
+  accentBtn: { backgroundColor: c.amber },
+  primaryText: { color: c.primaryText, fontSize: 17, fontWeight: "700" },
   link: { color: c.accent, fontSize: 14, fontWeight: "500", textAlign: "center" },
   divider: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 20 },
-  rule: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.10)" },
-  ghost: { marginTop: 10, minHeight: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  rule: { flex: 1, height: 1, backgroundColor: c.cardEdge },
   badges: { flexDirection: "row", justifyContent: "center", gap: 20, marginTop: 18 },
   badge: { color: c.accent, fontSize: 14 },
   error: { borderRadius: 10, borderWidth: 1, borderColor: c.errorEdge, backgroundColor: c.errorBg, paddingHorizontal: 12, paddingVertical: 8 },
@@ -483,5 +471,9 @@ const st = StyleSheet.create({
   },
   googleG: { fontSize: 20, fontWeight: "800", color: "#4285F4" },
   googleText: { fontSize: 16, fontWeight: "600", color: "#3c4043" },
-  footer: { marginTop: 20, paddingTop: 18, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.10)" },
+  langRow: { flexDirection: "row", alignSelf: "center", backgroundColor: c.bg, borderColor: c.cardEdge, borderWidth: 1, borderRadius: 12, padding: 4, marginBottom: 18 },
+  langBtn: { minHeight: 36, paddingHorizontal: 14, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  langBtnOn: { backgroundColor: c.card, borderWidth: 1, borderColor: c.cardEdge },
+  langText: { fontSize: 15, fontWeight: "600", color: c.muted },
+  footer: { marginTop: 20, paddingTop: 18, borderTopWidth: 1, borderTopColor: c.cardEdge },
 });

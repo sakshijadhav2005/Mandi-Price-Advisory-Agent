@@ -30,7 +30,8 @@
     "alert.above": "{crop} at {market} is now ₹{price}/quintal (reported {date}), above your ₹{threshold} alert.",
     "alert.below": "{crop} at {market} is now ₹{price}/quintal (reported {date}), below your ₹{threshold} alert.",
     "advice_from": "From the crop advisory ({title}):",
-    "reason.seasonal_rise": "Last year, prices rose about {season}% over the same {h} days."
+    "reason.seasonal_rise": "Last year, prices rose about {season}% over the same {h} days.",
+    "official_contact": "To confirm the latest rules: {contact}."
   },
   "glossary": {
     "onion": [

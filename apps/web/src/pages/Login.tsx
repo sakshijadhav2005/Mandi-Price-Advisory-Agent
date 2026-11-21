@@ -1,3 +1,4 @@
+import { LANGUAGES, type LanguageCode } from "@mandi/i18n";
 import { ApiError } from "@mandi/shared";
 import { useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,20 +20,47 @@ import {
 import { useApp } from "../lib/app-context";
 
 /*
- * Sign in / sign up. The card is always the dark green "field" panel with
- * turmeric buttons, in both light and dark app themes.
+ * Sign in / sign up, built from the app theme only (paper, surface, ink, leaf,
+ * turmeric), so it follows light and dark mode like every other page.
  */
 
-const primaryBtn =
-  "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-[#e9b10a] px-4 font-semibold text-[#1c1a12] shadow-[0_6px_24px_-8px_rgb(233_177_10/0.7)] transition hover:bg-[#f2be1f] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e9b10a]";
+const primaryBtn = "btn-primary w-full";
+/** Second call to action ("Sign up" on the login card): the turmeric accent from the rate board. */
+const accentBtn = "btn w-full bg-turmeric text-board shadow-[inset_0_-2px_0_rgb(0_0_0/0.18)] hover:bg-turmeric/90";
 
 function AuthCard({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-md pt-2">
-      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(150deg,#1f3a2e_0%,#1a2d25_45%,#2b2716_100%)] p-6 text-white shadow-[0_24px_60px_-20px_rgb(0_0_0/0.6)] sm:p-8">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl" aria-hidden />
-        <div className="relative">{children}</div>
+      <div className="card rounded-2xl p-6 sm:p-8">
+        <LanguageSwitch />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** English / हिंदी / मराठी, the same setting as in Settings (saved, switches the whole app). */
+function LanguageSwitch() {
+  const { language, setLanguage } = useApp();
+  return (
+    <div role="radiogroup" aria-label="Language / भाषा" className="mb-5 flex justify-center">
+      <div className="inline-flex rounded-lg border border-line bg-sunken p-1">
+        {LANGUAGES.map((l) => {
+          const on = language === l.code;
+          return (
+            <button
+              key={l.code}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              lang={l.code}
+              onClick={() => setLanguage(l.code as LanguageCode)}
+              className={`min-h-[36px] rounded-md px-3 text-sm font-semibold transition-colors ${on ? "bg-surface text-leaf-ink shadow-[0_1px_0_rgb(var(--line))]" : "text-muted hover:text-ink"}`}
+            >
+              {l.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -41,11 +69,11 @@ function AuthCard({ children }: { children: ReactNode }) {
 function CardHeader({ icon, title, subtitle }: { icon: ReactNode; title: string; subtitle: string }) {
   return (
     <div className="mb-6 text-center">
-      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-900/40">
+      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-board text-board-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
         {icon}
       </div>
-      <h2 className="font-display text-3xl font-bold tracking-tight">{title}</h2>
-      <p className="mt-3 text-emerald-300">{subtitle}</p>
+      <h2 className="font-display text-3xl font-bold tracking-tight text-ink">{title}</h2>
+      <p className="mt-2 text-muted">{subtitle}</p>
     </div>
   );
 }
@@ -60,15 +88,15 @@ function Field({
 }: { id: string; label: string; icon: ReactNode; trailing?: ReactNode } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-white/90">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-ink">
         {label}
       </label>
       <div className="relative">
-        <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-emerald-300">{icon}</span>
+        <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-muted">{icon}</span>
         <input
           id={id}
           {...input}
-          className={`min-h-[48px] w-full rounded-xl border border-white/10 bg-white/[0.06] pl-11 ${trailing ? "pr-11" : "pr-3"} text-base text-white outline-none transition placeholder:text-white/40 hover:border-white/20 focus:border-emerald-400/70 focus:bg-white/[0.09] focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-60 ${className}`}
+          className={`input pl-11 ${trailing ? "pr-11" : ""} disabled:bg-sunken disabled:opacity-70 ${className}`}
         />
         {trailing && <span className="absolute inset-y-0 right-2 flex items-center">{trailing}</span>}
       </div>
@@ -100,7 +128,7 @@ function PasswordField({ id, label, placeholder, value, onChange, autoComplete }
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="grid h-9 w-9 place-items-center rounded-lg text-emerald-300 hover:bg-white/10"
+          className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-sunken hover:text-ink"
           aria-label={show ? t("auth.hidePassword") : t("auth.showPassword")}
           aria-pressed={show}
         >
@@ -113,10 +141,10 @@ function PasswordField({ id, label, placeholder, value, onChange, autoComplete }
 
 function Divider({ children }: { children: ReactNode }) {
   return (
-    <div className="my-5 flex items-center gap-3 text-sm text-emerald-300">
-      <span className="h-px flex-1 bg-white/10" aria-hidden />
+    <div className="my-5 flex items-center gap-3 text-sm text-muted">
+      <span className="h-px flex-1 bg-line" aria-hidden />
       {children}
-      <span className="h-px flex-1 bg-white/10" aria-hidden />
+      <span className="h-px flex-1 bg-line" aria-hidden />
     </div>
   );
 }
@@ -124,7 +152,7 @@ function Divider({ children }: { children: ReactNode }) {
 function ErrorText({ error }: { error: string | null }) {
   if (!error) return null;
   return (
-    <p role="alert" className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+    <p role="alert" className="rounded-lg border border-chilli/30 bg-chilli-soft px-3 py-2 text-sm text-chilli-ink">
       {error}
     </p>
   );
@@ -161,7 +189,7 @@ function GoogleBlock({ run, onError }: { run: (fn: () => Promise<unknown>) => Pr
   return (
     <>
       <Divider>{t("auth.orContinue")}</Divider>
-      <div className="overflow-hidden rounded-xl bg-white">
+      <div className="overflow-hidden rounded-lg">
         <GoogleSignInButton
           clientId={meta.google_client_id}
           locale={language ?? "en"}
@@ -244,7 +272,7 @@ export function LoginPage() {
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                 />
-                {devCode && <p className="mt-1.5 text-sm text-white/60">{t("login.devCode", { code: devCode })}</p>}
+                {devCode && <p className="mt-1.5 text-sm text-muted">{t("login.devCode", { code: devCode })}</p>}
               </div>
             )}
           </>
@@ -276,7 +304,7 @@ export function LoginPage() {
           {otpMode && !sent ? t("login.sendCode") : t("auth.signIn")}
           <ArrowRightIcon className="h-4 w-4" />
         </button>
-        <button type="button" onClick={switchMode} className="w-full text-center text-sm font-medium text-emerald-300 underline-offset-4 hover:underline">
+        <button type="button" onClick={switchMode} className="w-full text-center text-sm font-medium text-leaf-ink underline-offset-4 hover:underline">
           {otpMode ? t("auth.usePassword") : t("auth.useOtp")}
         </button>
       </form>
@@ -284,18 +312,18 @@ export function LoginPage() {
       <GoogleBlock run={run} onError={setError} />
 
       <Divider>{t("auth.noAccount")}</Divider>
-      <button type="button" className={primaryBtn} onClick={() => navigate("/signup")}>
+      <button type="button" className={accentBtn} onClick={() => navigate("/signup")}>
         <SparkleIcon className="h-5 w-5" />
         {t("auth.signUp")}
       </button>
 
       {!meta?.auth_required && (
-        <button type="button" className="mt-3 w-full rounded-xl py-2.5 text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white" onClick={() => navigate("/")}>
+        <button type="button" className="btn-ghost mt-3 w-full" onClick={() => navigate("/")}>
           {t("login.guest")}
         </button>
       )}
 
-      <div className="mt-5 flex items-center justify-center gap-5 text-sm text-emerald-300">
+      <div className="mt-5 flex items-center justify-center gap-5 text-sm text-leaf-ink">
         <span className="flex items-center gap-1.5">
           <ShieldIcon className="h-4 w-4" />
           {t("auth.secure")}
@@ -346,9 +374,9 @@ export function SignupPage() {
 
       <GoogleBlock run={run} onError={setError} />
 
-      <div className="mt-5 border-t border-white/10 pt-5 text-center text-sm text-emerald-300">
+      <div className="mt-5 border-t border-line pt-5 text-center text-sm text-muted">
         {t("auth.haveAccount")}{" "}
-        <Link to="/login" className="font-semibold text-emerald-400 hover:underline">
+        <Link to="/login" className="font-semibold text-leaf-ink hover:underline">
           {t("auth.signIn")}
         </Link>
       </div>

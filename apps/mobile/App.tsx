@@ -28,10 +28,7 @@ function Shell() {
   if (!language) return <LanguageScreen />;
   if (!loggedIn && (meta?.auth_required || !guestChosen))
     return (
-      <>
-        <StatusBar style="light" />
-        <AuthScreen />
-      </>
+      <AuthScreen />
     );
 
   return (

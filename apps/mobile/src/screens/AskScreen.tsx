@@ -39,7 +39,7 @@ export function AskScreen({ conversationId: initialId }: { conversationId: numbe
       return;
     }
     setSpeakingKey(key);
-    void speak(text, l, () => setSpeakingKey((k) => (k === key ? null : k)));
+    void speak(text, l, () => setSpeakingKey((k) => (k === key ? null : k)), meta?.voice.server_tts ? api : null);
   }, [speakingKey]);
 
   const send = useCallback(
@@ -58,7 +58,7 @@ export function AskScreen({ conversationId: initialId }: { conversationId: numbe
         setTurns((ts) => [...ts, turn]);
         if (autoSpeak || mode === "voice") {
           setSpeakingKey(key);
-          void speak(res.text, res.language, () => setSpeakingKey((k) => (k === key ? null : k)));
+          void speak(res.text, res.language, () => setSpeakingKey((k) => (k === key ? null : k)), meta?.voice.server_tts ? api : null);
         }
       } catch {
         setError(t("ask.error"));

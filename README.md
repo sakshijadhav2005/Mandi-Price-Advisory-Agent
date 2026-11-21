@@ -2,7 +2,7 @@
 
 A multilingual (English, Hindi, Marathi) agent that helps small farmers decide whether to **sell now or hold** their vegetables (28 of them: onion, tomato, potato, brinjal, okra, cauliflower, cabbage, chillies, gourds, beans, peas, leafy greens, garlic, ginger and more) in any of India's 789 districts. Nashik and Pune (Maharashtra) are the pilot, with hand-checked markets. It answers with a recommendation, a confidence level, the reasoning, and the sources it used, and it says "not enough data" when prices are stale. See [docs/plan.md](docs/plan.md) for the full plan.
 
-> **Status: code for all five plan phases is in place, running on synthetic prices.** Real Agmarknet / data.gov.in ingestion is implemented but not yet connected (it needs an API key and confirmation that the pilot mandis publish daily). The advisory bulletins in `backend/data/bulletins` are demo content, not official extension bulletins. Every synthetic price is tagged as such in the API and UI.
+> **Status: code for all five plan phases is in place, running on synthetic prices.** Real Agmarknet / data.gov.in ingestion is implemented but not yet connected (it needs an API key and confirmation that the pilot mandis publish daily). The app ships with no advisory documents: add official ones (crop bulletins, government schemes) as described under "Advisory documents and government schemes" below. Every synthetic price is tagged as such in the API and UI.
 
 ## What's here
 
@@ -16,7 +16,7 @@ A multilingual (English, Hindi, Marathi) agent that helps small farmers decide w
 | `backend/app/retrieval/index.py` | Hybrid retrieval: BM25 + character n-gram vectors, fused with RRF, with glossary-based cross-language query expansion. |
 | `backend/app/ingestion/` | data.gov.in API adapter, Agmarknet CSV importer, synthetic generator. |
 | `backend/app/api/` | FastAPI: `/auth/otp/*`, `/auth/google`, `/chat`, `/ws/chat`, `/prices`, `/conversations`, `/feedback`, `/voice/*`, `/meta`. OpenAPI docs at `/docs`. |
-| `backend/app/voice/` | Whisper speech-to-text, Google Cloud and Azure text-to-speech (with an answer cache), and WER/CER metrics. |
+| `backend/app/voice/` | Whisper speech-to-text, Sarvam AI, Google Cloud and Azure text-to-speech (with an answer cache), and WER/CER metrics. |
 | `backend/app/alerts.py`, `api/alerts.py` | Price alerts: thresholds checked after each daily ingestion, Expo push to phones, in-app inbox for the web. |
 | `backend/app/api/admin.py` | Pilot monitoring: `/admin/stats` (answers, helpful rate, voice share, latency per language) and `/admin/export.csv`. Document management: `/admin/documents` (list, upload PDF/Markdown/text, delete uploads); an upload is indexed at once and the agent answers from it on the next question. Enabled by `ADMIN_TOKEN`; the web app's **Admin** page (link at the bottom of Settings, or `/admin`) uses it. |
 | `backend/app/db/retention.py` | Deletes chat questions and answers (and their feedback) older than `HISTORY_RETENTION_DAYS` (30) at startup and every hour; `python manage.py purge-history` runs it by hand. |
@@ -24,7 +24,7 @@ A multilingual (English, Hindi, Marathi) agent that helps small farmers decide w
 | `packages/shared` | TypeScript API client, types, formatting helpers and the voice state machine, shared by web and mobile. |
 | `packages/i18n` | UI strings per language (i18next JSON). |
 | `apps/web` | React + Vite + Tailwind web app: first-launch language picker, chat with mic button, price dashboard with alerts, history, settings, OTP login. Installable PWA that shows the last prices offline. |
-| `apps/mobile` | React Native (Expo SDK 52) app, the primary mobile path: same screens, server speech-to-text from on-device recording, on-device text-to-speech, push price alerts, offline price cache. |
+| `apps/mobile` | React Native (Expo SDK 52) app, the primary mobile path: same screens, server speech-to-text from on-device recording, the server's voice when one is configured (else on-device text-to-speech), push price alerts, offline price cache. |
 | `apps/capacitor` | Fallback mobile path: the web build wrapped as Android and iOS apps (`android/` and `ios/` projects generated, microphone, speech and location permissions added). |
 | `deploy/`, `docker-compose.yml`, `.github/workflows/ci.yml` | Web container (nginx), full stack with Postgres and the daily ingestion and alert job, CI for tests and builds. |
 | `evaluation/` | Test-set builder, evaluation runner and results report. |
@@ -51,7 +51,7 @@ Everything runs without paying for anything:
 | Answers | The template writer (default). It gives the same decision, numbers and sources as any LLM, and answers storage and handling questions from the bulletin passages in the farmer's language. |
 | Prices | A free data.gov.in API key (sign up on data.gov.in) for `fetch-data-gov`, or Agmarknet CSV downloads for `import-csv`. |
 | Voice input | The browser's speech recognition on the web; `pip install faster-whisper` and `STT_PROVIDER=whisper` for the mobile app. |
-| Spoken answers | The browser's or phone's speech engine (`TTS_PROVIDER=none`). |
+| Spoken answers | The browser's or phone's speech engine (`TTS_PROVIDER=none`). For clear Marathi and Hindi, set `TTS_PROVIDER=sarvam` and `SARVAM_API_KEY` (Sarvam AI Bulbul voices); the web and mobile apps then play the server's voice. |
 | Push alerts | Expo's push service, with a free Expo account. |
 
 **Optional free hosted LLM (Gemini, Groq or OpenRouter).** For natural answers in all three languages without paying, get a free key and put it in `backend/.env`:
@@ -146,15 +146,32 @@ Login and signup are one step: the first successful login creates the account, a
 ## Adding a crop, market or language
 
 - All of India: `backend/data/india_districts.json` lists every district with its state and centre, built by `python tools/build_india_districts.py INDIA_DISTRICTS.geojson` from the MIT-licensed boundaries in [datta07/INDIAN-SHAPEFILES](https://github.com/datta07/INDIAN-SHAPEFILES) (the script fixes the file's broken characters and adds old names such as Aurangabad and Bangalore as aliases). Each district starts with one main market at its centre; the daily `fetch-data-gov` run registers every other market Agmarknet reports in a known district (table `agmarknet_markets`). Until a district has real prices, it gets two years of demo prices the first time someone opens it, labelled as demo data; set `DEMO_PRICES=false` to turn that off, and real prices replace a district's demo prices automatically.
-- District, market or crop: add it to `backend/data/reference.json` (names, aliases, coordinates, storage cost, loss rate). A crop's `agmarknet_commodity` must be the exact Agmarknet commodity name (for example `Bhindi(Ladies Finger)`); list other published spellings in `agmarknet_commodity_aliases`. When a question names two crops' aliases, the longest one wins, so "shimla mirch" is capsicum, not chilli. Give it a demo price profile in `backend/app/ingestion/synthetic.py` and run `python manage.py seed-synthetic`. Each district lists its markets. Farmers pick a district in Settings, or the server uses the markets within `nearby_radius_km` of their location. Then add advisory bulletins for any new crop in `backend/data/bulletins/`.
+- **Advisory documents and government schemes:** the agent answers storage, handling and scheme questions only from documents you add; it ships with none. Upload PDF, Markdown or text files on the admin page (`/admin`, needs `ADMIN_TOKEN`), or put them in `backend/data/bulletins/` and restart. For each document set the language, the crop (or "all"), **which state it applies to** ("all" for central schemes; a state-only document is never used for farmers elsewhere), and for schemes the **official link and helpline**, which the answer then gives the farmer. A Markdown file sets these in a header:
+
+  ```
+  ---
+  id: pm-kisan-mr
+  title: पीएम-किसान योजना
+  crop: all
+  language: mr
+  state: all
+  source: Ministry of Agriculture, PM-KISAN operational guidelines
+  published: 2025-04-01
+  url: https://pmkisan.gov.in
+  helpline: 155261
+  ---
+  ```
+
+  A PDF takes the same lines in a `.meta` file next to it (`pm-kisan.pdf` + `pm-kisan.meta`). Scanned PDFs need OCR first. Upload the Marathi and Hindi versions where they exist: retrieval prefers the farmer's language, and the offline answer writer only answers a Marathi or Hindi farmer from a document in that language.
+- District, market or crop: add it to `backend/data/reference.json` (names, aliases, coordinates, storage cost, loss rate). A crop's `agmarknet_commodity` must be the exact Agmarknet commodity name (for example `Bhindi(Ladies Finger)`); list other published spellings in `agmarknet_commodity_aliases`. When a question names two crops' aliases, the longest one wins, so "shimla mirch" is capsicum, not chilli. Give it a demo price profile in `backend/app/ingestion/synthetic.py` and run `python manage.py seed-synthetic`. Each district lists its markets. Farmers pick a district in Settings, or the server uses the markets within `nearby_radius_km` of their location. Then add advisory documents for any new crop (see below).
 - Language: add `backend/data/languages/<code>.json` (copy `en.json`, translate every template) and `packages/i18n/src/locales/<code>.json`, then list it in `packages/i18n/src/index.ts`. Tests fail if any key is missing.
 
 ## What still needs people, accounts or devices
 
 These can't be done in code:
 
-- **Real data:** a `DATA_GOV_IN_API_KEY` (or Agmarknet CSV history), then rebuild the test set and rerun the evaluation. Replace the demo bulletins with official extension bulletins.
-- **API keys:** `ANTHROPIC_API_KEY` for Claude answers (then run `run_eval.py --llm`); a Google or Azure key for server text-to-speech.
+- **Real data:** a `DATA_GOV_IN_API_KEY` (or Agmarknet CSV history), then rebuild the test set and rerun the evaluation. Add official extension bulletins and scheme documents.
+- **API keys:** `ANTHROPIC_API_KEY` for Claude answers (then run `run_eval.py --llm`); a Sarvam AI key (best for Marathi), or a Google or Azure key, for server text-to-speech.
 - **Native-speaker review** of `backend/data/languages/{hi,mr}.json` and `packages/i18n/src/locales/{hi,mr}.json`.
 - **Devices:** test the Expo and Capacitor apps on a real low-end Android phone (microphone, speech, push); create an EAS project and a Play Store internal testing track.
 - **Pilot:** 3–5 farmers or traders and recorded voice samples per language, then a narrated demo with real prices and the resume bullet with measured numbers.

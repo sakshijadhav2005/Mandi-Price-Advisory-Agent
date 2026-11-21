@@ -17,11 +17,12 @@ Results from both rankers are combined with reciprocal rank fusion.
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Protocol
+from typing import Callable, Protocol
 
 import numpy as np
 from rank_bm25 import BM25Okapi
@@ -33,8 +34,11 @@ from app.translation.glossary import expand_query
 
 log = logging.getLogger(__name__)
 
-BULLETIN_DIR = DATA_DIR / "bulletins"
+# Where the documents the agent answers from live (Markdown, text or PDF). Tests point
+# ADVISORY_DOCS_DIR at their own sample documents.
+BULLETIN_DIR = Path(os.environ.get("ADVISORY_DOCS_DIR") or DATA_DIR / "bulletins")
 RRF_K = 60
+_CORE_META = {"id", "title", "crop", "language", "source", "published"}
 
 
 @dataclass
@@ -181,16 +185,27 @@ class AdvisoryIndex:
                         source=meta.get("source", "unknown"),
                         published=meta.get("published", ""),
                         text=text,
+                        meta={k: v for k, v in meta.items() if k not in _CORE_META},
                     )
                 )
         log.info("indexed %d advisory chunks from %s", len(chunks), directory)
         return cls(chunks, embedder)
 
-    def search(self, query: str, crop: str | None = None, language: str | None = None, k: int = 3) -> list[dict]:
+    def search(
+        self,
+        query: str,
+        crop: str | None = None,
+        language: str | None = None,
+        k: int = 3,
+        where: Callable[[Chunk], bool] | None = None,
+    ) -> list[dict]:
+        """`where`: an extra filter on chunks (e.g. scheme documents for the farmer's state)."""
         if not self.chunks:
             return []
         q = expand_query(query)
-        allowed = [i for i, c in enumerate(self.chunks) if crop is None or c.crop in (crop, "all")]
+        allowed = [
+            i for i, c in enumerate(self.chunks) if (crop is None or c.crop in (crop, "all")) and (where is None or where(c))
+        ]
         if not allowed:
             return []
 
@@ -224,6 +239,7 @@ class AdvisoryIndex:
                     "score": round(fused[i], 5),
                     "bm25": round(float(bm25_scores[i]), 3),
                     "vector": round(float(vec_scores[i]), 3),
+                    "meta": dict(c.meta),
                 }
             )
         return results

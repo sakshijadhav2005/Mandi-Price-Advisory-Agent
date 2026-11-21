@@ -61,6 +61,9 @@ def list_documents() -> list[dict]:
                 "language": meta.get("language", "en"),
                 "source": meta.get("source", "unknown"),
                 "published": meta.get("published", ""),
+                "state": meta.get("state", "all"),
+                "url": meta.get("url") or None,
+                "helpline": meta.get("helpline") or None,
                 "filename": path.name,
                 "format": path.suffix.lower().lstrip("."),
                 "chunks": len(chunk_text(body)),
@@ -110,7 +113,12 @@ def save_document(
     language: str,
     source: str,
     published: str,
+    state: str = "",
+    url: str = "",
+    helpline: str = "",
 ) -> dict:
+    """`state`: "all" (or empty) for national documents such as central schemes, else the
+    state name as in the district list (e.g. "Maharashtra"); farmers elsewhere never see it."""
     suffix = Path(filename or "").suffix.lower()
     if suffix not in ALLOWED_SUFFIXES:
         raise DocumentError("Only .pdf, .md and .txt files are supported.")
@@ -139,6 +147,9 @@ def save_document(
         "language": language,
         "source": _one_line(source) or "Uploaded by admin",
         "published": _one_line(published),
+        "state": _one_line(state) or "all",
+        **({"url": _one_line(url)} if url.strip() else {}),
+        **({"helpline": _one_line(helpline)} if helpline.strip() else {}),
         "uploaded": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     header = "\n".join(f"{k}: {v}" for k, v in meta.items())

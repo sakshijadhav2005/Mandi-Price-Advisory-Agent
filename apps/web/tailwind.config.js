@@ -2,7 +2,8 @@
 const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
 
 export default {
-  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  // relative: resolve these globs from this file, not from wherever Vite was started.
+  content: { relative: true, files: ["./index.html", "./src/**/*.{ts,tsx}"] },
   darkMode: "media",
   theme: {
     extend: {

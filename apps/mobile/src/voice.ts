@@ -1,6 +1,7 @@
 import { speechLocale } from "@mandi/i18n";
 import { voiceReducer, type ApiClient, type VoiceState } from "@mandi/shared";
 import { Audio } from "expo-av";
+import * as FileSystem from "expo-file-system";
 import * as Speech from "expo-speech";
 import { useCallback, useReducer, useRef } from "react";
 
@@ -81,9 +82,52 @@ export function useRecorder(api: ApiClient, language: string, consent = false) {
   return { state, start, stop, cancel, reset };
 }
 
-/** On-device text-to-speech. Falls back to a Hindi voice for Marathi when none is installed. */
-export async function speak(text: string, language: string, onDone: () => void): Promise<void> {
-  Speech.stop();
+let playing: { sound: Audio.Sound; onDone: () => void } | null = null;
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onloadend = () => resolve(String(reader.result).split(",", 2)[1] ?? "");
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Play the server's voice (e.g. Sarvam AI): clear Marathi and Hindi even on phones without those voices. */
+async function speakFromServer(api: ApiClient, text: string, language: string, onDone: () => void): Promise<void> {
+  const blob = await api.speak(text, language);
+  const uri = `${FileSystem.cacheDirectory}answer-${Date.now()}.mp3`;
+  await FileSystem.writeAsStringAsync(uri, await blobToBase64(blob), { encoding: FileSystem.EncodingType.Base64 });
+  await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+  const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+  playing = { sound, onDone };
+  sound.setOnPlaybackStatusUpdate((status) => {
+    if (status.isLoaded && status.didJustFinish) finish(sound);
+  });
+  function finish(s: Audio.Sound) {
+    if (playing?.sound !== s) return;
+    playing = null;
+    void s.unloadAsync();
+    void FileSystem.deleteAsync(uri, { idempotent: true });
+    onDone();
+  }
+}
+
+/**
+ * Read an answer aloud. With `api` (the server has a voice configured), the server's voice is
+ * used; otherwise, or if that fails (offline), the phone's own voice. On the phone, Marathi
+ * falls back to a Hindi voice when no Marathi voice is installed.
+ */
+export async function speak(text: string, language: string, onDone: () => void, api?: ApiClient | null): Promise<void> {
+  stopSpeaking();
+  if (api) {
+    try {
+      await speakFromServer(api, text, language, onDone);
+      return;
+    } catch {
+      // fall through to the on-device voice
+    }
+  }
   let lang = speechLocale(language);
   if (language === "mr") {
     const voices = await Speech.getAvailableVoicesAsync();
@@ -94,4 +138,10 @@ export async function speak(text: string, language: string, onDone: () => void):
 
 export function stopSpeaking(): void {
   Speech.stop();
+  if (playing) {
+    const { sound, onDone } = playing;
+    playing = null;
+    void sound.stopAsync().finally(() => void sound.unloadAsync());
+    onDone();
+  }
 }

@@ -48,7 +48,11 @@ def advisory_answer(ctx: ToolContext, question: str, crop_id: str | None, requir
             return None  # avoid answering a Hindi/Marathi farmer in English
         hit = hits[0]
     sentences = _SENTENCE_END.split(hit["text"].strip())
-    return t(ctx.language, "advice_from", title=hit["title"]) + " " + " ".join(sentences[:3])
+    answer = t(ctx.language, "advice_from", title=hit["title"]) + " " + " ".join(sentences[:3])
+    contact = " / ".join(x for x in (hit.get("url"), hit.get("helpline")) if x)
+    if contact:  # scheme documents: send the farmer to the official source
+        answer += " " + t(ctx.language, "official_contact", contact=contact)
+    return answer
 
 
 def write_answer(

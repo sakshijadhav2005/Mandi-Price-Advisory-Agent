@@ -62,6 +62,9 @@ export interface AdvisorySource {
   published: string;
   origin: string;
   excerpt: string;
+  /** Scheme documents: the official page and helpline. */
+  url?: string | null;
+  helpline?: string | null;
 }
 
 export type Source = PriceSource | AdvisorySource;
@@ -222,6 +225,10 @@ export interface AdminDocument {
   language: string;
   source: string;
   published: string;
+  /** "all" for national documents (central schemes), else the state it applies to. */
+  state: string;
+  url: string | null;
+  helpline: string | null;
   filename: string;
   format: string;
   chunks: number;
@@ -238,4 +245,7 @@ export interface DocumentUpload {
   language?: string;
   source?: string;
   published?: string;
+  state?: string;
+  url?: string;
+  helpline?: string;
 }

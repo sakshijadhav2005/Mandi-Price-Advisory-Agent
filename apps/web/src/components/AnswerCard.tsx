@@ -119,6 +119,20 @@ export function AnswerCard({
                   <p className="font-medium">{s.title}</p>
                   <p className="text-muted">{s.excerpt}…</p>
                   <p className="num mt-1 text-[11px] text-muted">{s.origin}</p>
+                  {(s.url || s.helpline) && (
+                    <p className="mt-1.5 flex flex-wrap gap-x-3 font-medium">
+                      {s.url && /^https?:\/\//i.test(s.url) && (
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-leaf-ink underline underline-offset-2">
+                          {s.url.replace(/^https?:\/\//i, "")}
+                        </a>
+                      )}
+                      {s.helpline && (
+                        <a href={`tel:${s.helpline.split(/[/,;]/)[0].replace(/[^\d+]/g, "")}`} className="text-leaf-ink">
+                          ☎ {s.helpline}
+                        </a>
+                      )}
+                    </p>
+                  )}
                 </li>
               ),
             )}

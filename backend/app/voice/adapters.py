@@ -13,6 +13,7 @@ import base64
 import logging
 import math
 import os
+import re
 import tempfile
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -130,7 +131,55 @@ def _azure_tts(text: str, language: str) -> bytes:
     return resp.content
 
 
-TTS_PROVIDERS = {"google": _google_tts, "azure": _azure_tts}
+SARVAM_TTS_URL = "https://api.sarvam.ai/text-to-speech"
+SARVAM_LOCALES = {"en": "en-IN", "hi": "hi-IN", "mr": "mr-IN"}
+SARVAM_MAX_CHARS = 2000  # API limit is 2500 characters per request; stay well under it
+
+
+def _split_for_tts(text: str, limit: int = SARVAM_MAX_CHARS) -> list[str]:
+    """Split long answers at sentence ends (। . ! ?) so each request stays under the limit."""
+    parts: list[str] = []
+    buf = ""
+    for sentence in re.split(r"(?<=[.!?।])\s+", text.strip()):
+        while len(sentence) > limit:  # one huge sentence: hard split
+            parts.append(sentence[:limit])
+            sentence = sentence[limit:]
+        if buf and len(buf) + 1 + len(sentence) > limit:
+            parts.append(buf)
+            buf = sentence
+        else:
+            buf = f"{buf} {sentence}".strip()
+    if buf:
+        parts.append(buf)
+    return parts
+
+
+def _sarvam_tts(text: str, language: str) -> bytes:
+    """Sarvam AI Bulbul text-to-speech (docs.sarvam.ai, POST /text-to-speech), returned as MP3."""
+    s = get_settings()
+    if not s.sarvam_api_key:
+        raise VoiceNotConfigured("SARVAM_API_KEY is not set")
+    audio = b""
+    for part in _split_for_tts(text):
+        body = {
+            "text": part,
+            "language_code": SARVAM_LOCALES.get(language, "en-IN"),
+            "model": s.sarvam_tts_model,
+            "pace": s.sarvam_tts_pace,
+            "output_audio_codec": "mp3",
+            # Reads numbers, dates and ₹ amounts as words in the target language.
+            "enable_preprocessing": True,
+        }
+        if s.sarvam_tts_speaker:
+            body["speaker"] = s.sarvam_tts_speaker
+        resp = httpx.post(SARVAM_TTS_URL, headers={"api-subscription-key": s.sarvam_api_key}, json=body, timeout=30)
+        resp.raise_for_status()
+        # MP3 frames can be concatenated, so multi-part answers play as one file.
+        audio += b"".join(base64.b64decode(a) for a in resp.json()["audios"])
+    return audio
+
+
+TTS_PROVIDERS = {"sarvam": _sarvam_tts, "google": _google_tts, "azure": _azure_tts}
 
 
 def synthesize(text: str, language: str) -> tuple[bytes, str]:

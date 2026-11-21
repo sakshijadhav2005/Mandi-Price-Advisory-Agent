@@ -124,6 +124,9 @@ async def upload_document(
     language: str = Form("en"),
     source: str = Form(""),
     published: str = Form(""),
+    state: str = Form("all"),
+    url: str = Form(""),
+    helpline: str = Form(""),
 ) -> dict:
     """Upload a .pdf/.md/.txt file; it is chunked and indexed right away."""
     crop = crop.strip().lower() or "all"
@@ -131,10 +134,17 @@ async def upload_document(
         raise HTTPException(422, f"Unknown crop {crop!r}. Use 'all' or one of: {', '.join(load_reference().crops)}.")
     if language not in SUPPORTED_LANGUAGES:
         raise HTTPException(422, f"Unsupported language {language!r}.")
+    state = state.strip() or "all"
+    states = load_reference().states
+    if state.lower() not in ("all", "central") and state not in states:
+        raise HTTPException(422, f"Unknown state {state!r}. Use 'all' or a state name such as {states[0]!r}.")
+    if url.strip() and not url.strip().lower().startswith(("https://", "http://")):
+        raise HTTPException(422, "The official link must start with https://")
     data = await file.read(documents.MAX_BYTES + 1)
     try:
         return documents.save_document(
-            file.filename or "", data, title=title, crop=crop, language=language, source=source, published=published
+            file.filename or "", data, title=title, crop=crop, language=language, source=source, published=published,
+            state=state, url=url, helpline=helpline,
         )
     except documents.DocumentError as exc:
         raise HTTPException(422, str(exc)) from exc
