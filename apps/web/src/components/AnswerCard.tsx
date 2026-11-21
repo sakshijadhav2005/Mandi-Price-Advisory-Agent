@@ -108,12 +108,21 @@ export function AnswerCard({
         <div className="space-y-3 border-t border-dashed border-line pt-3 text-sm">
           <h3 className="eyebrow">{t("answer.sources")}</h3>
           <ul className="space-y-2">
-            {answer.sources.map((s) => (
-              <li key={s.id} className="flex flex-wrap gap-x-2">
-                <span>{t("answer.priceSource", { market: marketName(meta, s.market, lang), date: formatDate(s.date, lang) })}</span>
-                <span className="text-muted">({s.origin === "synthetic" ? t("answer.demoData") : s.origin})</span>
-              </li>
-            ))}
+            {answer.sources.map((s) =>
+              s.kind === "agromet" ? (
+                <li key={s.id} className="flex flex-wrap gap-x-2">
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-medium text-leaf-ink underline underline-offset-2">
+                    {t("answer.agrometSource", { date: formatDate(s.issued_on, lang), until: formatDate(s.valid_until, lang) })}
+                  </a>
+                  <span className="text-muted">({s.origin})</span>
+                </li>
+              ) : (
+                <li key={s.id} className="flex flex-wrap gap-x-2">
+                  <span>{t("answer.priceSource", { market: marketName(meta, s.market, lang), date: formatDate(s.date, lang) })}</span>
+                  <span className="text-muted">({s.origin === "synthetic" ? t("answer.demoData") : s.origin})</span>
+                </li>
+              ),
+            )}
           </ul>
           {answer.trace.length > 0 && (
             <>

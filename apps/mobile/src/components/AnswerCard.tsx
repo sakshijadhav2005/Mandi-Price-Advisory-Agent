@@ -1,7 +1,7 @@
 import { displayName, formatDate, formatRupees, type ChatAnswer, type Decision } from "@mandi/shared";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 import { useMobile } from "../context";
 import { colors, s } from "../theme";
 
@@ -72,12 +72,18 @@ export function AnswerCard({
 
       {open && (
         <View style={{ gap: 6 }}>
-          {answer.sources.map((src) => (
-            <Text key={src.id} style={s.small}>
-              {t("answer.priceSource", { market: market(src.market), date: formatDate(src.date, lang) })}
-              {src.origin === "synthetic" ? ` (${t("answer.demoData")})` : ""}
-            </Text>
-          ))}
+          {answer.sources.map((src) =>
+            src.kind === "agromet" ? (
+              <Text key={src.id} style={[s.small, { color: colors.leaf }]} onPress={() => void Linking.openURL(src.url)} accessibilityRole="link">
+                {t("answer.agrometSource", { date: formatDate(src.issued_on, lang), until: formatDate(src.valid_until, lang) })}
+              </Text>
+            ) : (
+              <Text key={src.id} style={s.small}>
+                {t("answer.priceSource", { market: market(src.market), date: formatDate(src.date, lang) })}
+                {src.origin === "synthetic" ? ` (${t("answer.demoData")})` : ""}
+              </Text>
+            ),
+          )}
         </View>
       )}
 

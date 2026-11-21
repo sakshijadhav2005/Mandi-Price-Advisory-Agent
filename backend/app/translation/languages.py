@@ -7,6 +7,7 @@ keys (checked by tests) and a glossary, plus the UI strings in packages/i18n.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -25,6 +26,7 @@ class LanguagePack:
     glossary: dict[str, list[str]]  # canonical English term -> renderings in this language
     decision_words: dict[str, list[str]]  # decision -> word stems that express it (for consistency checks)
     advisory_words: list[str]  # stems that mark a storage / handling question
+    weather_words: list[str] = ()  # stems that mark a weather / spraying / crop-care question
 
 
 @lru_cache
@@ -41,10 +43,25 @@ def load_languages() -> dict[str, LanguagePack]:
             glossary=raw.get("glossary", {}),
             decision_words=raw.get("decision_words", {}),
             advisory_words=raw.get("advisory_words", []),
+            weather_words=raw.get("weather_words", []),
         )
     if "en" not in packs:
         raise RuntimeError("English language pack (en.json) is required as the fallback")
     return packs
+
+
+_WORD_START = r"\b"  # a Latin weather word must start a word
+
+
+def is_weather_question(text: str) -> bool:
+    """True for weather, rain, spraying, irrigation and crop-care questions (any language).
+    These are answered from the district's IMD agromet bulletin."""
+    lowered = text.lower()
+    for word in (w.lower() for p in load_languages().values() for w in p.weather_words):
+        # Latin words must start a word ("rain" but not "grain", "heat" but not "wheat").
+        if (re.search(_WORD_START + re.escape(word), lowered) if word.isascii() else word in lowered):
+            return True
+    return False
 
 
 def is_advisory_question(text: str) -> bool:

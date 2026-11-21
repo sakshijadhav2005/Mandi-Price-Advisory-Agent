@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
+from app.advisory.agromet import purge_old_bulletins
 from app.agent.data import today
 from app.agent.service import resolve_provider
 from app.api import admin, alerts, auth, chat, prices, voice
@@ -30,11 +31,13 @@ if get_settings().sentry_dsn:
 
 
 def _retention_loop(stop: threading.Event) -> None:
-    """Delete chat history older than HISTORY_RETENTION_DAYS now, then every hour."""
+    """Delete chat history older than HISTORY_RETENTION_DAYS and IMD bulletins older than
+    AGROMET_RETENTION_DAYS now, then every hour."""
     while True:
         try:
             with session_scope() as s:
                 purge_old_history(s)
+                purge_old_bulletins(s, today())
         except Exception:  # never let a cleanup error kill the thread
             logging.getLogger(__name__).exception("history retention run failed")
         if stop.wait(3600):

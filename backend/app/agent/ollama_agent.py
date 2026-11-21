@@ -18,11 +18,12 @@ import httpx
 from app.agent.llm_agent import LLMResult, LLMUnavailable, build_system_prompt, build_user_turn, call_tool_within_budget
 from app.agent.tools import ToolContext, function_tools, run_tool
 from app.config import get_settings
+from app.translation.languages import is_weather_question
 from app.translation.templates import t
 
 log = logging.getLogger(__name__)
 
-OPTIONAL_TOOLS = {"get_mandi_prices", "estimate_transport_cost"}
+OPTIONAL_TOOLS = {"get_mandi_prices", "estimate_transport_cost", "get_district_advisory"}
 
 
 def ollama_tools() -> list[dict]:
@@ -75,6 +76,13 @@ def run_ollama_agent(ctx: ToolContext, question: str, history: list[dict] | None
             decision_phrase = t(ctx.language, f"decision.{rec['decision']}", h=rec["horizon_days"])
         facts.append({"tool": "check_data_freshness", "result": {k: fresh.get(k) for k in ("fresh_markets", "total_markets", "usable")}})
 
+
+    if is_weather_question(question):
+        adv, err = run_tool(ctx, "get_district_advisory", {"crop": ctx.default_crop})
+        result.tool_calls += 1
+        if not err:
+            keep = ("available", "reason", "district", "issued_on", "valid_until", "forecast", "weather_summary", "crop_advice", "url")
+            facts.append({"tool": "get_district_advisory", "result": {k: adv.get(k) for k in keep}})
 
     user = build_user_turn(ctx, question)
     if facts:

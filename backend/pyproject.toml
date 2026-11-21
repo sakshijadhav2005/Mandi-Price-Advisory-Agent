@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-settings>=2.3",
     "SQLAlchemy>=2.0",
     "numpy>=1.26",
+    "pypdf>=4.0",  # reads IMD agromet bulletins
     "anthropic>=2.0",
     "PyJWT[crypto]>=2.8",  # crypto: RS256, to verify Google ID tokens
     "python-multipart>=0.0.9",

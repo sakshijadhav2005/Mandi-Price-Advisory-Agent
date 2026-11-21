@@ -47,7 +47,7 @@ Everything runs without paying for anything:
 
 | Part | Free option |
 |---|---|
-| Answers | The template writer (default). It gives the same decision, numbers and sources as any LLM. Questions outside prices and sell/hold get a short pointer to the agriculture office or KVK. |
+| Answers | The template writer (default). It gives the same decision, numbers and sources as any LLM, and answers weather and spraying questions from the district's IMD bulletin (forecast in the farmer's language; crop advice text in English with a link). Other questions get a short pointer to the agriculture office or KVK. |
 | Prices | A free data.gov.in API key (sign up on data.gov.in) for `fetch-data-gov`, or Agmarknet CSV downloads for `import-csv`. |
 | Voice input | The browser's speech recognition on the web; `pip install faster-whisper` and `STT_PROVIDER=whisper` for the mobile app. |
 | Spoken answers | The browser's or phone's speech engine (`TTS_PROVIDER=none`). For clear Marathi and Hindi, set `TTS_PROVIDER=sarvam` and `SARVAM_API_KEY` (Sarvam AI Bulbul voices); the web and mobile apps then play the server's voice. |
@@ -83,6 +83,8 @@ Mobile (Expo): `cd apps/mobile && npx expo start`, then open in Expo Go or an An
 Capacitor fallback: `npm run build -w apps/web`, then in `apps/capacitor`: `npx cap sync android && npx cap open android` (needs Android Studio). iOS, on a Mac with Xcode and CocoaPods: `npx cap sync ios && npx cap open ios`.
 
 Docker (Postgres + API + web + daily ingestion and alert job): `docker compose up --build`, then `docker compose exec api python manage.py seed-synthetic`.
+
+Weekly district farm advice: `python manage.py fetch-agromet` downloads the IMD agromet advisory bulletin (Gramin Krishi Mausam Sewa) for each district in `AGROMET_DISTRICTS` (default `pune`). It runs as part of `daily`, and `manage.py schedule` also runs it at 14:00 and 20:00 because bulletins come out twice a week at no fixed hour. A download is stored only if it is a real PDF with readable text and an issue date, and not the bulletin already stored; the district's previous bulletin is then marked superseded. Answers use a bulletin only until the last day of its forecast, and bulletins and their PDFs (`backend/data/agromet/`) are deleted after `AGROMET_RETENTION_DAYS` (30). When no valid bulletin is left, the assistant says so and `OPS_ALERT_WEBHOOK_URL` gets an alert. Plan for the other advisory features: [docs/rag-plan.md](docs/rag-plan.md).
 
 Real prices: set `DATA_GOV_IN_API_KEY` (free, from your data.gov.in account) and run `python manage.py daily` once a day. On Windows, `.\deploy\install-daily-task.ps1` registers a Task Scheduler job for 18:30 (log in `backend/daily.log`); on Linux use cron, or leave `manage.py schedule` running. Each API call is retried three times with a 20 s pause, because data.gov.in is often slow. It fetches prices, checks price alerts, and posts to `OPS_ALERT_WEBHOOK_URL` (Slack, Discord or Teams) when ingestion fails or returns nothing. Or import Agmarknet CSV exports with `python manage.py import-csv file.csv`.
 

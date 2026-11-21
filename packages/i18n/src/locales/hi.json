@@ -120,7 +120,8 @@
     "thanks": "धन्यवाद!",
     "offline": "साधारण जवाब (AI लेखक उपलब्ध नहीं)",
     "steps": "सहायक ने ये कदम उठाए",
-    "perQtl": "₹{{value}}/क्विंटल"
+    "perQtl": "₹{{value}}/क्विंटल",
+    "agrometSource": "IMD ज़िला सलाह, {{date}} ({{until}} तक मान्य)"
   },
   "prices": {
     "title": "मंडी भाव",

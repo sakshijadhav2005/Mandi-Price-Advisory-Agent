@@ -4,11 +4,12 @@
     python manage.py seed-synthetic [--days 730] [--end 2026-11-08]
     python manage.py import-csv path/to/agmarknet_export.csv [--source pilot_ground_truth]
     python manage.py fetch-data-gov            # needs DATA_GOV_IN_API_KEY
+    python manage.py fetch-agromet             # this week's IMD district advice (AGROMET_DISTRICTS)
     python manage.py purge-synthetic           # drop the demo prices once real ones arrive
     python manage.py purge-history             # delete chat history older than HISTORY_RETENTION_DAYS (30)
     python manage.py check-alerts              # evaluate price alerts, send push notifications
-    python manage.py daily                     # once: fetch prices, check alerts, alert ops on failure
-    python manage.py schedule                  # runs `daily` every day at --at
+    python manage.py daily                     # once: fetch prices and district advice, check alerts
+    python manage.py schedule                  # runs `daily` at --at, and fetch-agromet at 14:00 and 20:00
     python manage.py ask "kanda vikava ka?" --lang mr [--offline]
 """
 
@@ -20,6 +21,7 @@ import logging
 import sys
 import time
 from datetime import date, datetime, timedelta
+from datetime import time as dt_time
 from pathlib import Path
 
 from sqlalchemy import delete
@@ -83,11 +85,27 @@ def cmd_fetch_data_gov(_args) -> int:
     return n
 
 
+def cmd_fetch_agromet(_args) -> list[dict]:
+    """Download this week's IMD agromet bulletin for each district in AGROMET_DISTRICTS."""
+    from app.advisory.agromet import fetch_all
+
+    init_db()
+    with session_scope() as s:
+        results = fetch_all(s, today())
+    for r in results:
+        log.info("agromet %s: %s", r["district"], r)
+    return results
+
+
 def cmd_daily(args) -> None:
     """One daily run (for cron / Task Scheduler): fetch prices, check alerts, alert ops on failure."""
     from app.ops import run_daily
 
     log.info("daily job: %s", run_daily(lambda: cmd_fetch_data_gov(args), lambda: cmd_check_alerts(args)))
+    try:
+        cmd_fetch_agromet(args)
+    except Exception:  # district advice must never break the price job
+        log.exception("agromet fetch failed")
 
 
 def cmd_check_alerts(_args) -> None:
@@ -100,17 +118,27 @@ def cmd_check_alerts(_args) -> None:
 
 
 def cmd_schedule(args) -> None:
-    """Minimal daily scheduler. For production use cron, systemd timers or Celery beat."""
+    """Minimal scheduler: `daily` at --at, and the IMD bulletin check at 14:00 and 20:00
+    (bulletins come out on meeting days, at no fixed hour). For production use cron,
+    systemd timers or Celery beat."""
     init_db()
-    run_at = datetime.strptime(args.at, "%H:%M").time()
+    jobs = [(datetime.strptime(args.at, "%H:%M").time(), "daily"), (dt_time(14, 0), "agromet"), (dt_time(20, 0), "agromet")]
     while True:
         now = datetime.now()
-        target = datetime.combine(now.date(), run_at)
-        if target <= now:
-            target += timedelta(days=1)
-        log.info("next price ingestion at %s", target)
+        upcoming = []
+        for at, job in jobs:
+            target = datetime.combine(now.date(), at)
+            upcoming.append((target if target > now else target + timedelta(days=1), job))
+        target, job = min(upcoming)
+        log.info("next job %s at %s", job, target)
         time.sleep((target - now).total_seconds())
-        cmd_daily(args)
+        if job == "daily":
+            cmd_daily(args)
+        else:
+            try:
+                cmd_fetch_agromet(args)
+            except Exception:
+                log.exception("agromet fetch failed")
 
 
 def cmd_ask(args) -> None:
@@ -146,6 +174,7 @@ def main() -> None:
     sp.add_argument("--source", default="agmarknet_csv", help="e.g. pilot_ground_truth for prices farmers actually received")
     sp.set_defaults(func=cmd_import_csv)
     sub.add_parser("fetch-data-gov").set_defaults(func=cmd_fetch_data_gov)
+    sub.add_parser("fetch-agromet").set_defaults(func=cmd_fetch_agromet)
     sub.add_parser("purge-synthetic").set_defaults(func=cmd_purge_synthetic)
     sub.add_parser("purge-history").set_defaults(func=cmd_purge_history)
     sub.add_parser("check-alerts").set_defaults(func=cmd_check_alerts)

@@ -29,7 +29,15 @@
     "alert.above": "{crop} at {market} is now ₹{price}/quintal (reported {date}), above your ₹{threshold} alert.",
     "alert.below": "{crop} at {market} is now ₹{price}/quintal (reported {date}), below your ₹{threshold} alert.",
     "reason.seasonal_rise": "Last year, prices rose about {season}% over the same {h} days.",
-    "out_of_scope": "I can't advise on that yet. For storage, pests, fertiliser or government schemes, please ask your agriculture office or Krishi Vigyan Kendra (KVK)."
+    "out_of_scope": "I can't advise on that yet. For storage, pests, fertiliser or government schemes, please ask your agriculture office or Krishi Vigyan Kendra (KVK).",
+    "agromet_header": "IMD advisory for {district}, issued {issued} (valid till {valid}).",
+    "agromet_dry": "No rain is expected in the next {days} days.",
+    "agromet_rain": "Rain is expected on {dates} ({mm} mm in total).",
+    "agromet_temp": "Day temperature {tmax_lo}–{tmax_hi}°C, night {tmin_lo}–{tmin_hi}°C.",
+    "agromet_crop": "Advice for {crop}: {advice}",
+    "agromet_more": "Full crop-wise advice: {url}",
+    "agromet_unavailable": "There is no current IMD district advisory for {district}. Check the Meghdoot app or ask your KVK.",
+    "agromet_rain_note": "IMD forecast: rain on {dates}. Plan harvest, storage and transport around it."
   },
   "glossary": {
     "onion": [
@@ -205,5 +213,23 @@
     "handling",
     "spoil",
     "keep"
+  ],
+  "weather_words": [
+    "weather",
+    "rain",
+    "forecast",
+    "temperature",
+    "spray",
+    "irrigat",
+    "humid",
+    "hail",
+    "frost",
+    "cold wave",
+    "heat",
+    "imd",
+    "agromet",
+    "pest",
+    "disease",
+    "this week"
   ]
 }

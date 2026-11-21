@@ -49,7 +49,7 @@ def test_ollama_grounded_answer(session, ollama):
     assert ans.mode == "llm", ans.warnings
     assert ans.usage["model"] == "ollama:qwen2.5:3b"
     assert [t["tool"] for t in ans.trace] == ["check_data_freshness", "compute_recommendation"]
-    assert {t["function"]["name"] for t in calls[0]["tools"]} == {"get_mandi_prices", "estimate_transport_cost"}
+    assert {t["function"]["name"] for t in calls[0]["tools"]} == {"get_mandi_prices", "estimate_transport_cost", "get_district_advisory"}
     for tool in calls[0]["tools"]:
         for prop in tool["function"]["parameters"]["properties"].values():
             assert isinstance(prop["type"], str)

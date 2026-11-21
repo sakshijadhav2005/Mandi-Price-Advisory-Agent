@@ -120,7 +120,8 @@
     "thanks": "Thank you!",
     "offline": "Basic answer (AI writer unavailable)",
     "steps": "Steps the assistant took",
-    "perQtl": "₹{{value}}/qtl"
+    "perQtl": "₹{{value}}/qtl",
+    "agrometSource": "IMD district advisory, {{date}} (valid till {{until}})"
   },
   "prices": {
     "title": "Mandi prices",

@@ -54,7 +54,19 @@ export interface PriceSource {
   origin: string;
 }
 
-export type Source = PriceSource;
+/** This week's IMD agromet advisory for the farmer's district. */
+export interface AgrometSource {
+  id: string;
+  kind: "agromet";
+  title: string;
+  district: string;
+  issued_on: string;
+  valid_until: string;
+  url: string;
+  origin: string;
+}
+
+export type Source = PriceSource | AgrometSource;
 
 export interface TraceStep {
   tool: string;

@@ -106,6 +106,18 @@ class Settings(BaseSettings):
 
     # Pilot / admin
     admin_token: str = ""  # enables /admin endpoints when set
+    # Weekly district farm advice: the IMD agromet advisory bulletin (Gramin Krishi Mausam Sewa).
+    agromet_districts: str = "pune"  # comma-separated district ids to fetch; empty turns the feature off
+    agromet_url_template: str = (
+        "https://mausam.imd.gov.in/imd_latest/contents/agromet/agromet-data/district/current/english-pdf/{name}.pdf"
+    )
+    agromet_retention_days: int = 30  # bulletins and their PDFs older than this are deleted
+    agromet_dir: str = ""  # where bulletin PDFs are kept; default backend/data/agromet
+
+    @property
+    def agromet_district_list(self) -> list[str]:
+        return [d.strip().lower() for d in self.agromet_districts.split(",") if d.strip()]
+
     history_retention_days: int = 30  # chat questions/answers older than this are deleted; 0 keeps them forever
     sentry_dsn: str = ""
 

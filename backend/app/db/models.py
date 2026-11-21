@@ -187,3 +187,27 @@ class Notification(Base):
     pushed: Mapped[int] = mapped_column(Integer, default=0)
     read: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AgrometBulletin(Base):
+    """One IMD district agromet advisory bulletin (issued twice a week).
+
+    `status` is "active" for the latest bulletin of a district and "superseded" once a newer
+    one arrives. Answers use a bulletin only while it is active and `valid_until` has not
+    passed; old rows and their PDFs are deleted after AGROMET_RETENTION_DAYS.
+    """
+
+    __tablename__ = "agromet_bulletins"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    district: Mapped[str] = mapped_column(String(32), index=True)
+    language: Mapped[str] = mapped_column(String(8), default="en")
+    issued_on: Mapped[date] = mapped_column(Date)
+    valid_until: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(16), default="active")
+    sha256: Mapped[str] = mapped_column(String(64), unique=True)
+    source_url: Mapped[str] = mapped_column(String(500))
+    file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    data: Mapped[dict] = mapped_column(JSON)  # parsed forecast table and sections
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+

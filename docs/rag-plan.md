@@ -1,8 +1,8 @@
 # Advisory knowledge (RAG) plan: Pune district
 
-Status: plan, 2026-11-21. Nothing in this document is built yet; the app currently answers
-mandi price and sell/hold questions only, and points every other question to the
-agriculture office or KVK.
+Status, 2026-11-21: **feature 1 (this week's farm advice) is built** (`backend/app/advisory/agromet.py`,
+`manage.py fetch-agromet`, tool `get_district_advisory`, tests in `backend/tests/test_agromet.py`).
+Features 2-5 are planned. Other questions are pointed to the agriculture office or KVK.
 
 ## 1. Goal and scope
 
@@ -99,7 +99,7 @@ which is published by IMD and used as is).
 
 ## 4. Feature plans
 
-### 4.1 This week's farm advice (build first)
+### 4.1 This week's farm advice (built)
 
 - **Source:** IMD current district bulletin,
   `https://mausam.imd.gov.in/imd_latest/contents/agromet/agromet-data/district/current/english-pdf/Pune.pdf`.

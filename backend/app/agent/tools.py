@@ -130,6 +130,51 @@ def get_mandi_prices(ctx: ToolContext, crop: str | None = None, market: str | No
     return {"crop": c.id, "unit": "Rs per quintal", "as_of": ctx.as_of.isoformat(), "days": days, "markets": out}
 
 
+def get_district_advisory(ctx: ToolContext, crop: str | None = None) -> dict:
+    """This week's IMD agromet advisory for the farmer's district: forecast, weather summary
+    and the advice for the crop. Only a bulletin that is still valid is ever returned."""
+    from app.advisory.agromet import current_bulletin
+
+    ref = load_reference()
+    district = _scope(ctx).district
+    name = ref.districts[district].names.get(ctx.language, ref.districts[district].name)
+    if district not in get_settings().agromet_district_list:
+        return {"available": False, "district": name, "reason": "District farm advice is not available for this district yet."}
+    bulletin = current_bulletin(ctx.session, district, ctx.as_of)
+    if bulletin is None:
+        return {"available": False, "district": name, "reason": "There is no current IMD bulletin for this district (the last one has expired)."}
+    crop_id = _crop(ctx, crop).id if (crop or ctx.default_crop) else None
+    data = bulletin.data
+    forecast = [
+        {**f, "day": date.fromisoformat(f["date"]).day, "month": date.fromisoformat(f["date"]).month} for f in data.get("forecast", [])
+    ]
+    source_id = ctx.add_source(
+        f"agromet:{district}:{bulletin.issued_on.isoformat()}",
+        kind="agromet",
+        title=f"IMD agromet advisory, {name}",
+        district=district,
+        issued_on=bulletin.issued_on.isoformat(),
+        valid_until=bulletin.valid_until.isoformat(),
+        url=bulletin.source_url,
+        origin="IMD Gramin Krishi Mausam Sewa",
+    )
+    return {
+        "available": True,
+        "district": name,
+        "issued_on": bulletin.issued_on.isoformat(),
+        "valid_until": bulletin.valid_until.isoformat(),
+        "source_id": source_id,
+        "url": bulletin.source_url,
+        "forecast": forecast,
+        "rain_days": [f["date"] for f in forecast if (f.get("rain_mm") or 0) > 0],
+        "weather_summary": data.get("sections", {}).get("weather_summary", ""),
+        "extended_range": data.get("sections", {}).get("extended_range", ""),
+        "crop": crop_id,
+        "crop_advice": data.get("crops", {}).get(crop_id) if crop_id else None,
+        "general_advisory": data.get("sections", {}).get("general", "")[:1500],
+    }
+
+
 def estimate_transport_cost(ctx: ToolContext, market: str, quantity_qtl: float | None = None) -> dict:
     ref = load_reference()
     scope = _scope(ctx)
@@ -190,6 +235,7 @@ TOOL_FUNCS: dict[str, Callable[..., dict]] = {
     "check_data_freshness": check_data_freshness,
     "get_mandi_prices": get_mandi_prices,
     "estimate_transport_cost": estimate_transport_cost,
+    "get_district_advisory": get_district_advisory,
     "compute_recommendation": compute_recommendation,
 }
 
@@ -241,6 +287,17 @@ def tool_schemas() -> list[dict]:
                     "quantity_qtl": _nullable("number", description="Quantity in quintals, or null."),
                 },
                 "required": ["market", "quantity_qtl"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "get_district_advisory",
+            "description": "This week's official farm advice for the farmer's district from the IMD agromet advisory bulletin (Gramin Krishi Mausam Sewa): 5-day forecast (rain, temperature), weather summary, extended outlook, general advice and the advice for the crop. Use it for weather, rain, spraying, irrigation and crop-care questions, and to warn about rain in a sell/hold answer. Returns available=false when there is no valid bulletin.",
+            "strict": True,
+            "input_schema": {
+                "type": "object",
+                "properties": {"crop": crop_prop},
+                "required": ["crop"],
                 "additionalProperties": False,
             },
         },
@@ -316,6 +373,8 @@ def _summarise(name: str, result: dict) -> str:
         return f"{result['fresh_markets']}/{result['total_markets']} markets fresh"
     if name == "get_mandi_prices":
         return f"{len(result['markets'])} markets"
+    if name == "get_district_advisory":
+        return f"IMD bulletin of {result['issued_on']}" if result.get("available") else "no valid district bulletin"
     if name == "estimate_transport_cost":
         return f"Rs {result['transport_per_qtl']}/qtl to {result['market']}"
     if name == "compute_recommendation":
