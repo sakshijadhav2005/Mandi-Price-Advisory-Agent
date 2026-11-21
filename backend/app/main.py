@@ -15,7 +15,6 @@ from app.config import get_settings
 from app.db.retention import purge_old_history
 from app.db.session import init_db, session_scope
 from app.reference import load_reference
-from app.retrieval.index import get_index
 from app.translation.languages import load_languages
 from app.voice.adapters import capabilities
 
@@ -45,7 +44,6 @@ def _retention_loop(stop: threading.Event) -> None:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    threading.Thread(target=get_index, daemon=True).start()  # warm the advisory index
     stop = threading.Event()
     threading.Thread(target=_retention_loop, args=(stop,), daemon=True).start()
     yield

@@ -158,10 +158,8 @@ def pipeline_eval(points: list[dict], per_crop: int, use_llm: bool) -> dict:
     from app.agent.service import answer_query
     from app.db.models import Price
     from app.db.session import session_scope
-    from app.retrieval.index import get_index
 
     ref = load_reference()
-    chunk_ids = {c.chunk_id for c in get_index().chunks}
     rng = random.Random(3)
     chosen = []
     for crop in ref.crops:
@@ -189,12 +187,10 @@ def pipeline_eval(points: list[dict], per_crop: int, use_llm: bool) -> dict:
                 m["grounded"].append(int(not ungrounded_numbers(ans.text, [ans.recommendation or {}, *ans.sources])))
                 valid = 0
                 for src in ans.sources:
-                    if src["kind"] == "price":
+                    if src["kind"] == "price":  # every source is a price row now
                         valid += bool(
                             s.scalar(select(Price.id).where(Price.crop == src["crop"], Price.market == src["market"], Price.price_date == date.fromisoformat(src["date"])).limit(1))
                         )
-                    else:
-                        valid += src["id"].removeprefix("advisory:") in chunk_ids
                 m["citation_valid"].append(valid / len(ans.sources) if ans.sources else 0.0)
                 m["has_sources"].append(int(bool(ans.sources)))
                 m["llm_used"].append(int(ans.mode == "llm"))

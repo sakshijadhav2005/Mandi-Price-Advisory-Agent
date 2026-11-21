@@ -1,0 +1,103 @@
+{
+  "generated": "2026-11-21",
+  "district": "pune",
+  "documents": [
+    {
+      "feature": "weekly-advice",
+      "path": "1-weekly-advice/imd-pune-current-en.pdf",
+      "url": "https://mausam.imd.gov.in/imd_latest/contents/agromet/agromet-data/district/current/english-pdf/Pune.pdf",
+      "publisher": "IMD / Gramin Krishi Mausam Sewa, AMFU Pune (College of Agriculture, Pune)",
+      "note": "Issued twice a week; replaced on each issue",
+      "bytes": 689277,
+      "sha256": "30bd0435c82bb3d1fe254b9c213a67e657c6693688cd636f3d00cfff82df08f8",
+      "fetched_at": "2026-11-21T17:39:27+00:00"
+    },
+    {
+      "feature": "schemes",
+      "path": "5-schemes/pmfby-operational-guidelines-2020.pdf",
+      "url": "https://pmfby.gov.in/pdf/Revamped%20Operational%20Guidelines_17th%20August%202020.pdf",
+      "publisher": "Ministry of Agriculture & Farmers Welfare (PMFBY)",
+      "note": "Revamped operational guidelines, 17 Aug 2020",
+      "bytes": 9871316,
+      "sha256": "fc57c66ee9a275309bdcf84a81398376075bdd8657d026c673ef363a3a7616f8",
+      "fetched_at": "2026-11-21T17:39:31+00:00"
+    },
+    {
+      "feature": "pesticides",
+      "path": "3-pesticides/cibrc-insecticides-2026-09-30.pdf",
+      "url": "https://ppqs.gov.in/sites/default/files/MUP%20%28insecticide%29%20%2030.09.2026.pdf",
+      "publisher": "Central Insecticides Board & Registration Committee (CIB&RC), PPQS, Ministry of Agriculture",
+      "note": "Major uses of pesticides as on 30.09.2026",
+      "bytes": 1776721,
+      "sha256": "e0aaa0826d1134361ccba09ae649dbbda442ef8773c35af70e14282fe4d6ced1",
+      "fetched_at": "2026-11-21T17:40:34+00:00"
+    },
+    {
+      "feature": "pesticides",
+      "path": "3-pesticides/cibrc-herbicides-2026-09-30.pdf",
+      "url": "https://ppqs.gov.in/sites/default/files/4.%20Herbicides%20MUP%20as%20on%2030.09.2026.pdf",
+      "publisher": "Central Insecticides Board & Registration Committee (CIB&RC), PPQS, Ministry of Agriculture",
+      "note": "Major uses of pesticides as on 30.09.2026",
+      "bytes": 1099904,
+      "sha256": "ef5768101e7edaf7076a78fe9090d779e4b799df50fbb2ed13d1159bb53277ce",
+      "fetched_at": "2026-11-21T17:40:34+00:00"
+    },
+    {
+      "feature": "pesticides",
+      "path": "3-pesticides/cibrc-fungicides-2026-09-30.pdf",
+      "url": "https://ppqs.gov.in/sites/default/files/Fungicide%20MUP%20%20as%20on%2030.09.2026.pdf",
+      "publisher": "Central Insecticides Board & Registration Committee (CIB&RC), PPQS, Ministry of Agriculture",
+      "note": "Major uses of pesticides as on 30.09.2026",
+      "bytes": 1488481,
+      "sha256": "e6a539cfd2657c8dec752827d4da777e16ab3f4915bbbc88abed9248018136f4",
+      "fetched_at": "2026-11-21T17:40:35+00:00"
+    },
+    {
+      "feature": "pesticides",
+      "path": "3-pesticides/cibrc-bio-fungicides-2026-09-30.pdf",
+      "url": "https://ppqs.gov.in/sites/default/files/3.%20bio%20fungicides%20MUP%20as%20on%2030.09.2026.pdf",
+      "publisher": "Central Insecticides Board & Registration Committee (CIB&RC), PPQS, Ministry of Agriculture",
+      "note": "Major uses of pesticides as on 30.09.2026",
+      "bytes": 341443,
+      "sha256": "d684bb54569bcfeb66842f5fb0d1870fa488e473f1c08d9aca4f9e8b01c5939a",
+      "fetched_at": "2026-11-21T17:40:35+00:00"
+    },
+    {
+      "feature": "pesticides",
+      "path": "3-pesticides/cibrc-bio-insecticides-2026-09-30.pdf",
+      "url": "https://ppqs.gov.in/sites/default/files/MUP%20%28bio%20insecticide%29%2030.09.2026.pdf",
+      "publisher": "Central Insecticides Board & Registration Committee (CIB&RC), PPQS, Ministry of Agriculture",
+      "note": "Major uses of pesticides as on 30.09.2026",
+      "bytes": 497050,
+      "sha256": "0d89307acdea8ea0b59f6e0451ec2c764aece9f1df828852b3a865225900713c",
+      "fetched_at": "2026-11-21T17:40:35+00:00"
+    }
+  ],
+  "pending": [
+    {
+      "feature": "weekly-advice",
+      "what": "IMD Pune bulletin in Marathi",
+      "why": "IMD builds regional-language links with JavaScript; address not yet known (guessed regional-pdf/Pune.pdf returned 404)"
+    },
+    {
+      "feature": "kcc",
+      "what": "Kisan Call Centre transcripts, Pune district",
+      "why": "Comes from the data.gov.in API, which was timing out on 2026-11-21"
+    },
+    {
+      "feature": "storage",
+      "what": "ICAR-DOGR onion storage publications (English, Marathi newsletter)",
+      "why": "dogr.icar.gov.in did not resolve (DNS) and krishi.icar.gov.in refused connections on 2026-11-21"
+    },
+    {
+      "feature": "pesticides",
+      "what": "List of pesticides banned / restricted in India",
+      "why": "Not linked from the CIB&RC major-uses page; to locate on ppqs.gov.in"
+    },
+    {
+      "feature": "schemes",
+      "what": "PM-KISAN operational guidelines",
+      "why": "pmkisan.gov.in failed with a TLS certificate error on 2026-11-21"
+    }
+  ]
+}

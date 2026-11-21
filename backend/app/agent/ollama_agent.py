@@ -3,7 +3,7 @@
 Small local models (3-8B) are less reliable at multi-step tool use than Claude,
 so this path is "grounded generation": the server runs the freshness check and
 the recommendation itself and hands the model those facts. The model may still
-call search_advisories / get_mandi_prices / estimate_transport_cost for extra
+call get_mandi_prices / estimate_transport_cost for extra
 detail, within the same tool budget. The usual guardrails (answer language,
 number grounding) apply afterwards, with the template writer as fallback.
 """
@@ -18,12 +18,11 @@ import httpx
 from app.agent.llm_agent import LLMResult, LLMUnavailable, build_system_prompt, build_user_turn, call_tool_within_budget
 from app.agent.tools import ToolContext, function_tools, run_tool
 from app.config import get_settings
-from app.translation.languages import is_advisory_question
 from app.translation.templates import t
 
 log = logging.getLogger(__name__)
 
-OPTIONAL_TOOLS = {"search_advisories", "get_mandi_prices", "estimate_transport_cost"}
+OPTIONAL_TOOLS = {"get_mandi_prices", "estimate_transport_cost"}
 
 
 def ollama_tools() -> list[dict]:
@@ -76,11 +75,6 @@ def run_ollama_agent(ctx: ToolContext, question: str, history: list[dict] | None
             decision_phrase = t(ctx.language, f"decision.{rec['decision']}", h=rec["horizon_days"])
         facts.append({"tool": "check_data_freshness", "result": {k: fresh.get(k) for k in ("fresh_markets", "total_markets", "usable")}})
 
-    if is_advisory_question(question):
-        adv, err = run_tool(ctx, "search_advisories", {"query": question, "crop": ctx.default_crop})
-        result.tool_calls += 1
-        if not err and adv["results"]:
-            facts.append({"tool": "search_advisories", "result": [{"title": h["title"], "language": h["language"], "text": h["text"]} for h in adv["results"][:2]]})
 
     user = build_user_turn(ctx, question)
     if facts:

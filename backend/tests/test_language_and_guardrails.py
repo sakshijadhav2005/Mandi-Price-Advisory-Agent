@@ -2,8 +2,6 @@ import pytest
 
 from app.agent.guardrails import language_ok, ungrounded_numbers
 from app.reference import detect_crop, detect_market, detect_quantity_qtl
-from app.retrieval.index import get_index
-from app.translation.glossary import expand_query
 from app.translation.languages import load_languages
 from app.translation.templates import inr
 
@@ -60,17 +58,3 @@ def test_templates_have_same_keys_in_every_language():
         assert set(pack.templates) == keys, code
         assert pack.glossary, code
 
-
-def test_query_expansion_crosses_languages():
-    q = expand_query("कांदा साठवण")
-    assert "onion" in q and "storage" in q
-
-
-def test_hybrid_retrieval_finds_storage_advice_across_languages():
-    idx = get_index()
-    en = idx.search("how to store onions to avoid rot", crop="onion", language="en")
-    assert en and en[0]["crop"] == "onion"
-    mr = idx.search("कांदा साठवण चाळ", crop="onion", language="mr")
-    assert mr[0]["language"] == "mr"
-    tomato = idx.search("crates transport bruising", crop="tomato")
-    assert all(h["crop"] in ("tomato", "all") for h in tomato)

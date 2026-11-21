@@ -72,19 +72,12 @@ export function AnswerCard({
 
       {open && (
         <View style={{ gap: 6 }}>
-          {answer.sources.map((src) =>
-            src.kind === "price" ? (
-              <Text key={src.id} style={s.small}>
-                {t("answer.priceSource", { market: market(src.market), date: formatDate(src.date, lang) })}
-                {src.origin === "synthetic" ? ` (${t("answer.demoData")})` : ""}
-              </Text>
-            ) : (
-              <View key={src.id} style={{ backgroundColor: "#fafaf9", borderRadius: 8, padding: 8 }}>
-                <Text style={{ fontWeight: "600" }}>{src.title}</Text>
-                <Text style={s.small}>{src.excerpt}…</Text>
-              </View>
-            ),
-          )}
+          {answer.sources.map((src) => (
+            <Text key={src.id} style={s.small}>
+              {t("answer.priceSource", { market: market(src.market), date: formatDate(src.date, lang) })}
+              {src.origin === "synthetic" ? ` (${t("answer.demoData")})` : ""}
+            </Text>
+          ))}
         </View>
       )}
 

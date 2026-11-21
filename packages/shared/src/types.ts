@@ -54,20 +54,7 @@ export interface PriceSource {
   origin: string;
 }
 
-export interface AdvisorySource {
-  id: string;
-  kind: "advisory";
-  title: string;
-  language: string;
-  published: string;
-  origin: string;
-  excerpt: string;
-  /** Scheme documents: the official page and helpline. */
-  url?: string | null;
-  helpline?: string | null;
-}
-
-export type Source = PriceSource | AdvisorySource;
+export type Source = PriceSource;
 
 export interface TraceStep {
   tool: string;
@@ -217,35 +204,3 @@ export interface Transcript {
   needs_confirmation: boolean;
 }
 
-/** An advisory document the agent answers from (built-in bulletin or admin upload). */
-export interface AdminDocument {
-  id: string;
-  title: string;
-  crop: string;
-  language: string;
-  source: string;
-  published: string;
-  /** "all" for national documents (central schemes), else the state it applies to. */
-  state: string;
-  url: string | null;
-  helpline: string | null;
-  filename: string;
-  format: string;
-  chunks: number;
-  words: number;
-  uploaded_at: string | null;
-  deletable: boolean;
-}
-
-export interface DocumentUpload {
-  file: Blob;
-  filename: string;
-  title?: string;
-  crop?: string;
-  language?: string;
-  source?: string;
-  published?: string;
-  state?: string;
-  url?: string;
-  helpline?: string;
-}

@@ -9,8 +9,6 @@ os.environ["AS_OF_OVERRIDE"] = "2026-11-08"
 os.environ["LLM_ENABLED"] = "false"
 os.environ["LLM_PROVIDER"] = "anthropic"  # tests that enable the LLM use a fake Claude client
 os.environ["AUTH_REQUIRED"] = "false"
-# Sample advisory documents for retrieval tests (the app ships with none; admins add the real ones).
-os.environ["ADVISORY_DOCS_DIR"] = str(Path(__file__).parent / "fixtures" / "bulletins")
 
 import pytest  # noqa: E402
 

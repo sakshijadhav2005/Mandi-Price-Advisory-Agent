@@ -23,15 +23,13 @@
     "reason.some_markets_stale": "Some markets have not reported prices recently and were left out: {stale}.",
     "insufficient": "The latest price reports for {crop} are older than {days} days or missing, so I cannot give reliable sell or hold advice. Please check today's rate at the mandi or with your trader before selling.",
     "unsupported_crop": "I can currently advise on these crops only: {crops}. Please ask about one of them.",
-    "advice_tip": "Tip: {tip}",
     "synthetic_note": "Note: these prices are demo (synthetic) data, not real market reports.",
     "disclaimer": "This is decision support, not a guarantee. Prices can change; confirm with your trader before you sell.",
     "alert.title": "{crop} price alert",
     "alert.above": "{crop} at {market} is now ₹{price}/quintal (reported {date}), above your ₹{threshold} alert.",
     "alert.below": "{crop} at {market} is now ₹{price}/quintal (reported {date}), below your ₹{threshold} alert.",
-    "advice_from": "From the crop advisory ({title}):",
     "reason.seasonal_rise": "Last year, prices rose about {season}% over the same {h} days.",
-    "official_contact": "To confirm the latest rules: {contact}."
+    "out_of_scope": "I can't advise on that yet. For storage, pests, fertiliser or government schemes, please ask your agriculture office or Krishi Vigyan Kendra (KVK)."
   },
   "glossary": {
     "onion": [

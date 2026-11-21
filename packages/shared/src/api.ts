@@ -1,11 +1,9 @@
 import type {
-  AdminDocument,
   AppNotification,
   ChatAnswer,
   ChatRequest,
   ConversationDetail,
   ConversationSummary,
-  DocumentUpload,
   Meta,
   PriceAlert,
   PricesResponse,
@@ -230,27 +228,6 @@ export class ApiClient {
 
   adminStats(adminToken: string) {
     return this.request<Record<string, unknown>>("/admin/stats", { headers: { "X-Admin-Token": adminToken } });
-  }
-
-  adminDocuments(adminToken: string) {
-    return this.request<AdminDocument[]>("/admin/documents", { headers: { "X-Admin-Token": adminToken } });
-  }
-
-  uploadDocument(adminToken: string, doc: DocumentUpload) {
-    const form = new FormData();
-    form.append("file", doc.file, doc.filename);
-    for (const key of ["title", "crop", "language", "source", "published", "state", "url", "helpline"] as const) {
-      const v = doc[key];
-      if (v) form.append(key, v);
-    }
-    return this.request<AdminDocument>("/admin/documents", { method: "POST", body: form, headers: { "X-Admin-Token": adminToken } });
-  }
-
-  deleteDocument(adminToken: string, id: string) {
-    return this.request<{ deleted: boolean }>(`/admin/documents/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-      headers: { "X-Admin-Token": adminToken },
-    });
   }
 
   async speak(text: string, language: string): Promise<Blob> {

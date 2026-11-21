@@ -2,7 +2,7 @@
 
 A multilingual (English, Hindi, Marathi) agent that helps small farmers decide whether to **sell now or hold** their vegetables (28 of them: onion, tomato, potato, brinjal, okra, cauliflower, cabbage, chillies, gourds, beans, peas, leafy greens, garlic, ginger and more) in any of India's 789 districts. Nashik and Pune (Maharashtra) are the pilot, with hand-checked markets. It answers with a recommendation, a confidence level, the reasoning, and the sources it used, and it says "not enough data" when prices are stale. See [docs/plan.md](docs/plan.md) for the full plan.
 
-> **Status: code for all five plan phases is in place, running on synthetic prices.** Real Agmarknet / data.gov.in ingestion is implemented but not yet connected (it needs an API key and confirmation that the pilot mandis publish daily). The app ships with no advisory documents: add official ones (crop bulletins, government schemes) as described under "Advisory documents and government schemes" below. Every synthetic price is tagged as such in the API and UI.
+> **Status: code for all five plan phases is in place, running on synthetic prices.** Real Agmarknet / data.gov.in ingestion is implemented but not yet connected (it needs an API key and confirmation that the pilot mandis publish daily). The assistant advises only on mandi prices and sell/hold; storage, scheme and other questions get a pointer to the local agriculture office or KVK. Every synthetic price is tagged as such in the API and UI.
 
 ## What's here
 
@@ -13,12 +13,11 @@ A multilingual (English, Hindi, Marathi) agent that helps small farmers decide w
 | `backend/app/agent/llm_agent.py` | Claude tool-use loop (`claude-opus-5-5`, low effort, server-side refusal fallback enabled) with the fixed 6-call tool budget. |
 | `backend/app/agent/guardrails.py` | Rejects LLM answers in the wrong language, or with any figure that can't be traced to a tool result. A rejected answer is replaced by the template writer. |
 | `backend/app/agent/fallback.py` | Template answer writer in all 3 languages. Used when no LLM is configured, so the app and evaluation run offline. |
-| `backend/app/retrieval/index.py` | Hybrid retrieval: BM25 + character n-gram vectors, fused with RRF, with glossary-based cross-language query expansion. |
 | `backend/app/ingestion/` | data.gov.in API adapter, Agmarknet CSV importer, synthetic generator. |
 | `backend/app/api/` | FastAPI: `/auth/otp/*`, `/auth/google`, `/chat`, `/ws/chat`, `/prices`, `/conversations`, `/feedback`, `/voice/*`, `/meta`. OpenAPI docs at `/docs`. |
 | `backend/app/voice/` | Whisper speech-to-text, Sarvam AI, Google Cloud and Azure text-to-speech (with an answer cache), and WER/CER metrics. |
 | `backend/app/alerts.py`, `api/alerts.py` | Price alerts: thresholds checked after each daily ingestion, Expo push to phones, in-app inbox for the web. |
-| `backend/app/api/admin.py` | Pilot monitoring: `/admin/stats` (answers, helpful rate, voice share, latency per language) and `/admin/export.csv`. Document management: `/admin/documents` (list, upload PDF/Markdown/text, delete uploads); an upload is indexed at once and the agent answers from it on the next question. Enabled by `ADMIN_TOKEN`; the web app's **Admin** page (link at the bottom of Settings, or `/admin`) uses it. |
+| `backend/app/api/admin.py` | Pilot monitoring: `/admin/stats` (answers, helpful rate, voice share, latency per language) and `/admin/export.csv`. Enabled by `ADMIN_TOKEN` (send it as `X-Admin-Token`). |
 | `backend/app/db/retention.py` | Deletes chat questions and answers (and their feedback) older than `HISTORY_RETENTION_DAYS` (30) at startup and every hour; `python manage.py purge-history` runs it by hand. |
 | `backend/data/languages/*.json` | Language packs: answer templates, glossary, speech locale, script. Adding a language needs no code change. |
 | `packages/shared` | TypeScript API client, types, formatting helpers and the voice state machine, shared by web and mobile. |
@@ -48,7 +47,7 @@ Everything runs without paying for anything:
 
 | Part | Free option |
 |---|---|
-| Answers | The template writer (default). It gives the same decision, numbers and sources as any LLM, and answers storage and handling questions from the bulletin passages in the farmer's language. |
+| Answers | The template writer (default). It gives the same decision, numbers and sources as any LLM. Questions outside prices and sell/hold get a short pointer to the agriculture office or KVK. |
 | Prices | A free data.gov.in API key (sign up on data.gov.in) for `fetch-data-gov`, or Agmarknet CSV downloads for `import-csv`. |
 | Voice input | The browser's speech recognition on the web; `pip install faster-whisper` and `STT_PROVIDER=whisper` for the mobile app. |
 | Spoken answers | The browser's or phone's speech engine (`TTS_PROVIDER=none`). For clear Marathi and Hindi, set `TTS_PROVIDER=sarvam` and `SARVAM_API_KEY` (Sarvam AI Bulbul voices); the web and mobile apps then play the server's voice. |
@@ -97,7 +96,7 @@ How the feed is mapped onto the pilot markets:
 ## Tests
 
 ```bash
-cd backend && python -m pytest          # decision engine, guardrails, retrieval, Claude/Gemini/Groq/Ollama loops (fake servers), API, voice, alerts, admin, districts, ops alerts
+cd backend && python -m pytest          # decision engine, guardrails, Claude/Gemini/Groq/Ollama loops (fake servers), API, voice, alerts, admin, districts, ops alerts
 node node_modules/vitest/vitest.mjs run  # in packages/shared and apps/web
 ```
 
@@ -112,7 +111,7 @@ node ../../node_modules/@playwright/test/cli.js test   # or: npx playwright test
 
 Mobile UI flows (Maestro, on an emulator or phone with the app installed and the backend running): `maestro test apps/mobile/.maestro`.
 
-Optional backend extras: `pip install -e ".[semantic]"` and `RETRIEVAL_EMBEDDER=sentence-transformers` for multilingual sentence embeddings (a Marathi question then matches English bulletins without the glossary); `pip install -e ".[s3]"` and `S3_BUCKET=...` to keep consented voice recordings in S3-compatible storage. Recordings are kept only when `STORE_VOICE_RECORDINGS=true` **and** the farmer turns on "keep my voice recordings" in Settings; otherwise they are deleted right after transcription.
+Optional backend extras: `pip install -e ".[s3]"` and `S3_BUCKET=...` to keep consented voice recordings in S3-compatible storage. Recordings are kept only when `STORE_VOICE_RECORDINGS=true` **and** the farmer turns on "keep my voice recordings" in Settings; otherwise they are deleted right after transcription.
 
 ## Evaluation
 
@@ -146,31 +145,14 @@ Login and signup are one step: the first successful login creates the account, a
 ## Adding a crop, market or language
 
 - All of India: `backend/data/india_districts.json` lists every district with its state and centre, built by `python tools/build_india_districts.py INDIA_DISTRICTS.geojson` from the MIT-licensed boundaries in [datta07/INDIAN-SHAPEFILES](https://github.com/datta07/INDIAN-SHAPEFILES) (the script fixes the file's broken characters and adds old names such as Aurangabad and Bangalore as aliases). Each district starts with one main market at its centre; the daily `fetch-data-gov` run registers every other market Agmarknet reports in a known district (table `agmarknet_markets`). Until a district has real prices, it gets two years of demo prices the first time someone opens it, labelled as demo data; set `DEMO_PRICES=false` to turn that off, and real prices replace a district's demo prices automatically.
-- **Advisory documents and government schemes:** the agent answers storage, handling and scheme questions only from documents you add; it ships with none. Upload PDF, Markdown or text files on the admin page (`/admin`, needs `ADMIN_TOKEN`), or put them in `backend/data/bulletins/` and restart. For each document set the language, the crop (or "all"), **which state it applies to** ("all" for central schemes; a state-only document is never used for farmers elsewhere), and for schemes the **official link and helpline**, which the answer then gives the farmer. A Markdown file sets these in a header:
-
-  ```
-  ---
-  id: pm-kisan-mr
-  title: पीएम-किसान योजना
-  crop: all
-  language: mr
-  state: all
-  source: Ministry of Agriculture, PM-KISAN operational guidelines
-  published: 2025-04-01
-  url: https://pmkisan.gov.in
-  helpline: 155261
-  ---
-  ```
-
-  A PDF takes the same lines in a `.meta` file next to it (`pm-kisan.pdf` + `pm-kisan.meta`). Scanned PDFs need OCR first. Upload the Marathi and Hindi versions where they exist: retrieval prefers the farmer's language, and the offline answer writer only answers a Marathi or Hindi farmer from a document in that language.
-- District, market or crop: add it to `backend/data/reference.json` (names, aliases, coordinates, storage cost, loss rate). A crop's `agmarknet_commodity` must be the exact Agmarknet commodity name (for example `Bhindi(Ladies Finger)`); list other published spellings in `agmarknet_commodity_aliases`. When a question names two crops' aliases, the longest one wins, so "shimla mirch" is capsicum, not chilli. Give it a demo price profile in `backend/app/ingestion/synthetic.py` and run `python manage.py seed-synthetic`. Each district lists its markets. Farmers pick a district in Settings, or the server uses the markets within `nearby_radius_km` of their location. Then add advisory documents for any new crop (see below).
+- District, market or crop: add it to `backend/data/reference.json` (names, aliases, coordinates, storage cost, loss rate). A crop's `agmarknet_commodity` must be the exact Agmarknet commodity name (for example `Bhindi(Ladies Finger)`); list other published spellings in `agmarknet_commodity_aliases`. When a question names two crops' aliases, the longest one wins, so "shimla mirch" is capsicum, not chilli. Give it a demo price profile in `backend/app/ingestion/synthetic.py` and run `python manage.py seed-synthetic`. Each district lists its markets. Farmers pick a district in Settings, or the server uses the markets within `nearby_radius_km` of their location.
 - Language: add `backend/data/languages/<code>.json` (copy `en.json`, translate every template) and `packages/i18n/src/locales/<code>.json`, then list it in `packages/i18n/src/index.ts`. Tests fail if any key is missing.
 
 ## What still needs people, accounts or devices
 
 These can't be done in code:
 
-- **Real data:** a `DATA_GOV_IN_API_KEY` (or Agmarknet CSV history), then rebuild the test set and rerun the evaluation. Add official extension bulletins and scheme documents.
+- **Real data:** a `DATA_GOV_IN_API_KEY` (or Agmarknet CSV history), then rebuild the test set and rerun the evaluation.
 - **API keys:** `ANTHROPIC_API_KEY` for Claude answers (then run `run_eval.py --llm`); a Sarvam AI key (best for Marathi), or a Google or Azure key, for server text-to-speech.
 - **Native-speaker review** of `backend/data/languages/{hi,mr}.json` and `packages/i18n/src/locales/{hi,mr}.json`.
 - **Devices:** test the Expo and Capacitor apps on a real low-end Android phone (microphone, speech, push); create an EAS project and a Play Store internal testing track.

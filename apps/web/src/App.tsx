@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Layout } from "./components/Layout";
-import { AdminPage } from "./pages/Admin";
 import { useApp } from "./lib/app-context";
 import { AskPage } from "./pages/Ask";
 import { HistoryPage } from "./pages/History";
@@ -18,7 +17,6 @@ export function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/admin" element={<AdminPage />} />
         {mustLogin ? (
           <Route path="*" element={<Navigate to="/login" replace />} />
         ) : (

@@ -49,7 +49,7 @@ def test_ollama_grounded_answer(session, ollama):
     assert ans.mode == "llm", ans.warnings
     assert ans.usage["model"] == "ollama:qwen2.5:3b"
     assert [t["tool"] for t in ans.trace] == ["check_data_freshness", "compute_recommendation"]
-    assert {t["function"]["name"] for t in calls[0]["tools"]} == {"search_advisories", "get_mandi_prices", "estimate_transport_cost"}
+    assert {t["function"]["name"] for t in calls[0]["tools"]} == {"get_mandi_prices", "estimate_transport_cost"}
     for tool in calls[0]["tools"]:
         for prop in tool["function"]["parameters"]["properties"].values():
             assert isinstance(prop["type"], str)
@@ -57,13 +57,12 @@ def test_ollama_grounded_answer(session, ollama):
 
 
 def test_ollama_tool_call_then_answer(session, ollama):
-    tool_turn = {"message": {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "search_advisories", "arguments": {"query": "onion storage"}}}]}}
+    tool_turn = {"message": {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "get_mandi_prices", "arguments": {"crop": "onion"}}}]}}
     calls = ollama([tool_turn, facts_answer])
-    ans = answer_query(session, "How do I store onion?", language="en", as_of=AS_OF, use_llm=True)
+    ans = answer_query(session, "What is the onion price at my mandis?", language="en", as_of=AS_OF, use_llm=True)
     assert ans.mode == "llm"
-    assert "search_advisories" in [t["tool"] for t in ans.trace]
+    assert "get_mandi_prices" in [t["tool"] for t in ans.trace]
     assert calls[1]["messages"][-1]["role"] == "tool"
-    assert any(src["kind"] == "advisory" for src in ans.sources)
 
 
 def test_ollama_invented_number_falls_back(session, ollama):
@@ -128,12 +127,14 @@ def test_ollama_skipped_for_languages_not_enabled(session, ollama):
     assert ans.mode == "offline" and calls == [] and ans.warnings == []
 
 
-def test_offline_storage_question_answers_from_bulletin(session):
+def test_offline_out_of_scope_questions_point_to_kvk(session):
     en = answer_query(session, "How should I store onions so they do not rot?", language="en", as_of=AS_OF, use_llm=False)
-    assert en.text.startswith("From the crop advisory (Onion curing and storage after harvest):")
+    assert en.text.startswith("I can't advise on that yet.")
     mr = answer_query(session, "कांदा साठवण कशी करावी?", language="mr", as_of=AS_OF, use_llm=False)
-    assert mr.text.startswith("पीक सल्ल्यातून (कांदा काढणीनंतर सुकवणे आणि साठवण):")
-    assert any(src["kind"] == "advisory" for src in mr.sources)
+    assert mr.text.startswith("यावर मी अजून सल्ला देऊ शकत नाही.")
+    scheme = answer_query(session, "पीएम किसान योजनेचा हप्ता कधी येईल?", language="mr", as_of=AS_OF, use_llm=False)
+    assert scheme.text.startswith("यावर मी अजून सल्ला देऊ शकत नाही.") and scheme.recommendation is None
+    assert all(src["kind"] == "price" for src in en.sources + mr.sources)
     plain = answer_query(session, "Should I sell onion now?", language="en", as_of=AS_OF, use_llm=False)
     assert plain.text.startswith(("Sell now", "Hold"))
 

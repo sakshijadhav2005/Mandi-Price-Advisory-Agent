@@ -10,13 +10,10 @@ dependencies = [
     "pydantic-settings>=2.3",
     "SQLAlchemy>=2.0",
     "numpy>=1.26",
-    "scikit-learn>=1.4",
-    "rank-bm25>=0.2.2",
     "anthropic>=2.0",
     "PyJWT[crypto]>=2.8",  # crypto: RS256, to verify Google ID tokens
     "python-multipart>=0.0.9",
     "httpx>=0.27",
-    "pypdf>=4.0",
 ]
 
 [project.optional-dependencies]
@@ -24,7 +21,6 @@ dev = ["pytest>=8", "pytest-asyncio>=0.23"]
 postgres = ["psycopg[binary]>=3.1"]
 whisper = ["faster-whisper>=1.0"]
 s3 = ["boto3>=1.34"]
-semantic = ["sentence-transformers>=3.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

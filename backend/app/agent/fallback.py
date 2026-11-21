@@ -1,58 +1,19 @@
 """Deterministic answer writer: runs the tools in a fixed order and fills templates.
 
+It answers price and sell/hold questions only; storage, scheme and other questions get a
+short reply pointing to the local agriculture office or KVK.
+
 Used when no LLM is configured, when the LLM call fails, and when an LLM answer
 fails a guardrail (wrong language or numbers not traceable to tool output).
 """
 
 from __future__ import annotations
 
-import re
-
 from app.agent.tools import ToolContext, run_tool
 from app.reference import load_reference
 from app.translation.languages import asks_sell_or_hold, is_advisory_question
 from app.translation.templates import inr, t
 
-_SENTENCE_END = re.compile(r"(?<=[.!?।])\s+")
-
-
-def _tip(ctx: ToolContext, decision: str, crop_id: str) -> str | None:
-    query = {
-        "hold": "storage loss rot ventilated store",
-        "sell": "grading selling market transport costs",
-    }.get(decision, "market price report")
-    result, err = run_tool(ctx, "search_advisories", {"query": query, "crop": crop_id})
-    if err:
-        return None
-    for hit in result["results"]:
-        if hit["language"] == ctx.language:
-            return _SENTENCE_END.split(hit["text"].strip())[0]
-    return None
-
-
-def advisory_answer(ctx: ToolContext, question: str, crop_id: str | None, require_match: bool = False) -> str | None:
-    """Answer from the best bulletin / uploaded-document passage, preferring the farmer's language.
-
-    `require_match`: only answer when the passage shares words with the question
-    (used for questions that name no crop, where any passage would otherwise win).
-    """
-    result, err = run_tool(ctx, "search_advisories", {"query": question, "crop": crop_id})
-    if err or not result["results"]:
-        return None
-    hits = [h for h in result["results"] if h["bm25"] > 0] if require_match else result["results"]
-    if not hits:
-        return None
-    hit = next((h for h in hits if h["language"] == ctx.language), None)
-    if hit is None:
-        if ctx.language != "en":
-            return None  # avoid answering a Hindi/Marathi farmer in English
-        hit = hits[0]
-    sentences = _SENTENCE_END.split(hit["text"].strip())
-    answer = t(ctx.language, "advice_from", title=hit["title"]) + " " + " ".join(sentences[:3])
-    contact = " / ".join(x for x in (hit.get("url"), hit.get("helpline")) if x)
-    if contact:  # scheme documents: send the farmer to the official source
-        answer += " " + t(ctx.language, "official_contact", contact=contact)
-    return answer
 
 
 def write_answer(
@@ -65,15 +26,13 @@ def write_answer(
     ref = load_reference()
     lang = ctx.language
     if not crop_id or crop_id not in ref.crops:
-        # A general question (a scheme, a pest, ...) may be covered by an uploaded document.
-        # A sell/hold question about an unsupported crop still gets the supported-crops reply.
-        if question and not asks_sell_or_hold(question) and (doc := advisory_answer(ctx, question, None, require_match=True)):
-            return doc
-        return t(lang, "unsupported_crop", crops=", ".join(c.display(lang) for c in ref.crops.values()))
+        # No crop: a general question (a scheme, a pest, storage of an unknown crop) is out of scope.
+        crops = ", ".join(c.display(lang) for c in ref.crops.values())
+        if question and not asks_sell_or_hold(question):
+            return t(lang, "out_of_scope") + " " + t(lang, "unsupported_crop", crops=crops)
+        return t(lang, "unsupported_crop", crops=crops)
     crop = ref.crops[crop_id]
     crop_name = crop.display(lang)
-
-    advice = advisory_answer(ctx, question, crop_id) if question and is_advisory_question(question) else None
 
     run_tool(ctx, "check_data_freshness", {"crop": crop_id})
     rec, err = run_tool(
@@ -82,7 +41,8 @@ def write_answer(
     if err:
         return rec["error"]
 
-    lines: list[str] = [advice] if advice else []
+    # Storage / handling questions get the sell-or-hold answer, plus a pointer to local experts.
+    lines: list[str] = [t(lang, "out_of_scope")] if question and is_advisory_question(question) else []
     h = rec["horizon_days"]
     if rec["decision"] == "insufficient_data":
         lines.append(t(lang, "decision.insufficient_data") + t(lang, "eos"))
@@ -127,8 +87,6 @@ def write_answer(
             reasons.append(t(lang, key, **fmt))
     lines.append(" ".join(reasons))
 
-    if not advice and (tip := _tip(ctx, rec["decision"], crop_id)):
-        lines.append(t(lang, "advice_tip", tip=tip))
     if any(m.get("source") == "synthetic" for m in rec["markets"] if m["status"] == "fresh"):
         lines.append(t(lang, "synthetic_note"))
     return "\n\n".join(line for line in lines if line)

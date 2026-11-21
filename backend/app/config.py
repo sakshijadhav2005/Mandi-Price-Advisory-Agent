@@ -94,10 +94,6 @@ class Settings(BaseSettings):
     s3_endpoint_url: str = ""  # for Cloudflare R2, MinIO, etc.
     s3_region: str = ""
 
-    # Retrieval embedder: char (default, no download) | sentence-transformers
-    # (pip install sentence-transformers)
-    retrieval_embedder: str = "char"
-    embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
     # Operations alerts: a Slack/Discord/Teams-style webhook that receives {"text": ...}
     # when the daily ingestion fails or leaves no fresh prices.

@@ -15,3 +15,6 @@ apps/web/test-results/
 apps/web/playwright-report/
 apps/capacitor/ios/App/App/public/
 token.txt
+
+# Downloaded RAG source documents (large, third-party licences); manifest.json is tracked
+backend/data/rag-sources/**/*.pdf

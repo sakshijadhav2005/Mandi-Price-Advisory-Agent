@@ -56,7 +56,7 @@ def test_pune_chat_and_prices(session):
     assert ans.recommendation["crop"] == "potato"
     assert ans.recommendation["best_market_now"] in PUNE_MARKETS
     assert all(s["market"] in PUNE_MARKETS for s in ans.sources if s["kind"] == "price")
-    assert any(s["kind"] == "advisory" for s in ans.sources) or "बटाटा" in ans.text
+    assert "बटाटा" in ans.text
     with TestClient(app) as c:
         data = c.get("/prices", params={"crop": "potato", "district": "pune"}).json()
         assert data["district"] == "pune" and {m["market"] for m in data["markets"]} == PUNE_MARKETS
@@ -70,9 +70,11 @@ def test_question_naming_a_district_overrides_setting(session):
     assert ans.recommendation["assumptions"]["district"] == "pune"
 
 
-def test_storage_question_for_potato_uses_potato_bulletin(session):
+def test_storage_question_gets_sell_or_hold_and_points_to_kvk(session):
     ans = answer_query(session, "How do I store potatoes?", language="en", as_of=AS_OF, use_llm=False)
-    assert ans.text.startswith("From the crop advisory (Potato curing and storage):")
+    assert ans.text.startswith("I can't advise on that yet.")
+    assert "Krishi Vigyan Kendra" in ans.text
+    assert ans.recommendation["crop"] == "potato"  # the price advice still comes with it
 
 
 def test_migration_adds_new_nullable_column(tmp_path):

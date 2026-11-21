@@ -16,7 +16,6 @@ from app.agent import decision as decision_mod
 from app.agent.data import last_ingestion, load_series
 from app.config import get_settings
 from app.reference import load_reference
-from app.retrieval.index import get_index
 
 
 @dataclass
@@ -53,18 +52,6 @@ def _crop(ctx: ToolContext, crop: str | None):
     if crop_id not in ref.crops:
         raise ToolError(f"Unsupported crop {crop!r}. Supported crops: {', '.join(ref.crops)}.")
     return ref.crops[crop_id]
-
-
-def farmer_state(ctx: ToolContext) -> str:
-    """The farmer's state, from their district (or the nearest one to their location)."""
-    ref = load_reference()
-    return ref.districts[_scope(ctx).district].state
-
-
-def applies_to_state(meta: dict, state: str) -> bool:
-    """National documents (state all / central / missing) apply everywhere; state ones only there."""
-    doc_state = (meta.get("state") or "all").strip().lower()
-    return doc_state in ("all", "central", "india") or doc_state == state.lower()
 
 
 def check_data_freshness(ctx: ToolContext, crop: str | None = None) -> dict:
@@ -143,32 +130,6 @@ def get_mandi_prices(ctx: ToolContext, crop: str | None = None, market: str | No
     return {"crop": c.id, "unit": "Rs per quintal", "as_of": ctx.as_of.isoformat(), "days": days, "markets": out}
 
 
-def search_advisories(ctx: ToolContext, query: str, crop: str | None = None) -> dict:
-    crop_id = None
-    if crop or ctx.default_crop:
-        crop_id = _crop(ctx, crop).id
-    state = farmer_state(ctx)
-    hits = get_index().search(query, crop=crop_id, language=ctx.language, k=3, where=lambda c: applies_to_state(c.meta, state))
-    for h in hits:
-        meta = h.pop("meta", {})
-        # Scheme documents carry the official link and helpline; the answer should point the farmer to them.
-        for key in ("url", "helpline", "state"):
-            if meta.get(key):
-                h[key] = meta[key]
-        h["source_id"] = ctx.add_source(
-            f"advisory:{h['chunk_id']}",
-            kind="advisory",
-            title=h["title"],
-            language=h["language"],
-            published=h["published"],
-            origin=h["source"],
-            excerpt=h["text"][:280],
-            url=meta.get("url"),
-            helpline=meta.get("helpline"),
-        )
-    return {"query": query, "results": hits}
-
-
 def estimate_transport_cost(ctx: ToolContext, market: str, quantity_qtl: float | None = None) -> dict:
     ref = load_reference()
     scope = _scope(ctx)
@@ -228,7 +189,6 @@ def compute_recommendation(
 TOOL_FUNCS: dict[str, Callable[..., dict]] = {
     "check_data_freshness": check_data_freshness,
     "get_mandi_prices": get_mandi_prices,
-    "search_advisories": search_advisories,
     "estimate_transport_cost": estimate_transport_cost,
     "compute_recommendation": compute_recommendation,
 }
@@ -267,17 +227,6 @@ def tool_schemas() -> list[dict]:
                     "days": _nullable("integer", description="Days of history, 1-30. Null means 7."),
                 },
                 "required": ["crop", "market", "days"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "search_advisories",
-            "description": "Search the advisory documents: crop bulletins (storage, quality, handling, market practice) and government scheme documents (eligibility, benefits, how to apply), already limited to national documents and the farmer's own state. Results may include the official url and helpline. Documents exist in English, Hindi and Marathi; write the query in English for best coverage.",
-            "strict": True,
-            "input_schema": {
-                "type": "object",
-                "properties": {"query": {"type": "string"}, "crop": crop_prop},
-                "required": ["query", "crop"],
                 "additionalProperties": False,
             },
         },
@@ -367,8 +316,6 @@ def _summarise(name: str, result: dict) -> str:
         return f"{result['fresh_markets']}/{result['total_markets']} markets fresh"
     if name == "get_mandi_prices":
         return f"{len(result['markets'])} markets"
-    if name == "search_advisories":
-        return f"{len(result['results'])} advisory passages"
     if name == "estimate_transport_cost":
         return f"Rs {result['transport_per_qtl']}/qtl to {result['market']}"
     if name == "compute_recommendation":

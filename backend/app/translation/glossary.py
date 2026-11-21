@@ -1,9 +1,6 @@
 """Agricultural glossary, built from the language packs.
 
-Used for two things:
-1. Query expansion: a Hindi/Marathi query gets English keywords appended (and
-   vice versa), so lexical retrieval can match bulletins in another language.
-2. Consistent terminology: the LLM prompt lists the target-language terms.
+Used for consistent terminology: the LLM prompt lists the target-language terms.
 """
 
 from __future__ import annotations
@@ -32,16 +29,6 @@ def glossary() -> dict[str, dict[str, list[str]]]:
             out.setdefault(term, {})[code] = renderings
     return out
 
-
-def expand_query(query: str) -> str:
-    """Append equivalent terms in the other supported languages."""
-    lowered = query.lower()
-    extra: list[str] = []
-    for english, langs in glossary().items():
-        variants = [english] + [v for vs in langs.values() for v in vs]
-        if any(v.lower() in lowered for v in variants):
-            extra.extend(v for v in variants if v.lower() not in lowered and v not in extra)
-    return f"{query} {' '.join(extra)}" if extra else query
 
 
 def glossary_for(lang: str) -> str:

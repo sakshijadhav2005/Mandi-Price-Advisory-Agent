@@ -108,34 +108,12 @@ export function AnswerCard({
         <div className="space-y-3 border-t border-dashed border-line pt-3 text-sm">
           <h3 className="eyebrow">{t("answer.sources")}</h3>
           <ul className="space-y-2">
-            {answer.sources.map((s) =>
-              s.kind === "price" ? (
-                <li key={s.id} className="flex flex-wrap gap-x-2">
-                  <span>{t("answer.priceSource", { market: marketName(meta, s.market, lang), date: formatDate(s.date, lang) })}</span>
-                  <span className="text-muted">({s.origin === "synthetic" ? t("answer.demoData") : s.origin})</span>
-                </li>
-              ) : (
-                <li key={s.id} className="rounded-lg bg-sunken p-2.5">
-                  <p className="font-medium">{s.title}</p>
-                  <p className="text-muted">{s.excerpt}…</p>
-                  <p className="num mt-1 text-[11px] text-muted">{s.origin}</p>
-                  {(s.url || s.helpline) && (
-                    <p className="mt-1.5 flex flex-wrap gap-x-3 font-medium">
-                      {s.url && /^https?:\/\//i.test(s.url) && (
-                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-leaf-ink underline underline-offset-2">
-                          {s.url.replace(/^https?:\/\//i, "")}
-                        </a>
-                      )}
-                      {s.helpline && (
-                        <a href={`tel:${s.helpline.split(/[/,;]/)[0].replace(/[^\d+]/g, "")}`} className="text-leaf-ink">
-                          ☎ {s.helpline}
-                        </a>
-                      )}
-                    </p>
-                  )}
-                </li>
-              ),
-            )}
+            {answer.sources.map((s) => (
+              <li key={s.id} className="flex flex-wrap gap-x-2">
+                <span>{t("answer.priceSource", { market: marketName(meta, s.market, lang), date: formatDate(s.date, lang) })}</span>
+                <span className="text-muted">({s.origin === "synthetic" ? t("answer.demoData") : s.origin})</span>
+              </li>
+            ))}
           </ul>
           {answer.trace.length > 0 && (
             <>

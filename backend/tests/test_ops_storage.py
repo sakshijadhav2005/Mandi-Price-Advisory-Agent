@@ -1,14 +1,12 @@
-"""Ops alerts on ingestion failure, consented voice storage, and pluggable retrieval embedders."""
+"""Ops alerts on ingestion failure and consented voice storage."""
 
 import sys
 import types
 
 import httpx
-import numpy as np
 
 from app import ops
 from app.config import get_settings
-from app.retrieval.index import AdvisoryIndex, CharNgramEmbedder, SentenceEmbedder, make_embedder
 from app.voice import storage
 
 # --- ops alerts -------------------------------------------------------------
@@ -114,32 +112,3 @@ def test_transcribe_api_passes_consent(monkeypatch):
         c.post("/voice/transcribe", files=audio, headers=guest)
         assert seen["consent"] is False
 
-
-# --- retrieval embedders ----------------------------------------------------
-
-
-class FakeSentenceModel:
-    """Maps texts to 3-d vectors by topic, the way a multilingual model would."""
-
-    TOPICS = (("storage", "साठवण", "भंडारण"), ("tomato", "टोमॅटो", "टमाटर"), ("cost", "खर्च", "लागत"))
-
-    def encode(self, texts, normalize_embeddings=True):
-        rows = [[float(any(w in t.lower() for w in topic)) + 1e-3 for topic in self.TOPICS] for t in texts]
-        m = np.array(rows, dtype=np.float32)
-        return m / np.linalg.norm(m, axis=1, keepdims=True)
-
-
-def test_sentence_embedder_plugs_into_index():
-    idx = AdvisoryIndex.from_directory(embedder=SentenceEmbedder("fake", model=FakeSentenceModel()))
-    hits = idx.search("कांदा साठवण कशी करावी?", crop="onion", language="mr")
-    assert hits and hits[0]["crop"] in ("onion", "all")
-    assert hits[0]["vector"] > 0.5
-
-
-def test_make_embedder_falls_back_without_package(monkeypatch):
-    s = get_settings()
-    monkeypatch.setattr(s, "retrieval_embedder", "sentence-transformers")
-    monkeypatch.setitem(sys.modules, "sentence_transformers", None)  # import fails
-    assert isinstance(make_embedder(), CharNgramEmbedder)
-    monkeypatch.setattr(s, "retrieval_embedder", "char")
-    assert isinstance(make_embedder(), CharNgramEmbedder)
