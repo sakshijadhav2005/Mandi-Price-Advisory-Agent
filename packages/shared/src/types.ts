@@ -198,6 +198,8 @@ export interface Meta {
   auth_required: boolean;
   /** OAuth 2.0 client ID; set when the server offers "Sign in with Google". */
   google_client_id?: string | null;
+  /** Set when the server serves one district only (LOCKED_DISTRICT); the apps then hide the district picker. */
+  locked_district?: string | null;
   stale_after_days: number;
 }
 
@@ -257,5 +259,41 @@ export interface Transcript {
   language: string;
   confidence: number;
   needs_confirmation: boolean;
+}
+
+/** A storage / post-harvest document on the admin page. */
+export interface AdminDocument {
+  id: number;
+  title: string;
+  crop: string;
+  language: string;
+  publisher: string;
+  url: string | null;
+  published: string | null;
+  file_name: string;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by: string | null;
+  passages: number;
+  created_at: string | null;
+}
+
+export interface DocumentUpload {
+  file: Blob;
+  filename: string;
+  title: string;
+  crop: string;
+  language: string;
+  publisher: string;
+  url?: string;
+  published?: string;
+}
+
+/** Review work left and content available to the advisory features (GET /admin/content). */
+export interface AdminContent {
+  pesticide_rows: Record<string, number>;
+  documents: Record<string, number>;
+  kcc_answers: number;
+  schemes: { total: number; needs_attention: string[] };
+  agromet: { district: string; issued_on: string; valid_until: string }[];
 }
 

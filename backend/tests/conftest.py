@@ -31,3 +31,14 @@ def seeded_db():
 def session():
     with session_scope() as s:
         yield s
+
+
+@pytest.fixture(autouse=True)
+def _fresh_rate_limits():
+    """Each test starts with empty login / OTP / signup counters."""
+    from app.api import ratelimit
+
+    ratelimit.reset()
+    yield
+    ratelimit.reset()
+

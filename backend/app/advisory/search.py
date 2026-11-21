@@ -49,6 +49,12 @@ _STOPWORDS = {
 def stem(word: str) -> str:
     word = word.lower()
     if word.isascii():
+        for suffix in ("ing", "ed"):  # "dropping" -> "drop", "infested" -> "infest"
+            if len(word) > len(suffix) + 3 and word.endswith(suffix):
+                word = word[: -len(suffix)]
+                if len(word) > 3 and word[-1] == word[-2] and word[-1] not in "aeiou":
+                    word = word[:-1]
+                return word
         for suffix in ("ies", "es", "s"):
             if len(word) > 4 and word.endswith(suffix):
                 return word[: -len(suffix)] + ("y" if suffix == "ies" else "")

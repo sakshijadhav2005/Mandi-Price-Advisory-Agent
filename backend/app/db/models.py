@@ -298,3 +298,15 @@ class KccAnswer(Base):
     language: Mapped[str] = mapped_column(String(8))
     dedupe_key: Mapped[str] = mapped_column(String(64), unique=True)
 
+
+class SourceWatch(Base):
+    """Last seen fingerprint of an official page behind a scheme entry (weekly watch)."""
+
+    __tablename__ = "source_watch"
+
+    url: Mapped[str] = mapped_column(String(500), primary_key=True)
+    fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    error: Mapped[str | None] = mapped_column(String(300), nullable=True)
+

@@ -8,12 +8,12 @@ import io
 import statistics
 from collections import Counter, defaultdict
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.agent.data import last_ingestion
+from app.agent.data import last_ingestion, today
 from app.config import get_settings
 from app.db.models import Feedback, Message, Notification, PriceAlert, User
 from app.db.session import get_db
@@ -105,3 +105,80 @@ def export(db: Session = Depends(get_db)) -> StreamingResponse:
         )
     buf.seek(0)
     return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=pilot_export.csv"})
+
+
+# --- advisory content: review status, storage documents ------------------------------------
+
+
+@router.get("/content", dependencies=[Depends(require_admin)])
+def content_status(db: Session = Depends(get_db)) -> dict:
+    """What the reviewers still have to do, and what the advisory features have to work with."""
+    from app.advisory.schemes import load_schemes, problems_report
+    from app.db.models import AdvisoryDocument, AgrometBulletin, KccAnswer, PesticideUse
+
+    def counts(model, column) -> dict:
+        return {k: n for k, n in db.execute(select(column, func.count()).select_from(model).group_by(column)).all()}
+
+    latest = db.scalars(select(AgrometBulletin).where(AgrometBulletin.status == "active").order_by(AgrometBulletin.issued_on.desc())).all()
+    return {
+        "pesticide_rows": counts(PesticideUse, PesticideUse.status),
+        "documents": counts(AdvisoryDocument, AdvisoryDocument.status),
+        "kcc_answers": db.scalar(select(func.count()).select_from(KccAnswer)) or 0,
+        "schemes": {"total": len(load_schemes()), "needs_attention": problems_report(today())},
+        "agromet": [{"district": b.district, "issued_on": b.issued_on.isoformat(), "valid_until": b.valid_until.isoformat()} for b in latest],
+    }
+
+
+def _document_out(doc, passages: int) -> dict:
+    return {
+        "id": doc.id, "title": doc.title, "crop": doc.crop_id, "language": doc.language, "publisher": doc.publisher,
+        "url": doc.url, "published": doc.published, "file_name": doc.file_name, "status": doc.status,
+        "reviewed_by": doc.reviewed_by, "passages": passages, "created_at": doc.created_at.isoformat() if doc.created_at else None,
+    }
+
+
+@router.get("/documents", dependencies=[Depends(require_admin)])
+def list_documents(db: Session = Depends(get_db)) -> list[dict]:
+    from app.db.models import AdvisoryChunk, AdvisoryDocument
+
+    n = dict(db.execute(select(AdvisoryChunk.document_id, func.count()).group_by(AdvisoryChunk.document_id)).all())
+    return [_document_out(d, n.get(d.id, 0)) for d in db.scalars(select(AdvisoryDocument).order_by(AdvisoryDocument.id.desc()))]
+
+
+@router.post("/documents", dependencies=[Depends(require_admin)], status_code=201)
+async def upload_document(
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    crop: str = Form("all"),
+    language: str = Form(...),
+    publisher: str = Form(...),
+    url: str = Form(""),
+    published: str = Form(""),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Upload a storage / post-harvest document (PDF, Markdown, text). It is pending until approved."""
+    from app.advisory.documents import MAX_BYTES, DocumentError, add_document_bytes
+    from app.db.models import AdvisoryChunk
+
+    data = await file.read(MAX_BYTES + 1)
+    try:
+        doc = add_document_bytes(db, file.filename or "upload.txt", data, title=title, crop=crop, language=language, publisher=publisher, url=url.strip(), published=published.strip())
+    except DocumentError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return _document_out(doc, db.scalar(select(func.count()).select_from(AdvisoryChunk).where(AdvisoryChunk.document_id == doc.id)) or 0)
+
+
+@router.post("/documents/{doc_id}/{decision}", dependencies=[Depends(require_admin)])
+def review_document(doc_id: int, decision: str, reviewer: str = Form(...), db: Session = Depends(get_db)) -> dict:
+    """approve / reject a document; the reviewer's name is recorded."""
+    from app.advisory.documents import DocumentError
+    from app.advisory.documents import review_document as review
+
+    if decision not in ("approve", "reject"):
+        raise HTTPException(404, "Use approve or reject")
+    try:
+        doc = review(db, doc_id, reviewer, approve=decision == "approve")
+    except DocumentError as exc:
+        raise HTTPException(404 if "no document" in str(exc) else 422, str(exc)) from exc
+    return {"id": doc.id, "status": doc.status, "reviewed_by": doc.reviewed_by}
+

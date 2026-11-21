@@ -35,10 +35,13 @@ class DocumentError(ValueError):
 
 
 def read_text(path: Path) -> str:
-    data = path.read_bytes()
+    return text_from_bytes(path.name, path.read_bytes())
+
+
+def text_from_bytes(file_name: str, data: bytes) -> str:
     if len(data) > MAX_BYTES:
         raise DocumentError("file is larger than 20 MB")
-    if path.suffix.lower() == ".pdf":
+    if Path(file_name).suffix.lower() == ".pdf":
         from pypdf import PdfReader
 
         try:
@@ -80,7 +83,14 @@ def split_passages(text: str) -> list[tuple[str, str]]:
 
 
 def add_document(session: Session, path: Path, *, title: str, crop: str, language: str, publisher: str, url: str = "", published: str = "") -> AdvisoryDocument:
-    if path.suffix.lower() not in ALLOWED:
+    return add_document_bytes(session, path.name, path.read_bytes(), title=title, crop=crop, language=language, publisher=publisher, url=url, published=published)
+
+
+def add_document_bytes(
+    session: Session, file_name: str, data: bytes, *, title: str, crop: str, language: str, publisher: str, url: str = "", published: str = ""
+) -> AdvisoryDocument:
+    """Store a document as pending (from the command line or an admin upload)."""
+    if Path(file_name).suffix.lower() not in ALLOWED:
         raise DocumentError("only .pdf, .md and .txt files")
     crop = crop.strip().lower() or "all"
     if crop != "all" and crop not in load_reference().crops:
@@ -88,19 +98,19 @@ def add_document(session: Session, path: Path, *, title: str, crop: str, languag
     if language not in LANGUAGES:
         raise DocumentError(f"language must be one of {LANGUAGES}")
     if not title.strip() or not publisher.strip():
-        raise DocumentError("give a --title and the --publisher (who issued the document)")
+        raise DocumentError("give a title and the publisher (who issued the document)")
     if url and not url.startswith("https://"):
         raise DocumentError("the source link must start with https://")
-    text = read_text(path)
+    text = text_from_bytes(file_name, data)
     passages = split_passages(text)
     if sum(len(p.split()) for _, p in passages) < 30:
         raise DocumentError("no readable text found (a scanned PDF needs OCR first)")
-    sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    sha = hashlib.sha256(data).hexdigest()
     if session.scalar(select(AdvisoryDocument).where(AdvisoryDocument.sha256 == sha)):
         raise DocumentError("this file was already added")
     doc = AdvisoryDocument(
         title=title.strip()[:300], crop_id=crop, language=language, publisher=publisher.strip()[:200],
-        url=url or None, published=published or None, sha256=sha, file_name=path.name[:300], status="pending",
+        url=url or None, published=published or None, sha256=sha, file_name=Path(file_name).name[:300], status="pending",
     )
     session.add(doc)
     session.flush()

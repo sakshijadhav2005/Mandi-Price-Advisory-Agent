@@ -64,6 +64,12 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-only-change-me"
     jwt_ttl_hours: int = 24 * 30
     auth_required: bool = False  # dev default: guests may chat without OTP login
+    # Brute-force limits (per server process; see app/api/ratelimit.py)
+    auth_window_minutes: int = 15
+    auth_max_failures: int = 5  # failed password logins per account in the window
+    auth_ip_max_attempts: int = 30  # failed logins / OTP requests per IP address in the window
+    otp_max_requests: int = 5  # OTP codes (SMS) per phone number in the window
+    signup_max_per_ip: int = 10  # new accounts per IP address in the window
     otp_dev_mode: bool = True  # logs the OTP instead of sending an SMS
     google_client_id: str = ""  # OAuth 2.0 web client ID; enables "Sign in with Google" when set
     # Extra OAuth client IDs whose Google ID tokens are accepted (comma-separated): the Android and
@@ -106,6 +112,11 @@ class Settings(BaseSettings):
 
     # Pilot / admin
     admin_token: str = ""  # enables /admin endpoints when set
+    # Serve one district only (e.g. "pune" for a Pune-only deployment): every answer, price list
+    # and alert uses it, and /meta lists only it, so the apps hide their district picker.
+    # Empty: all districts.
+    locked_district: str = ""
+
     # Weekly district farm advice: the IMD agromet advisory bulletin (Gramin Krishi Mausam Sewa).
     agromet_districts: str = "pune"  # comma-separated district ids to fetch; empty turns the feature off
     agromet_url_template: str = (

@@ -186,7 +186,9 @@
     "version": "ॲप आवृत्ती",
     "connected": "जोडलेले",
     "notConnected": "जोडलेले नाही",
-    "state": "राज्य"
+    "state": "राज्य",
+    "admin": "ॲडमिन",
+    "adminHelp": "सल्ला सामग्री व दस्तऐवज पडताळणी (कर्मचारी)"
   },
   "disclaimerTitle": "कृपया लक्षात घ्या",
   "offline": {

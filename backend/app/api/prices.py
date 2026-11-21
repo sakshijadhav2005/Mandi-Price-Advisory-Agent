@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.agent.data import last_ingestion, load_series, today
 from app.config import get_settings
 from app.db.session import get_db
-from app.reference import load_reference
+from app.reference import effective_district, load_reference, locked_district
 
 router = APIRouter(prefix="/prices", tags=["prices"])
 
@@ -31,7 +31,10 @@ def prices(
         raise HTTPException(404, f"Unknown market {market!r}")
     if district and district not in ref.districts:
         raise HTTPException(404, f"Unknown district {district!r}")
+    district = effective_district(district)
     scope = ref.scope(district, lat, lon)
+    if market and locked_district() and market not in scope.market_ids:
+        raise HTTPException(404, f"Market {market!r} is outside {ref.districts[district].name}")
     as_of = as_of or today()
     stale_after = get_settings().stale_after_days
     series = load_series(db, crop, as_of, lookback_days=days, markets=[market] if market else scope.market_ids)

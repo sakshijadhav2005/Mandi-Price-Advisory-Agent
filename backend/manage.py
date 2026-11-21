@@ -9,6 +9,7 @@
     python manage.py approve-pesticides review.csv --reviewer "Name"   # make reviewed rows usable
     python manage.py check-pesticide-list      # is a newer CIB&RC list published?
     python manage.py check-schemes             # validate scheme entries; list unreviewed / outdated ones
+    python manage.py watch-sources             # alert when an official scheme page changes (weekly in daily)
     python manage.py add-document FILE --title T --crop onion --language mr --publisher "ICAR-DOGR" [--url U]
     python manage.py approve-document ID --reviewer "Name"   # (reject-document, list-documents)
     python manage.py import-kcc kcc.csv        # Kisan Call Centre answers from a data.gov.in CSV export
@@ -201,6 +202,16 @@ def cmd_fetch_kcc(_args) -> dict:
     return out
 
 
+def cmd_watch_sources(_args) -> dict:
+    from app.advisory.watch import check_sources
+
+    init_db()
+    with session_scope() as s:
+        out = check_sources(s)
+    log.info("source watch: %s", out)
+    return out
+
+
 def cmd_daily(args) -> None:
     """One daily run (for cron / Task Scheduler): fetch prices, check alerts, alert ops on failure."""
     from app.ops import run_daily
@@ -210,6 +221,11 @@ def cmd_daily(args) -> None:
         cmd_fetch_agromet(args)
     except Exception:  # district advice must never break the price job
         log.exception("agromet fetch failed")
+    if date.today().weekday() == 0:  # Mondays: have the official scheme pages changed?
+        try:
+            cmd_watch_sources(args)
+        except Exception:
+            log.exception("source watch failed")
     if date.today().day == 1:  # the CIB&RC lists and scheme rules change a few times a year: check monthly
         try:
             cmd_check_pesticide_list(args)
@@ -308,6 +324,7 @@ def main() -> None:
     sp.set_defaults(func=cmd_approve_pesticides)
     sub.add_parser("check-pesticide-list").set_defaults(func=cmd_check_pesticide_list)
     sub.add_parser("check-schemes").set_defaults(func=cmd_check_schemes)
+    sub.add_parser("watch-sources").set_defaults(func=cmd_watch_sources)
     sp = sub.add_parser("add-document")
     sp.add_argument("file")
     sp.add_argument("--title", required=True)

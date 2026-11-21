@@ -15,6 +15,7 @@ import {
   PhoneIcon,
   PinIcon,
   ServerIcon,
+  ShieldIcon,
   SlidersIcon,
   SpeakerIcon,
   SunIcon,
@@ -355,6 +356,16 @@ export function SettingsPage() {
             {metaError && <p className="text-sm text-chilli-ink">{metaError}</p>}
           </div>
         </details>
+        <Link to="/admin" className="flex min-h-[72px] items-center gap-3 px-4 py-3 transition-colors hover:bg-sunken/60">
+          <Tile>
+            <ShieldIcon />
+          </Tile>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold leading-snug">{t("settings.admin")}</span>
+            <span className="block text-sm leading-snug text-muted">{t("settings.adminHelp")}</span>
+          </span>
+          <ChevronRightIcon className="h-5 w-5 shrink-0 text-muted" />
+        </Link>
       </Section>
 
       <Section icon={<InfoIcon />} title={t("settings.about")}>

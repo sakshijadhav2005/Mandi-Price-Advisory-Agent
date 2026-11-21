@@ -1,9 +1,12 @@
 import type {
+  AdminContent,
+  AdminDocument,
   AppNotification,
   ChatAnswer,
   ChatRequest,
   ConversationDetail,
   ConversationSummary,
+  DocumentUpload,
   Meta,
   PriceAlert,
   PricesResponse,
@@ -225,6 +228,34 @@ export class ApiClient {
   }
 
   // --- admin (X-Admin-Token; the server enables these only when ADMIN_TOKEN is set) ---
+
+  adminContent(adminToken: string) {
+    return this.request<AdminContent>("/admin/content", { headers: { "X-Admin-Token": adminToken } });
+  }
+
+  adminDocuments(adminToken: string) {
+    return this.request<AdminDocument[]>("/admin/documents", { headers: { "X-Admin-Token": adminToken } });
+  }
+
+  uploadDocument(adminToken: string, doc: DocumentUpload) {
+    const form = new FormData();
+    form.append("file", doc.file, doc.filename);
+    for (const key of ["title", "crop", "language", "publisher", "url", "published"] as const) {
+      const v = doc[key];
+      if (v) form.append(key, v);
+    }
+    return this.request<AdminDocument>("/admin/documents", { method: "POST", body: form, headers: { "X-Admin-Token": adminToken } });
+  }
+
+  reviewDocument(adminToken: string, id: number, decision: "approve" | "reject", reviewer: string) {
+    const form = new FormData();
+    form.append("reviewer", reviewer);
+    return this.request<{ id: number; status: string; reviewed_by: string }>(`/admin/documents/${id}/${decision}`, {
+      method: "POST",
+      body: form,
+      headers: { "X-Admin-Token": adminToken },
+    });
+  }
 
   adminStats(adminToken: string) {
     return this.request<Record<string, unknown>>("/admin/stats", { headers: { "X-Admin-Token": adminToken } });

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.api.auth import Identity, get_identity
 from app.db.models import Device, Notification, PriceAlert
 from app.db.session import get_db
-from app.reference import load_reference
+from app.reference import effective_district, load_reference
 
 router = APIRouter(tags=["alerts"])
 
@@ -80,7 +80,8 @@ def create_alert(body: AlertIn, identity: Identity = Depends(get_identity), db: 
         raise HTTPException(422, f"Unknown market {body.market!r}")
     if body.district and body.district not in ref.districts:
         raise HTTPException(422, f"Unknown district {body.district!r}")
-    existing = db.scalars(select(PriceAlert).where(_owner_filter(PriceAlert, identity), PriceAlert.active == 1)).all()
+    body.district = effective_district(body.district)
+    existing =db.scalars(select(PriceAlert).where(_owner_filter(PriceAlert, identity), PriceAlert.active == 1)).all()
     if len(existing) >= MAX_ALERTS:
         raise HTTPException(429, f"At most {MAX_ALERTS} active alerts")
     alert = PriceAlert(**body.model_dump(), **_owner_fields(identity))

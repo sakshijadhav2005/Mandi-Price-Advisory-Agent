@@ -186,7 +186,9 @@
     "version": "ऐप संस्करण",
     "connected": "जुड़ा है",
     "notConnected": "जुड़ा नहीं",
-    "state": "राज्य"
+    "state": "राज्य",
+    "admin": "एडमिन",
+    "adminHelp": "सलाह सामग्री और दस्तावेज़ समीक्षा (स्टाफ़)"
   },
   "disclaimerTitle": "कृपया ध्यान दें",
   "offline": {

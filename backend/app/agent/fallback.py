@@ -108,13 +108,24 @@ def knowledge_answer(ctx: ToolContext, crop_id: str | None, question: str) -> st
     """A storage question from a reviewed document, or a crop question from a close Kisan
     Call Centre answer, in the farmer's language. None when nothing matches well enough."""
     lang = ctx.language
+
+    def pick(res: dict, err: bool) -> dict | None:
+        """The first passage in the farmer's language; the other passages are not cited."""
+        if err:
+            return None
+        hit = next((h for h in res["results"] if h["language"] == lang), None)
+        keep = hit["source_id"] if hit else None  # passages of one document share a source id
+        for h in res["results"]:
+            if h["source_id"] != keep:
+                ctx.sources.pop(h["source_id"], None)
+        return hit
+
     if is_advisory_question(question):
         res, err = run_tool(ctx, "search_storage_advice", {"query": question, "crop": crop_id})
-        hit = None if err else next((h for h in res["results"] if h["language"] == lang), None)
-        if hit:
+        if hit := pick(res, err):
             return t(lang, "document_answer", title=hit["title"], publisher=hit["publisher"], text=hit["text"])
     res, err = run_tool(ctx, "search_farmer_questions", {"query": question, "crop": crop_id})
-    hit = None if err else next((h for h in res["results"] if h["language"] == lang), None)
+    hit = pick(res, err)
     if hit:
         district = load_reference().districts[res["district"]]
         return " ".join(

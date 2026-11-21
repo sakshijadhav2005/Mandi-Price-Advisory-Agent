@@ -15,7 +15,7 @@ from app.api import admin, alerts, auth, chat, prices, voice
 from app.config import get_settings
 from app.db.retention import purge_old_history
 from app.db.session import init_db, session_scope
-from app.reference import load_reference
+from app.reference import load_reference, locked_district
 from app.translation.languages import load_languages
 from app.voice.adapters import capabilities
 
@@ -79,17 +79,22 @@ def health() -> dict:
 def meta() -> dict:
     ref = load_reference()
     s = get_settings()
+    locked = locked_district()
+    # A single-district deployment lists only its district, so the apps hide the picker.
+    districts = [ref.districts[locked]] if locked else list(ref.districts.values())
     return {
         "today": today().isoformat(),
-        "district": ref.district,
-        "districts": [d.as_dict() for d in ref.districts.values()],
-        "states": ref.states,
+        "district": locked or ref.district,
+        "locked_district": locked,
+        "districts": [d.as_dict() for d in districts],
+        "states": sorted({d.state for d in districts}),
         "languages": {code: p.name for code, p in load_languages().items()},
         "language_packs": [{"code": p.code, "name": p.name, "speech_locale": p.speech_locale} for p in load_languages().values()],
         "crops": [{"id": c.id, "name": c.name, "names": c.names} for c in ref.crops.values()],
         "markets": [
             {"id": m.id, "name": m.name, "names": m.names, "lat": m.lat, "lon": m.lon, "district": m.district}
             for m in ref.markets.values()
+            if not locked or m.district == locked
         ],
         "voice": capabilities(),
         "answer_writer": resolve_provider(),

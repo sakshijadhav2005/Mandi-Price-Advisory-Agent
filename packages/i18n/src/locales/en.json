@@ -186,7 +186,9 @@
     "version": "App version",
     "connected": "Connected",
     "notConnected": "Not connected",
-    "state": "State"
+    "state": "State",
+    "admin": "Admin",
+    "adminHelp": "Advisory content and document review (staff)"
   },
   "disclaimerTitle": "Please note",
   "offline": {

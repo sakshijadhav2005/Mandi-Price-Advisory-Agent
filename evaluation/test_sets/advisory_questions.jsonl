@@ -1,0 +1,33 @@
+{"id": "en-decision-1", "lang": "en", "question": "Should I sell my onion now?", "route": "decision"}
+{"id": "en-decision-2", "lang": "en", "question": "Should I hold tomato for a better price?", "route": "decision"}
+{"id": "en-weather-1", "lang": "en", "question": "Will it rain this week in my area?", "route": "weather", "contains": ["No rain is expected"]}
+{"id": "en-weather-2", "lang": "en", "question": "When should I spray my onion?", "route": "weather", "contains": ["Advice for Onion"]}
+{"id": "en-pesticide-1", "lang": "en", "question": "I sprayed mancozeb on tomato 2 days ago, when can I harvest?", "route": "pesticide", "contains": ["wait 3 more days"]}
+{"id": "en-pesticide-2", "lang": "en", "question": "How many days after spraying thiamethoxam can I harvest onion?", "route": "pesticide", "contains": ["7 days"]}
+{"id": "en-pesticide-3", "lang": "en", "question": "I sprayed mancozeb on onion, when can I harvest?", "route": "pesticide", "contains": ["not listed"]}
+{"id": "en-scheme-1", "lang": "en", "question": "Am I eligible for PM-KISAN?", "route": "scheme", "scheme": "pm-kisan", "contains": ["income tax"]}
+{"id": "en-scheme-2", "lang": "en", "question": "How do I apply for crop insurance?", "route": "scheme", "scheme": "pmfby", "contains": ["14447"]}
+{"id": "en-scheme-3", "lang": "en", "question": "Tell me about Kisan Credit Card", "route": "scheme", "scheme": "kcc", "contains": ["7%"]}
+{"id": "en-scheme-list", "lang": "en", "question": "What government schemes are there for me?", "route": "scheme", "contains": ["PM-KISAN", "Namo Shetkari"]}
+{"id": "en-storage-1", "lang": "en", "question": "How should I store onions so they do not rot?", "route": "storage", "contains": ["ventilated"]}
+{"id": "en-kcc-1", "lang": "en", "question": "Why is my onion bulb size small?", "route": "kcc", "contains": ["irrigation"]}
+{"id": "en-kcc-2", "lang": "en", "question": "My tomato flowers are dropping, what should I do?", "route": "kcc", "contains": ["soil moisture"]}
+{"id": "en-out-1", "lang": "en", "question": "How do I get a loan from a moneylender?", "route": "out_of_scope"}
+{"id": "mr-decision-1", "lang": "mr", "question": "मी कांदा आता विकू की थांबू?", "route": "decision"}
+{"id": "mr-decision-2", "lang": "mr", "question": "बटाट्याचा भाव कसा आहे, विकू का?", "route": "decision"}
+{"id": "mr-weather-1", "lang": "mr", "question": "या आठवड्यात पाऊस येणार आहे का?", "route": "weather", "contains": ["पावसाची शक्यता नाही"], "not_contains": ["imidacloprid"]}
+{"id": "mr-pesticide-1", "lang": "mr", "question": "टोमॅटोवर mancozeb फवारणीनंतर किती दिवसांनी काढणी करू?", "route": "pesticide", "contains": ["किमान 5 दिवस"]}
+{"id": "mr-scheme-1", "lang": "mr", "question": "मला पीएम किसान मिळेल का?", "route": "scheme", "scheme": "pm-kisan", "contains": ["आयकर"]}
+{"id": "mr-scheme-2", "lang": "mr", "question": "पीक विमा कसा काढायचा?", "route": "scheme", "scheme": "pmfby", "contains": ["14447"]}
+{"id": "mr-scheme-3", "lang": "mr", "question": "नमो शेतकरी योजनेचे पैसे कधी मिळतात?", "route": "scheme", "scheme": "namo-shetkari", "contains": ["₹6,000"]}
+{"id": "mr-scheme-4", "lang": "mr", "question": "ठिबक सिंचनासाठी अनुदान किती मिळते?", "route": "scheme", "scheme": "micro-irrigation", "contains": ["55%"]}
+{"id": "mr-scheme-list", "lang": "mr", "question": "कोणत्या सरकारी योजना आहेत?", "route": "scheme", "contains": ["पीएम-किसान"]}
+{"id": "mr-storage-1", "lang": "mr", "question": "कांद्याची साठवण कशी करावी?", "route": "storage", "contains": ["चाळ"]}
+{"id": "mr-kcc-1", "lang": "mr", "question": "कांद्याचा आकार लहान का राहतो?", "route": "kcc", "contains": ["पाणी"]}
+{"id": "hi-decision-1", "lang": "hi", "question": "क्या मुझे प्याज अभी बेचना चाहिए?", "route": "decision"}
+{"id": "hi-weather-1", "lang": "hi", "question": "क्या इस हफ्ते बारिश होगी?", "route": "weather", "contains": ["बारिश की संभावना नहीं"]}
+{"id": "hi-pesticide-1", "lang": "hi", "question": "टमाटर पर mancozeb छिड़काव के बाद कितने दिन बाद तुड़ाई करें?", "route": "pesticide", "contains": ["5 दिन"]}
+{"id": "hi-scheme-1", "lang": "hi", "question": "पीएम किसान की किस्त कैसे मिलती है?", "route": "scheme", "scheme": "pm-kisan", "contains": ["₹6,000"]}
+{"id": "hi-scheme-2", "lang": "hi", "question": "किसान क्रेडिट कार्ड कैसे बनवाएं?", "route": "scheme", "scheme": "kcc", "contains": ["7%"]}
+{"id": "hi-scheme-3", "lang": "hi", "question": "नमो शेतकरी योजना के बारे में बताइए", "route": "scheme", "district": "amritsar", "contains": ["लागू नहीं"]}
+{"id": "hi-storage-1", "lang": "hi", "question": "प्याज का भंडारण कैसे करें?", "route": "decision", "contains": ["KVK"], "not_contains": ["ICAR-DOGR"]}

@@ -24,11 +24,12 @@ from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 
 import jwt
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api import ratelimit
 from app.config import get_settings
 from app.db.models import OtpCode, User
 from app.db.session import get_db
@@ -77,9 +78,14 @@ class OtpVerify(BaseModel):
 
 
 @router.post("/otp/request")
-def request_otp(body: OtpRequest, db: Session = Depends(get_db)) -> dict:
+def request_otp(body: OtpRequest, request: Request, db: Session = Depends(get_db)) -> dict:
     s = get_settings()
     phone = normalise_phone(body.phone)
+    ip = ratelimit.client_ip(request)
+    ratelimit.check("otp-phone", phone, s.otp_max_requests)  # each request may send an SMS
+    ratelimit.check("otp-ip", ip, s.auth_ip_max_attempts)
+    ratelimit.hit("otp-phone", phone)
+    ratelimit.hit("otp-ip", ip)
     code = f"{secrets.randbelow(10**6):06d}"
     db.add(OtpCode(phone=phone, code_hash=_hash(phone, code), expires_at=datetime.now(timezone.utc) + OTP_TTL))
     db.commit()
@@ -161,7 +167,10 @@ class PasswordLogin(BaseModel):
 
 
 @router.post("/signup", status_code=201)
-def signup(body: Signup, db: Session = Depends(get_db)) -> dict:
+def signup(body: Signup, request: Request, db: Session = Depends(get_db)) -> dict:
+    ip = ratelimit.client_ip(request)
+    ratelimit.check("signup-ip", ip, get_settings().signup_max_per_ip)
+    ratelimit.hit("signup-ip", ip)
     email = normalise_email(body.email)
     name = body.name.strip()
     if not name:
@@ -178,18 +187,30 @@ def signup(body: Signup, db: Session = Depends(get_db)) -> dict:
 
 
 @router.post("/login")
-def password_login(body: PasswordLogin, db: Session = Depends(get_db)) -> dict:
+def password_login(body: PasswordLogin, request: Request, db: Session = Depends(get_db)) -> dict:
+    s = get_settings()
     ident = body.identifier.strip()
+    account, ip = ident.lower(), ratelimit.client_ip(request)
+    # Checked before the password, so a locked account cannot be probed further.
+    ratelimit.check("login-account", account, s.auth_max_failures)
+    ratelimit.check("login-ip", ip, s.auth_ip_max_attempts)
+
+    def fail() -> HTTPException:
+        ratelimit.hit("login-account", account)
+        ratelimit.hit("login-ip", ip)
+        return HTTPException(401, "Incorrect email/mobile or password")
+
     if "@" in ident:
         user = db.scalars(select(User).where(User.email == ident.lower(), User.password_hash.is_not(None))).first()
     else:
         try:
             phone = normalise_phone(ident)
         except HTTPException:
-            raise HTTPException(401, "Incorrect email/mobile or password") from None
+            raise fail() from None
         user = db.scalars(select(User).where(User.phone == phone)).first()
     if not user or not check_password(body.password, user.password_hash):
-        raise HTTPException(401, "Incorrect email/mobile or password")
+        raise fail()
+    ratelimit.clear("login-account", account)
     if body.language:
         user.language = body.language
     db.commit()

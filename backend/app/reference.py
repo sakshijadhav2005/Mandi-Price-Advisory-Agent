@@ -426,3 +426,21 @@ def detect_quantity_qtl(text: str) -> float | None:
     if unit.startswith(("kg", "किलो")):
         return value / 100.0
     return value
+
+
+def locked_district() -> str | None:
+    """The district this deployment is locked to (LOCKED_DISTRICT), or None when it serves all."""
+    from app.config import get_settings
+
+    wanted = get_settings().locked_district.strip().lower()
+    if not wanted:
+        return None
+    if wanted not in load_reference().districts:
+        raise ValueError(f"LOCKED_DISTRICT={wanted!r} is not a known district id")
+    return wanted
+
+
+def effective_district(requested: str | None) -> str | None:
+    """The district to use: the locked one when the deployment is locked, else the request's."""
+    return locked_district() or requested
+

@@ -21,7 +21,7 @@ from app.agent.ollama_agent import run_ollama_agent
 from app.agent.openai_compat_agent import PRESETS, configured_free_provider, run_openai_compat_agent
 from app.agent.tools import ToolContext, compute_recommendation, run_tool
 from app.config import get_settings
-from app.reference import detect_crop, detect_district, detect_quantity_qtl, load_reference
+from app.reference import detect_crop, detect_district, detect_quantity_qtl, load_reference, locked_district
 from app.translation.glossary import SUPPORTED_LANGUAGES
 from app.translation.languages import is_advisory_question
 from app.translation.templates import t
@@ -111,8 +111,11 @@ def answer_query(
     crop = detect_crop(question) or crop
     quantity_qtl = detect_quantity_qtl(question) or quantity_qtl
     ref = load_reference()
-    own = district if district in ref.districts else None
-    district = detect_district(question, prefer_state=ref.districts[own].state if own else ref.default_district.state) or own
+    if locked := locked_district():  # a single-district deployment ignores other districts
+        district = locked
+    else:
+        own = district if district in ref.districts else None
+        district = detect_district(question, prefer_state=ref.districts[own].state if own else ref.default_district.state) or own
 
     def new_context() -> ToolContext:
         return ToolContext(

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { useApp } from "../lib/app-context";
 import { useOnline } from "../lib/online";
 import { ChartIcon, ChatIcon, ClockIcon, GearIcon } from "./Icons";
@@ -28,6 +28,8 @@ export function Layout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { language } = useApp();
   const online = useOnline();
+  // Sign-in screens have no tab bar: the tabs would only lead back to sign-in.
+  const authScreen = ["/login", "/signup"].includes(useLocation().pathname);
   const today = new Intl.DateTimeFormat(`${LOCALE[language ?? "en"] ?? "en-IN"}-u-nu-latn`, { day: "2-digit", month: "short" }).format(new Date());
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-2xl flex-col">
@@ -49,39 +51,41 @@ export function Layout({ children }: { children: ReactNode }) {
           {t("offline.banner")}
         </p>
       )}
-      <main className="flex-1 px-4 pb-32 pt-5">{children}</main>
-      <nav
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur-md"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        aria-label="Main"
-      >
-        <ul className="mx-auto grid max-w-2xl grid-cols-4">
-          {tabs.map(({ to, key, Icon, end }) => (
-            <li key={to}>
-              <NavLink
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  `relative flex min-h-[64px] flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors ${
-                    isActive ? "text-leaf-ink" : "text-muted hover:text-ink"
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={`absolute inset-x-4 top-0 h-[3px] rounded-b-full transition-colors ${isActive ? "bg-leaf" : "bg-transparent"}`}
-                      aria-hidden
-                    />
-                    <Icon />
-                    {t(key)}
-                  </>
-                )}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <main className={`flex-1 px-4 pt-5 ${authScreen ? "pb-8" : "pb-32"}`}>{children}</main>
+      {!authScreen && (
+        <nav
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur-md"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          aria-label="Main"
+        >
+          <ul className="mx-auto grid max-w-2xl grid-cols-4">
+            {tabs.map(({ to, key, Icon, end }) => (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  end={end}
+                  className={({ isActive }) =>
+                    `relative flex min-h-[64px] flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors ${
+                      isActive ? "text-leaf-ink" : "text-muted hover:text-ink"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        className={`absolute inset-x-4 top-0 h-[3px] rounded-b-full transition-colors ${isActive ? "bg-leaf" : "bg-transparent"}`}
+                        aria-hidden
+                      />
+                      <Icon />
+                      {t(key)}
+                    </>
+                  )}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }
