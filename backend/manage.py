@@ -4,6 +4,7 @@
     python manage.py seed-synthetic [--days 730] [--end 2026-11-08]
     python manage.py import-csv path/to/agmarknet_export.csv [--source pilot_ground_truth]
     python manage.py fetch-data-gov            # needs DATA_GOV_IN_API_KEY
+    python manage.py catch-up-prices [--days 30] # fill missed days by date (data.gov.in history)
     python manage.py fetch-agromet             # this week's IMD district advice (AGROMET_DISTRICTS)
     python manage.py translate-agromet         # Marathi/Hindi crop advice for stored bulletins (SARVAM_API_KEY)
     python manage.py import-pesticides [folder]           # CIB&RC lists -> pending rows + review CSV
@@ -93,6 +94,25 @@ def cmd_fetch_data_gov(_args) -> int:
         n = price_ingest.fetch_data_gov_in(s)
     log.info("fetched %d rows from data.gov.in", n)
     return n
+
+
+def cmd_catch_up_prices(args) -> dict:
+    """Fill days without real prices (last --days days) from data.gov.in, by date."""
+    from app.ingestion.price_history import CatchUpError, catch_up
+    from app.reference import load_reference, locked_district
+
+    init_db()
+    districts = [locked_district()] if locked_district() else list(load_reference().curated_districts)
+    with session_scope() as s:
+        try:
+            out = catch_up(s, districts, days=getattr(args, "days", 30))
+        except CatchUpError as exc:
+            if getattr(args, "func", None) is not cmd_catch_up_prices:
+                raise  # inside the daily job: let it alert
+            log.error("price catch-up: %s (will try again on the next run)", exc)
+            sys.exit(1)
+    log.info("price catch-up: %s", out)
+    return out
 
 
 def cmd_fetch_agromet(_args) -> list[dict]:
@@ -229,6 +249,13 @@ def cmd_daily(args) -> None:
     from app.ops import run_daily
 
     log.info("daily job: %s", run_daily(lambda: cmd_fetch_data_gov(args), lambda: cmd_check_alerts(args)))
+    try:  # days the daily fetch missed (data.gov.in down, PC off) are filled by date
+        cmd_catch_up_prices(args)
+    except Exception as exc:
+        from app.ops import ops_alert
+
+        log.exception("price catch-up failed")
+        ops_alert(f"Price catch-up from data.gov.in failed: {exc!r}")
     try:
         cmd_fetch_agromet(args)
     except Exception:  # district advice must never break the price job
@@ -325,6 +352,9 @@ def main() -> None:
     sp.add_argument("--source", default="agmarknet_csv", help="e.g. pilot_ground_truth for prices farmers actually received")
     sp.set_defaults(func=cmd_import_csv)
     sub.add_parser("fetch-data-gov").set_defaults(func=cmd_fetch_data_gov)
+    sp = sub.add_parser("catch-up-prices", help="fill days without real prices from data.gov.in, by date")
+    sp.add_argument("--days", type=int, default=30)
+    sp.set_defaults(func=cmd_catch_up_prices)
     sub.add_parser("fetch-agromet").set_defaults(func=cmd_fetch_agromet)
     sub.add_parser("translate-agromet").set_defaults(func=cmd_translate_agromet)
     sp = sub.add_parser("import-pesticides")

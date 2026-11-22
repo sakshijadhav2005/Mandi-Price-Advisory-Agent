@@ -18,3 +18,16 @@ if ($?) {
   Write-Host "Task '$Name' runs $script daily at $At (or as soon as the PC is on, if it was off). Log: backend\daily.log"
   Write-Host "Run it now with:  Start-ScheduledTask -TaskName $Name"
 }
+
+# Second task: every 3 hours, fill days without real prices (deploy\prices-retry.ps1).
+$retryName = "MandiPricesRetry"
+$retryScript = Join-Path $PSScriptRoot "prices-retry.ps1"
+$retryAction = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$retryScript`""
+$retryTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddHours(2) `
+    -RepetitionInterval (New-TimeSpan -Hours 3) -RepetitionDuration (New-TimeSpan -Days 3650)
+$retrySettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 1)
+Register-ScheduledTask -TaskName $retryName -Action $retryAction -Trigger $retryTrigger -Settings $retrySettings -Force | Out-Null
+if ($?) {
+  Write-Host "Task '$retryName' fills missed price days every 3 hours. Log: backend\daily.log"
+}
