@@ -62,6 +62,22 @@ def resolve_provider() -> str:
     return "none"
 
 
+# provider -> time.monotonic() until which it is skipped after a failure (per process).
+_cooldown_until: dict[str, float] = {}
+
+
+def cooling_down(provider: str) -> bool:
+    """True while `provider` is skipped after a recent failure (see LLM_COOLDOWN_S)."""
+    return time.monotonic() < _cooldown_until.get(provider, 0.0)
+
+
+def _start_cooldown(provider: str) -> None:
+    seconds = get_settings().llm_cooldown_s
+    if seconds > 0:
+        _cooldown_until[provider] = time.monotonic() + seconds
+        log.warning("%s failed: answering from templates for the next %.0f s", provider, seconds)
+
+
 Writer = Callable[[ToolContext, str, "list[dict] | None"], LLMResult]
 
 # Answer writers by provider name. A new provider is one entry here (and its module).
@@ -141,6 +157,11 @@ def answer_query(
         provider = settings.llm_provider if settings.llm_provider in WRITERS else "anthropic"
     if provider == "ollama" and language not in settings.ollama_language_list:
         provider = "none"  # small local models write poor Hindi/Marathi; use the templates instead
+    # Automatic use (the app): skip a provider that just failed, so farmers do not each wait
+    # out the deadline. An explicit use_llm=True always tries.
+    if use_llm is None and provider in WRITERS and cooling_down(provider):
+        warnings.append(f"llm_cooling_down:{provider}")
+        provider = "none"
     if provider in WRITERS:
         try:
             res = WRITERS[provider](ctx, question, history)
@@ -159,6 +180,7 @@ def answer_query(
         except LLMUnavailable as exc:
             log.warning("LLM unavailable, using template answer writer: %s", exc)
             warnings.append(f"llm_unavailable:{exc}"[:300])
+            _start_cooldown(provider)
 
     if mode == "template":
         # Fresh context so the template writer's trace and sources are not mixed with a rejected LLM attempt.

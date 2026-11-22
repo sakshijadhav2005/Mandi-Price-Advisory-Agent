@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     # across all its tool rounds. Past it the template writer answers from the same
     # prices and decision, so a slow connection never leaves the farmer waiting.
     llm_deadline_s: float = 15.0
+    # After the AI writer fails (timeout, rate limit, connection error), skip it for this long
+    # and answer from the templates at once, instead of every farmer waiting out the deadline.
+    llm_cooldown_s: float = 300.0
 
     # Agent guardrails (plan section 6)
     tool_budget: int = 6

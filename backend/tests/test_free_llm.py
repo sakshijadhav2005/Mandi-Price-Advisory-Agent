@@ -169,3 +169,22 @@ def test_request_shape_per_provider(session, gemini, monkeypatch):
     assert body["reasoning_effort"] == "low" and body["max_tokens"] == s.groq_max_tokens
     pesticide = next(t for t in body["tools"] if t["function"]["name"] == "lookup_pesticide")
     assert pesticide["function"]["parameters"]["properties"]["chemical"]["type"] == ["string", "null"]  # Groq: null allowed
+
+
+def test_failed_llm_is_skipped_for_a_while(session, gemini, monkeypatch):
+    # The app's automatic path (use_llm=None): after a failure the next farmers get the
+    # template answer at once, without waiting on the AI writer; it is tried again later.
+    monkeypatch.setattr(get_settings(), "llm_enabled", True)
+    monkeypatch.setattr(service, "_cooldown_until", {})
+    clock = [1000.0]
+    monkeypatch.setattr(service.time, "monotonic", lambda: clock[0])
+    calls = gemini([{"error": {"message": "quota"}}], status=429)
+    first = answer_query(session, "Should I sell onion?", language="en", as_of=AS_OF)
+    assert first.mode == "template" and any(w.startswith("llm_unavailable") for w in first.warnings)
+    assert len(calls) == 1
+    second = answer_query(session, "Should I sell onion?", language="en", as_of=AS_OF)
+    assert second.mode == "template" and "llm_cooling_down:gemini" in second.warnings
+    assert len(calls) == 1  # no request: skipped
+    clock[0] += get_settings().llm_cooldown_s + 1
+    answer_query(session, "Should I sell onion?", language="en", as_of=AS_OF)
+    assert len(calls) == 2  # tried again after the cooldown
