@@ -30,11 +30,14 @@ class Preset:
     base_url: str
     key_setting: str
     model_setting: str
+    # Thinking models (gemini-3.5-flash, gpt-oss) can spend 20+ s "thinking" before a short
+    # answer, past LLM_DEADLINE_S; a low reasoning effort keeps them to a few seconds.
+    effort_setting: str | None = None
 
 
 PRESETS: dict[str, Preset] = {
-    "gemini": Preset("https://generativelanguage.googleapis.com/v1beta/openai", "gemini_api_key", "gemini_model"),
-    "groq": Preset("https://api.groq.com/openai/v1", "groq_api_key", "groq_model"),
+    "gemini": Preset("https://generativelanguage.googleapis.com/v1beta/openai", "gemini_api_key", "gemini_model", "gemini_reasoning_effort"),
+    "groq": Preset("https://api.groq.com/openai/v1", "groq_api_key", "groq_model", "groq_reasoning_effort"),
     "openrouter": Preset("https://openrouter.ai/api/v1", "openrouter_api_key", "openrouter_model"),
 }
 
@@ -51,17 +54,24 @@ def _chat(provider: str, messages: list[dict], tools: list[dict], timeout: float
     key = getattr(s, preset.key_setting)
     if not key:
         raise LLMUnavailable(f"{provider}: no API key set ({preset.key_setting.upper()})")
+    body = {
+        "model": getattr(s, preset.model_setting),
+        "messages": messages,
+        "tools": tools,
+        "temperature": 0.2,
+        "max_tokens": s.llm_max_tokens,
+    }
+    if provider == "groq":
+        # Groq's free tier counts prompt + max_tokens against a per-minute token limit (8,000):
+        # the default 4,000-token reply budget alone would exhaust it. Answers are short.
+        body["max_tokens"] = min(s.llm_max_tokens, s.groq_max_tokens)
+    if preset.effort_setting and (effort := getattr(s, preset.effort_setting, "")):
+        body["reasoning_effort"] = effort
     try:
         resp = httpx.post(
             f"{preset.base_url}/chat/completions",
             headers={"Authorization": f"Bearer {key}"},
-            json={
-                "model": getattr(s, preset.model_setting),
-                "messages": messages,
-                "tools": tools,
-                "temperature": 0.2,
-                "max_tokens": s.llm_max_tokens,
-            },
+            json=body,
             timeout=timeout,
         )
     except httpx.HTTPError as exc:
@@ -81,7 +91,7 @@ def _chat(provider: str, messages: list[dict], tools: list[dict], timeout: float
 def run_openai_compat_agent(provider: str, ctx: ToolContext, question: str, history: list[dict] | None = None) -> LLMResult:
     s = get_settings()
     result = LLMResult(text="", stop_reason=None, model=f"{provider}:{getattr(s, PRESETS[provider].model_setting)}")
-    tools = function_tools()
+    tools = function_tools(keep_null=provider == "groq")
     messages: list[dict] = [
         {"role": "system", "content": build_system_prompt()},
         *(history or []),

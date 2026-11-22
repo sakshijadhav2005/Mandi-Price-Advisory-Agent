@@ -566,24 +566,26 @@ def tool_schemas() -> list[dict]:
     ]
 
 
-def simplify_schema(schema: dict) -> dict:
-    """Plain JSON Schema for OpenAI-style APIs: no nullable type arrays, optional fields not required."""
+def simplify_schema(schema: dict, keep_null: bool = False) -> dict:
+    """Plain JSON Schema for OpenAI-style APIs: optional fields not required. Nullable type
+    arrays are dropped, unless `keep_null` (Groq validates arguments strictly and its models
+    send null for optional fields)."""
     props = {}
     for name, p in schema["properties"].items():
         p = dict(p)
-        if isinstance(p.get("type"), list):
+        if isinstance(p.get("type"), list) and not keep_null:
             p["type"] = next(t for t in p["type"] if t != "null")
-        if "enum" in p:
+        if "enum" in p and not keep_null:
             p["enum"] = [v for v in p["enum"] if v is not None]
         props[name] = p
     required = [n for n in schema.get("required", []) if not isinstance(schema["properties"][n].get("type"), list)]
     return {"type": "object", "properties": props, "required": required}
 
 
-def function_tools(names: set[str] | None = None) -> list[dict]:
+def function_tools(names: set[str] | None = None, keep_null: bool = False) -> list[dict]:
     """The tools in OpenAI "function" format (Ollama, Gemini, Groq, OpenRouter), optionally a subset."""
     return [
-        {"type": "function", "function": {"name": t["name"], "description": t["description"], "parameters": simplify_schema(t["input_schema"])}}
+        {"type": "function", "function": {"name": t["name"], "description": t["description"], "parameters": simplify_schema(t["input_schema"], keep_null)}}
         for t in tool_schemas()
         if names is None or t["name"] in names
     ]

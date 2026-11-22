@@ -146,3 +146,26 @@ def test_auto_picks_free_provider(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
     assert resolve_provider() == "anthropic"
     assert service.PRESETS.keys() == {"gemini", "groq", "openrouter"}
+
+
+def test_request_shape_per_provider(session, gemini, monkeypatch):
+    """Gemini/Groq get a low reasoning effort (thinking models are otherwise too slow);
+    Groq also gets nullable tool fields and a small reply budget (free tier: 8,000 tokens/min)."""
+    calls = gemini([tool_call("compute_recommendation", {"crop": "onion"}), answer_from_recommendation])
+    answer_query(session, "Should I sell onion?", language="en", as_of=AS_OF, use_llm=True)
+    body = calls[0]["body"]
+    assert body["reasoning_effort"] == "low" and body["max_tokens"] == get_settings().llm_max_tokens
+    pesticide = next(t for t in body["tools"] if t["function"]["name"] == "lookup_pesticide")
+    assert pesticide["function"]["parameters"]["properties"]["chemical"]["type"] == "string"  # Gemini: plain types
+
+    s = get_settings()
+    monkeypatch.setattr(s, "llm_provider", "groq")
+    monkeypatch.setattr(s, "groq_api_key", "groq-key")
+    calls.clear()
+    gemini([tool_call("compute_recommendation", {"crop": "onion"}), answer_from_recommendation])
+    answer_query(session, "Should I sell onion?", language="en", as_of=AS_OF, use_llm=True)
+    body = calls[0]["body"]
+    assert calls[0]["url"].startswith("https://api.groq.com/") and body["model"] == "openai/gpt-oss-20b"
+    assert body["reasoning_effort"] == "low" and body["max_tokens"] == s.groq_max_tokens
+    pesticide = next(t for t in body["tools"] if t["function"]["name"] == "lookup_pesticide")
+    assert pesticide["function"]["parameters"]["properties"]["chemical"]["type"] == ["string", "null"]  # Groq: null allowed
