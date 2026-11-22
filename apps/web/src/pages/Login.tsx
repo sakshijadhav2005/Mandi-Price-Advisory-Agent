@@ -4,6 +4,7 @@ import { useState, type FormEvent, type InputHTMLAttributes, type ReactNode } fr
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
+import { NativeGoogleButton } from "../components/NativeGoogleButton";
 import {
   ArrowRightIcon,
   BoltIcon,
@@ -185,17 +186,28 @@ function useAuthRunner() {
 function GoogleBlock({ run, onError }: { run: (fn: () => Promise<unknown>) => Promise<void>; onError: (msg: string) => void }) {
   const { t } = useTranslation();
   const { api, language, meta } = useApp();
+  // Inside the Android/iOS app (Capacitor) Google's web sign-in opens in the outside browser,
+  // which cannot hand the result back ("origin_mismatch"), so the app uses native sign-in.
+  const inNativeApp = !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
   if (!meta?.google_client_id) return null;
   return (
     <>
       <Divider>{t("auth.orContinue")}</Divider>
       <div className="overflow-hidden rounded-lg">
-        <GoogleSignInButton
-          clientId={meta.google_client_id}
-          locale={language ?? "en"}
-          onCredential={(credential) => void run(() => api.googleLogin(credential, language ?? undefined))}
-          onError={() => onError(t("login.googleFailed"))}
-        />
+        {inNativeApp ? (
+          <NativeGoogleButton
+            clientId={meta.google_client_id}
+            onCredential={(credential) => void run(() => api.googleLogin(credential, language ?? undefined))}
+            onError={() => onError(t("login.googleFailed"))}
+          />
+        ) : (
+          <GoogleSignInButton
+            clientId={meta.google_client_id}
+            locale={language ?? "en"}
+            onCredential={(credential) => void run(() => api.googleLogin(credential, language ?? undefined))}
+            onError={() => onError(t("login.googleFailed"))}
+          />
+        )}
       </div>
     </>
   );
