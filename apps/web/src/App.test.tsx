@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import "./i18n";
 import { AppProvider } from "./lib/app-context";
+import { resetChat } from "./lib/chat-session";
 
 const meta = {
   today: "2026-11-08",
@@ -60,6 +61,7 @@ function renderApp() {
 describe("App", () => {
   beforeEach(() => {
     localStorage.clear();
+    resetChat(true);
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
@@ -87,5 +89,32 @@ describe("App", () => {
     await waitFor(() => expect(screen.getByText(/compute_recommendation/)).toBeInTheDocument());
     const chatCall = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.find(([u]) => String(u).endsWith("/chat"));
     expect(JSON.parse(chatCall![1].body).language).toBe("mr");
+  });
+  it("keeps a question that is still being answered when the farmer switches tabs", async () => {
+    let finish: (r: Response) => void = () => undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        if (url.endsWith("/meta")) return Promise.resolve(new Response(JSON.stringify(meta), { status: 200 }));
+        if (url.endsWith("/chat")) return new Promise<Response>((resolve) => (finish = resolve)); // answered later
+        if (url.includes("/alerts")) return Promise.resolve(new Response("[]", { status: 200 }));
+        const prices = { summary: null, crop: "onion", unit: "Rs/quintal", as_of: "2026-11-08", stale_after_days: 3, markets: [] };
+        return Promise.resolve(new Response(JSON.stringify(prices), { status: 200 }));
+      }),
+    );
+    renderApp();
+    fireEvent.click(screen.getByRole("button", { name: /English/ }));
+    const box = await screen.findByPlaceholderText(/Type your question/);
+    fireEvent.change(box, { target: { value: "Should I sell onion?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByText("Should I sell onion?")).toBeInTheDocument();
+
+    // Open Prices while the answer is loading, then come back to Ask.
+    fireEvent.click(screen.getByRole("link", { name: /Prices/ }));
+    await waitFor(() => expect(screen.queryByText("Should I sell onion?")).toBeNull());
+    finish(new Response(JSON.stringify(answer), { status: 200 }));
+    fireEvent.click(screen.getByRole("link", { name: /Ask/ }));
+    expect(await screen.findByText("Should I sell onion?")).toBeInTheDocument();
+    expect(await screen.findByText("आता विका. खात्री: जास्त.")).toBeInTheDocument();
   });
 });

@@ -2,6 +2,7 @@ import { ApiClient, type KeyValueStore, type Meta } from "@mandi/shared";
 import { isLanguage, type LanguageCode } from "@mandi/i18n";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import i18n from "../i18n";
+import { resetChat } from "./chat-session";
 
 /** localStorage wrapper that never throws (private mode, blocked storage). */
 export const webStore: KeyValueStore = {
@@ -127,6 +128,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
   const logout = useCallback(() => {
     api.setToken(null);
+    resetChat(true); // the next person on this phone must not see this conversation
     setLoggedIn(false);
   }, [api]);
   const setTheme = useCallback((t: Theme) => {

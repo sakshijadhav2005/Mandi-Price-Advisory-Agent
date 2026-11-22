@@ -50,7 +50,11 @@ function Shell() {
         )}
       </View>
       <View style={{ flex: 1 }}>
-        {tab === "ask" && <AskScreen key={`${conversation.id}-${conversation.nonce}`} conversationId={conversation.id} />}
+        {/* Ask stays mounted (hidden on other tabs): a question still being answered when the
+            farmer opens Prices or History finishes, and is there on coming back. */}
+        <View style={{ flex: 1, display: tab === "ask" ? "flex" : "none" }}>
+          <AskScreen key={`${conversation.id}-${conversation.nonce}`} conversationId={conversation.id} active={tab === "ask"} />
+        </View>
         {tab === "prices" && <PricesScreen />}
         {tab === "history" && (
           <HistoryScreen

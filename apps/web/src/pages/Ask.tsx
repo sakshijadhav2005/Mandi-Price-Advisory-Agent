@@ -1,4 +1,4 @@
-import { assistantTurn, canAutoSend, displayName, turnsFromConversation, userTurn, type Turn } from "@mandi/shared";
+import { assistantTurn, canAutoSend, displayName, turnsFromConversation, userTurn } from "@mandi/shared";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { AnswerCard } from "../components/AnswerCard";
 import { PinIcon, SendIcon } from "../components/Icons";
 import { MicButton, VoicePanel } from "../components/VoiceControl";
 import { useApp } from "../lib/app-context";
+import { getChat, resetChat, setChat, useChat } from "../lib/chat-session";
 import { useSpeaker, useVoiceInput } from "../lib/speech";
 
 
@@ -15,14 +16,20 @@ export function AskPage() {
   const lang = language ?? "en";
   const params = useParams();
   const navigate = useNavigate();
-  const [conversationId, setConversationId] = useState<number | null>(params.id ? Number(params.id) : null);
-  const [turns, setTurns] = useState<Turn[]>([]);
+  // The conversation lives outside the page (lib/chat-session), so switching tabs while an
+  // answer is loading neither loses the question nor the answer.
+  const { turns, busy, error, crop, qty } = useChat();
+  const setCrop = (v: string) => setChat({ crop: v });
+  const setQty = (v: string) => setChat({ qty: v });
   const [input, setInput] = useState("");
-  const [crop, setCrop] = useState<string>("");
-  const [qty, setQty] = useState<string>("");
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Hands-free voice conversation: tap the mic once, then speak, hear the
@@ -36,11 +43,15 @@ export function AskPage() {
   // Load an existing conversation from history.
   useEffect(() => {
     if (!params.id) return;
+    const id = Number(params.id);
+    const current = getChat();
+    if (current.conversationId === id && (current.busy || current.turns.length > 0)) return; // already open
+    resetChat();
+    const session = getChat().session;
     api
-      .conversation(Number(params.id))
+      .conversation(id)
       .then((c) => {
-        setConversationId(c.id);
-        setTurns(turnsFromConversation(c));
+        if (getChat().session === session) setChat({ conversationId: c.id, turns: turnsFromConversation(c) });
       })
       .catch(() => navigate("/", { replace: true }));
   }, [api, params.id, navigate]);
@@ -52,11 +63,11 @@ export function AskPage() {
   const send = useCallback(
     async (text: string, mode: "text" | "voice" = "text") => {
       const message = text.trim();
-      if (!message || busy) return;
-      setError(null);
+      const start = getChat();
+      if (!message || start.busy) return;
+      const session = start.session;
       setInput("");
-      setTurns((ts) => [...ts, userTurn(message)]);
-      setBusy(true);
+      setChat((s) => ({ error: null, busy: true, turns: [...s.turns, userTurn(message)] }));
       try {
         const res = await api.chat({
           message,
@@ -65,21 +76,22 @@ export function AskPage() {
           quantity_qtl: qty ? Number(qty) : null,
           lat: coords?.lat ?? null,
           lon: coords?.lon ?? null,
-          conversation_id: conversationId,
+          conversation_id: start.conversationId,
           input_mode: mode,
           district,
         });
-        setConversationId(res.conversation_id);
+        if (getChat().session !== session) return; // "new chat" or logout meanwhile
         const turn = assistantTurn(res, res.message_id);
-        setTurns((ts) => [...ts, turn]);
-        if (autoSpeak || mode === "voice") void speaker.speak(turn.key, res.text, res.language);
+        setChat((s) => ({ conversationId: res.conversation_id, turns: [...s.turns, turn] }));
+        // Read aloud only if the farmer is still on this page.
+        if (mounted.current && (autoSpeak || mode === "voice")) void speaker.speak(turn.key, res.text, res.language);
       } catch {
-        setError(navigator.onLine ? t("ask.error") : t("offline.noAnswer"));
+        if (getChat().session === session) setChat({ error: navigator.onLine ? t("ask.error") : t("offline.noAnswer") });
       } finally {
-        setBusy(false);
+        if (getChat().session === session) setChat({ busy: false });
       }
     },
-    [api, autoSpeak, busy, conversationId, coords, crop, district, lang, qty, speaker, t],
+    [api, autoSpeak, coords, crop, district, lang, qty, speaker, t],
   );
 
   const startVoice = useCallback(() => {
@@ -135,8 +147,7 @@ export function AskPage() {
 
   const newChat = () => {
     endVoice();
-    setTurns([]);
-    setConversationId(null);
+    resetChat();
     navigate("/");
   };
 

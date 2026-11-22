@@ -9,7 +9,10 @@ import { colors, s } from "../theme";
 import { speak, stopSpeaking, useRecorder } from "../voice";
 
 
-export function AskScreen({ conversationId: initialId }: { conversationId: number | null }) {
+export function AskScreen({ conversationId: initialId, active = true }: { conversationId: number | null; active?: boolean }) {
+  // Read answers aloud only while this tab is on screen (it stays mounted when hidden).
+  const activeRef = useRef(active);
+  activeRef.current = active;
   const { t } = useTranslation();
   const { api, meta, language, autoSpeak, district, keepRecordings } = useMobile();
   const lang = language ?? "en";
@@ -56,7 +59,7 @@ export function AskScreen({ conversationId: initialId }: { conversationId: numbe
         const turn = assistantTurn(res, res.message_id);
         const key = turn.key;
         setTurns((ts) => [...ts, turn]);
-        if (autoSpeak || mode === "voice") {
+        if (activeRef.current && (autoSpeak || mode === "voice")) {
           setSpeakingKey(key);
           void speak(res.text, res.language, () => setSpeakingKey((k) => (k === key ? null : k)), meta?.voice.server_tts ? api : null);
         }
