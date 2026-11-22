@@ -290,5 +290,17 @@
     "can i get",
     "will i get",
     "am i"
+  ],
+  "price_words": [
+    "price",
+    "rate",
+    "cost",
+    "how much",
+    "mandi",
+    "market",
+    "sell",
+    "worth",
+    "quintal",
+    "₹"
   ]
 }

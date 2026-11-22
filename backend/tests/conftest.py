@@ -24,6 +24,8 @@ for _name, _value in {
     "KCC_DISTRICTS": "pune",
     "KCC_RESOURCE_ID": "",
     "OTP_DEV_MODE": "true",
+    "DEMO_PRICES": "true",
+    "DATA_GOV_IN_API_KEY": "",
 }.items():
     os.environ[_name] = _value
 

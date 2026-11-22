@@ -30,6 +30,7 @@ class LanguagePack:
     pesticide_words: list[str] = ()  # stems that mark a pesticide dose / waiting-period question
     scheme_words: list[str] = ()  # "scheme", "योजना": a general government-scheme question
     eligibility_words: list[str] = ()  # "am I eligible", "पात्र", "मिळेल का"
+    price_words: list[str] = ()  # "price", "भाव", "दाम": the question is about the market price
 
 
 @lru_cache
@@ -50,6 +51,7 @@ def load_languages() -> dict[str, LanguagePack]:
             pesticide_words=raw.get("pesticide_words", []),
             scheme_words=raw.get("scheme_words", []),
             eligibility_words=raw.get("eligibility_words", []),
+            price_words=raw.get("price_words", []),
         )
     if "en" not in packs:
         raise RuntimeError("English language pack (en.json) is required as the fallback")
@@ -91,6 +93,11 @@ def is_scheme_question(text: str) -> bool:
 def asks_eligibility(text: str) -> bool:
     """True when the farmer asks whether they qualify ("am I eligible", "मला मिळेल का")."""
     return _mentions(text, [w for p in load_languages().values() for w in p.eligibility_words])
+
+
+def asks_price(text: str) -> bool:
+    """True when the question is about the market price ("onion rate today", "कांद्याचा भाव")."""
+    return _mentions(text, [w for p in load_languages().values() for w in p.price_words])
 
 
 def days_since_spray(text: str) -> int | None:

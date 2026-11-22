@@ -215,3 +215,15 @@ def test_search_fixes_found_by_the_storage_preview(clean, session, tmp_path):
     assert hits[0]["title"] == "onion"
     en = search_documents(session, "How do I cure onions before storage?", "onion", language="en")
     assert en[0]["language"] == "en"
+
+
+def test_unanswered_crop_questions_get_no_price_answer(clean, session):
+    # Nothing reviewed matches: a storage or crop-care question gets only the pointer to
+    # local experts, not a sell-or-hold answer nobody asked for.
+    for lang, q in (("en", "Why is my onion bulb size small?"), ("mr", "कांद्याची साठवण कशी करावी?"), ("mr", "माझ्या टोमॅटोची पाने पिवळी का पडतात?")):
+        text = answer_query(session, q, language=lang, as_of=AS_OF, use_llm=False, district="pune").text
+        assert "KVK" in text and "₹" not in text, (q, text)
+    # Price questions, sell-or-hold questions and a bare crop name still get prices.
+    for lang, q in (("mr", "कांद्याचा आजचा भाव काय आहे?"), ("en", "Should I sell onion now?"), ("en", "onion"), ("hi", "टमाटर का भाव क्या है?")):
+        text = answer_query(session, q, language=lang, as_of=AS_OF, use_llm=False, district="pune").text
+        assert "₹" in text, (q, text)

@@ -15,10 +15,12 @@ from __future__ import annotations
 
 from datetime import date
 
+from app.advisory.search import _crop_terms, terms
 from app.agent.tools import ToolContext, run_tool
 from app.reference import load_reference
 from app.translation.languages import (
     asks_eligibility,
+    asks_price,
     asks_sell_or_hold,
     days_since_spray,
     is_advisory_question,
@@ -109,6 +111,18 @@ def _not_a_decision(question: str) -> bool:
     """Not a sell/hold question. A storage question counts as not a decision even though
     Marathi "साठव" (store) is also a hold word; is_advisory_question handles that overlap."""
     return is_advisory_question(question) or not asks_sell_or_hold(question)
+
+
+def _not_about_price(question: str) -> bool:
+    """A crop question about something other than its price: storage, or crop care ("why
+    is my onion bulb small?"). It says nothing about price, selling or holding, and has
+    words beyond the crop name ("onion?" alone still gets the price answer)."""
+    if is_advisory_question(question):
+        return True
+    if asks_sell_or_hold(question) or asks_price(question):
+        return False
+    crop_words = _crop_terms()
+    return len([w for w in terms(question) if w not in crop_words]) >= 2
 
 
 def knowledge_answer(ctx: ToolContext, crop_id: str | None, question: str) -> str | None:
@@ -270,6 +284,10 @@ def write_answer(
         return found
     if weather and not asks_sell_or_hold(question):
         return agromet_answer(ctx, crop_id)
+    # Nothing reviewed matched a storage / crop-care question: point to local experts only,
+    # rather than a sell-or-hold answer nobody asked for.
+    if question and _not_about_price(question):
+        return t(lang, "out_of_scope")
 
     run_tool(ctx, "check_data_freshness", {"crop": crop_id})
     rec, err = run_tool(

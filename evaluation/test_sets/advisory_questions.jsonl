@@ -30,4 +30,4 @@
 {"id": "hi-scheme-1", "lang": "hi", "question": "पीएम किसान की किस्त कैसे मिलती है?", "route": "scheme", "scheme": "pm-kisan", "contains": ["₹6,000"]}
 {"id": "hi-scheme-2", "lang": "hi", "question": "किसान क्रेडिट कार्ड कैसे बनवाएं?", "route": "scheme", "scheme": "kcc", "contains": ["7%"]}
 {"id": "hi-scheme-3", "lang": "hi", "question": "नमो शेतकरी योजना के बारे में बताइए", "route": "scheme", "district": "amritsar", "contains": ["लागू नहीं"]}
-{"id": "hi-storage-1", "lang": "hi", "question": "प्याज का भंडारण कैसे करें?", "route": "decision", "contains": ["KVK"], "not_contains": ["ICAR-DOGR"]}
+{"id": "hi-storage-1", "lang": "hi", "question": "प्याज का भंडारण कैसे करें?", "route": "out_of_scope", "contains": ["KVK"], "not_contains": ["ICAR-DOGR"]}
