@@ -78,7 +78,9 @@ npm run dev        # http://localhost:5173
 
 > **Windows note:** npm scripts fail when the folder path contains `&` (as in `Mandi Price & Advisory Agent`), because npm runs them through `cmd.exe`. Either rename the folder (e.g. `mandi-agent`) or call the tools directly: `node node_modules/vite/bin/vite.js apps/web`, `node node_modules/vitest/vitest.mjs run`, `node node_modules/typescript/bin/tsc --noEmit -p apps/web`.
 
-Mobile (Expo): `cd apps/mobile && npx expo start`, then open in Expo Go or an Android emulator. The default server address is `http://10.0.2.2:8000` (the emulator's view of your PC); change it in Settings for a real phone. Push notifications need an EAS project id in `app.json`. Voice input on mobile needs `STT_PROVIDER=whisper` on the backend.
+Mobile, one command: `.\start-mobile.ps1` (or double-click `start-mobile.bat`) starts the backend in its own window, waits until it answers, then starts Expo with the PC's Wi-Fi address as the app's default server, so a real phone connects without changing Settings. `.\start-mobile.ps1 -BackendOnly` starts just the backend, for the installed APK.
+
+Mobile (Expo) by hand: `cd apps/mobile && npx expo start`, then open in Expo Go or an Android emulator. The default server address is `http://10.0.2.2:8000` (the emulator's view of your PC); change it in Settings for a real phone. Push notifications need an EAS project id in `app.json`. Voice input on mobile needs `STT_PROVIDER=whisper` on the backend.
 
 Capacitor fallback: `npm run build -w apps/web`, then in `apps/capacitor`: `npx cap sync android && npx cap open android` (needs Android Studio). iOS, on a Mac with Xcode and CocoaPods: `npx cap sync ios && npx cap open ios`.
 

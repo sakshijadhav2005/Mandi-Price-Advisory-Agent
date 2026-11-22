@@ -15,7 +15,12 @@ void i18n.use(initReactI18next).init({
   compatibilityJSON: "v4",
 });
 
-const DEFAULT_API = (Constants.expoConfig?.extra?.apiBase as string | undefined) ?? "http://10.0.2.2:8000";
+// start-mobile.ps1 sets EXPO_PUBLIC_API_BASE to this PC's network address, so a real phone
+// reaches the backend without editing Settings. Otherwise app.json's apiBase (the emulator's
+// view of the PC) is used.
+const DEFAULT_API =
+  process.env.EXPO_PUBLIC_API_BASE ||
+  ((Constants.expoConfig?.extra?.apiBase as string | undefined) ?? "http://10.0.2.2:8000");
 
 interface MobileState {
   api: ApiClient;
