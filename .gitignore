@@ -26,3 +26,5 @@ backend/data/pesticides/
 backend/data/tessdata/
 # OCR text of third-party documents (MPKV etc.): kept locally, not committed
 backend/data/rag-sources/**/*.md
+# Daily job log
+backend/daily.log
