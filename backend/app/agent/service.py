@@ -28,6 +28,9 @@ from app.translation.templates import t
 
 log = logging.getLogger(__name__)
 
+# Tools whose use makes an answer a price answer.
+PRICE_TOOLS = {"check_data_freshness", "get_mandi_prices", "compute_recommendation", "estimate_transport_cost"}
+
 
 @dataclass
 class AgentAnswer:
@@ -190,6 +193,10 @@ def answer_query(
         if llm_text is not None:
             ctx.trace = [{"tool": "(rejected llm attempt)", "args": {}, "is_error": True, "summary": f"{len(llm_trace)} tool calls"}] + ctx.trace
 
+    # The price disclaimer ("confirm with your trader before you sell") belongs only on answers
+    # that used price data, not on weather, scheme, storage or pesticide answers.
+    about_prices = any(step["tool"] in PRICE_TOOLS for step in ctx.trace)
+
     # Always attach a structured recommendation when a crop is known, so the UI card is grounded.
     if ctx.recommendation is None and crop and not detect_scheme(question):
         compute_recommendation(ctx, crop=crop, quantity_qtl=quantity_qtl)
@@ -202,7 +209,7 @@ def answer_query(
         confidence=rec["confidence"] if rec else None,
         recommendation=rec,
         sources=list(ctx.sources.values()),
-        disclaimer=t(language, "disclaimer"),
+        disclaimer=t(language, "disclaimer") if about_prices else "",
         mode=mode,
         trace=ctx.trace,
         warnings=warnings,

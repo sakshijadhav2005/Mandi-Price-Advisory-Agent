@@ -104,11 +104,13 @@ export function AnswerCard({
         </View>
       )}
 
-      <View style={s.banner}>
-        <Text style={s.bannerText}>
-          {t("disclaimerTitle")}: {answer.disclaimer}
-        </Text>
-      </View>
+      {answer.disclaimer ? (
+        <View style={s.banner}>
+          <Text style={s.bannerText}>
+            {t("disclaimerTitle")}: {answer.disclaimer}
+          </Text>
+        </View>
+      ) : null}
 
       {messageId !== undefined &&
         (voted ? (

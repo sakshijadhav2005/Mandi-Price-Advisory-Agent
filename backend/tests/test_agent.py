@@ -22,6 +22,13 @@ def test_offline_answer_in_each_language(session):
         assert ans.disclaimer
 
 
+def test_price_disclaimer_only_on_price_answers(session):
+    scheme = answer_query(session, "Am I eligible for PM-KISAN?", language="en", as_of=AS_OF, use_llm=False)
+    assert scheme.disclaimer == ""
+    stale = answer_query(session, "onion?", language="en", as_of=date(2027, 3, 1), use_llm=False)
+    assert "trader" in stale.disclaimer  # a stale-price answer is still about prices
+
+
 def test_offline_insufficient_when_data_is_old(session):
     ans = answer_query(session, "onion?", language="en", as_of=date(2027, 3, 1), use_llm=False)
     assert ans.decision == "insufficient_data"

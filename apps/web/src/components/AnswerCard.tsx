@@ -172,10 +172,16 @@ export function AnswerCard({
         </div>
       )}
 
-      <aside className="rounded-r-lg border-l-[3px] border-turmeric bg-turmeric-soft/70 px-3 py-2.5 text-sm text-turmeric-ink">
-        <strong>{t("disclaimerTitle")}:</strong> {answer.disclaimer}
-        {isDemo && <span className="mt-1 block font-medium">{t("prices.demo")}</span>}
-      </aside>
+      {(answer.disclaimer || isDemo) && (
+        <aside className="rounded-r-lg border-l-[3px] border-turmeric bg-turmeric-soft/70 px-3 py-2.5 text-sm text-turmeric-ink">
+          {answer.disclaimer && (
+            <>
+              <strong>{t("disclaimerTitle")}:</strong> {answer.disclaimer}
+            </>
+          )}
+          {isDemo && <span className="mt-1 block font-medium">{t("prices.demo")}</span>}
+        </aside>
+      )}
 
       {messageId && (
         <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3 text-sm">
