@@ -73,18 +73,22 @@ def prices(
     as_of = as_of or today()
     stale_after = get_settings().stale_after_days
     series = load_series(db, crop, as_of, lookback_days=days, markets=[market] if market else scope.market_ids)
+    # A market with real prices in the period shows only those; a market without any keeps
+    # its demo prices (marked as demo in the apps) rather than showing nothing.
+    series = {
+        m: real if (real := [p for p in pts if p.source != "synthetic"]) else pts for m, pts in series.items()
+    }
     markets = []
     for m_id in [market] if market else list(scope.market_ids):
         pts = series.get(m_id, [])
         latest = pts[-1] if pts else None
         if latest is None:
-            # Nothing in the window: show the last real price before it, with its date.
-            latest = db.scalars(
-                select(Price)
-                .where(Price.crop == crop, Price.market == m_id, Price.price_date <= as_of, Price.source != "synthetic")
-                .order_by(Price.price_date.desc())
-                .limit(1)
-            ).first()
+            # Nothing in the window: show the last price before it, with its date (a real
+            # one when there is one, else the last demo price).
+            before = select(Price).where(Price.crop == crop, Price.market == m_id, Price.price_date <= as_of)
+            latest = db.scalars(before.where(Price.source != "synthetic").order_by(Price.price_date.desc()).limit(1)).first()
+            if latest is None:
+                latest = db.scalars(before.order_by(Price.price_date.desc()).limit(1)).first()
             if latest is not None:
                 latest = _Point(latest.price_date, latest.min_price, latest.modal_price, latest.max_price, latest.source)
         age = (as_of - latest.price_date).days if latest else None

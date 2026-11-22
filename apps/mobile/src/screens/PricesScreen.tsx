@@ -1,5 +1,5 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { displayName, formatDate, formatRupees, type MarketPrices, type PriceAlert, type PriceSummary, type PricesResponse } from "@mandi/shared";
+import { PRICE_DAYS, daysBefore, displayName, formatDate, formatRupees, marketOnDay, type MarketPrices, type PriceAlert, type PriceSummary, type PricesResponse } from "@mandi/shared";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
@@ -25,13 +25,14 @@ export function PricesScreen() {
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [threshold, setThreshold] = useState("");
   const [direction, setDirection] = useState<"above" | "below">("above");
-  const [asOf, setAsOf] = useState<string | null>(null); // null = today; else a past yyyy-mm-dd
+  // The last 7 days come in one request (and are cached offline); choosing a day only picks from them.
+  const [picked, setPicked] = useState<string | null>(null); // null = today; else a day in the last 7
   const [picking, setPicking] = useState(false);
 
   const load = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await cacheJson(`prices.${district ?? "default"}.${crop}.${asOf ?? "today"}`, () => api.prices(crop, 30, district, asOf));
+      const res = await cacheJson(`prices7.${district ?? "default"}.${crop}`, () => api.prices(crop, PRICE_DAYS, district, null));
       setData(res.data);
       setCached(res.cached);
     } catch {
@@ -40,7 +41,17 @@ export function PricesScreen() {
       setRefreshing(false);
     }
     api.alerts().then(setAlerts).catch(() => undefined);
-  }, [api, crop, district, asOf]);
+  }, [api, crop, district]);
+
+  const today = data?.as_of ?? isoDay(new Date());
+  const firstDay = daysBefore(today, PRICE_DAYS - 1);
+  const day = picked && picked >= firstDay && picked < today ? picked : today;
+  const allViews = data?.markets.map((m) => ({ m, view: marketOnDay(m, day, today, data.stale_after_days) })) ?? [];
+  // Only markets with a real record; empty "no information" cards are left out.
+  const views = allViews.filter((v) => v.view.point);
+  // The demo banner only when every market shown is on demo prices.
+  const withData = data?.markets.filter((m) => m.source) ?? [];
+  const allDemo = withData.length > 0 && withData.every((m) => m.source === "synthetic");
 
   useEffect(() => {
     void load();
@@ -66,30 +77,33 @@ export function PricesScreen() {
         ))}
       </ScrollView>
       <Text style={s.small}>{t("prices.unit")}</Text>
-      <View style={s.row}>
-        <Pressable style={[s.btnGhost, { flex: 1 }]} onPress={() => setPicking(true)} accessibilityRole="button">
-          <Text style={s.btnGhostText}>📅 {asOf ? t("prices.showingDate", { date: formatDate(asOf, lang) }) : t("prices.pickDate")}</Text>
-        </Pressable>
-        {asOf && (
-          <Pressable style={s.btnGhost} onPress={() => setAsOf(null)} accessibilityRole="button">
-            <Text style={s.btnGhostText}>{t("prices.backToToday")}</Text>
+      <View style={[s.row, { justifyContent: "space-between", alignItems: "center" }]}>
+        <Text style={{ flex: 1, fontSize: 18, fontWeight: "700" }} accessibilityLiveRegion="polite">
+          {day === today ? t("prices.todayPrices", { date: formatDate(today, lang) }) : t("prices.pricesFor", { date: formatDate(day, lang) })}
+        </Text>
+        {day !== today && (
+          <Pressable onPress={() => setPicked(null)} accessibilityRole="button" hitSlop={8}>
+            <Text style={{ color: colors.leaf, fontWeight: "600" }}>{t("prices.backToToday")}</Text>
           </Pressable>
         )}
+        <Pressable style={[s.btnGhost, { minWidth: 48, paddingHorizontal: 0 }]} onPress={() => setPicking(true)} accessibilityRole="button" accessibilityLabel={t("prices.calendar")}>
+          <Text style={{ fontSize: 22 }}>📅</Text>
+        </Pressable>
       </View>
       {picking && (
         <DateTimePicker
-          value={asOf ? new Date(`${asOf}T12:00:00`) : new Date()}
+          value={new Date(`${day}T12:00:00`)}
           mode="date"
-          maximumDate={new Date()}
-          onChange={(event, picked) => {
+          minimumDate={new Date(`${firstDay}T00:00:00`)}
+          maximumDate={new Date(`${today}T23:59:59`)}
+          onChange={(event, chosen) => {
             setPicking(false);
-            if (event.type !== "set" || !picked) return;
-            const day = isoDay(picked);
-            setAsOf(day < isoDay(new Date()) ? day : null);
+            if (event.type !== "set" || !chosen) return;
+            setPicked(isoDay(chosen));
           }}
         />
       )}
-      {data && data.markets.every((m) => !m.latest) && (
+      {data && views.length === 0 && (
         <View style={s.banner}>
           <Text style={s.bannerText}>{t("prices.noData")}</Text>
         </View>
@@ -99,39 +113,38 @@ export function PricesScreen() {
           <Text style={s.bannerText}>{t("offline.banner")}</Text>
         </View>
       )}
-      {data?.markets.some((m) => m.source === "synthetic") && (
+      {allDemo && (
         <View style={s.banner}>
           <Text style={s.bannerText}>{t("prices.demo")}</Text>
         </View>
       )}
-      {data?.markets.map((m) => (
+      {views.map(({ m, view }) => (
         <View key={m.market} style={s.card}>
           <View style={[s.row, { justifyContent: "space-between" }]}>
             <Text style={s.h2}>{displayName({ id: m.market, name: m.market_name, names: m.names }, lang)}</Text>
-            <Text style={{ backgroundColor: STATUS_BG[m.status], paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: "hidden", fontSize: 13 }}>
-              {t(`prices.status.${m.status === "sparse" ? "stale" : m.status}`)}
+            <Text style={{ backgroundColor: STATUS_BG[view.status], paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: "hidden", fontSize: 13 }}>
+              {t(`prices.status.${view.status === "sparse" ? "stale" : view.status}`)}
             </Text>
-          </View>
-          {m.latest && (
+          </View>          {view.point && (
             <View style={[s.row, { justifyContent: "space-between" }]}>
               <View>
                 <Text style={s.small}>{t("prices.modal")}</Text>
-                <Text style={{ fontSize: 20, fontWeight: "700" }}>₹{formatRupees(m.latest.modal, lang)}</Text>
+                <Text style={{ fontSize: 20, fontWeight: "700" }}>₹{formatRupees(view.point.modal, lang)}</Text>
               </View>
               <View>
                 <Text style={s.small}>{t("prices.range")}</Text>
                 <Text>
-                  {formatRupees(m.latest.min, lang)}–{formatRupees(m.latest.max, lang)}
+                  {formatRupees(view.point.min, lang)}–{formatRupees(view.point.max, lang)}
                 </Text>
               </View>
               <View>
                 <Text style={s.small}>{t("prices.date")}</Text>
-                <Text>{formatDate(m.latest.date, lang)}</Text>
+                <Text>{formatDate(view.point.date, lang)}</Text>
               </View>
             </View>
           )}
-          {m.latest && m.latest.date !== data.as_of && (
-            <Text style={[s.small, { color: "#92400e" }]}>{t("prices.lastAvailable", { date: formatDate(m.latest.date, lang) })}</Text>
+          {view.point && view.point.date !== day && (
+            <Text style={[s.small, { color: "#92400e" }]}>{t("prices.lastAvailable", { date: formatDate(view.point.date, lang) })}</Text>
           )}
           <PriceRecords market={m} lang={lang} />
         </View>

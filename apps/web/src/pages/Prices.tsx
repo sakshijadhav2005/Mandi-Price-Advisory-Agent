@@ -1,7 +1,8 @@
-import { displayName, formatDate, formatRupees, type MarketPrices, type PriceSummary, type PricesResponse } from "@mandi/shared";
-import { useEffect, useState } from "react";
+import { PRICE_DAYS, daysBefore, displayName, formatDate, formatRupees, marketOnDay, type MarketPrices, type PriceSummary, type PricesResponse } from "@mandi/shared";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertsPanel } from "../components/AlertsPanel";
+import { CalendarIcon } from "../components/Icons";
 import { Sparkline } from "../components/Sparkline";
 import { useApp } from "../lib/app-context";
 
@@ -21,19 +22,39 @@ export function PricesPage() {
   const [crop, setCrop] = useState("onion");
   const [data, setData] = useState<PricesResponse | null>(null);
   const [error, setError] = useState(false);
-  const [asOf, setAsOf] = useState(""); // "" = today; otherwise a past date (yyyy-mm-dd)
-  const todayIso = new Date().toLocaleDateString("en-CA");
+  // The last 7 days come in one request; choosing a day only picks from them.
+  const [picked, setPicked] = useState(""); // "" = today; otherwise a day in the last 7 (yyyy-mm-dd)
+  const dateInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setData(null);
     setError(false);
     api
-      .prices(crop, 30, district, asOf || null)
+      .prices(crop, PRICE_DAYS, district, null)
       .then(setData)
       .catch(() => setError(true));
-  }, [api, crop, district, asOf]);
+  }, [api, crop, district]);
 
-  const demo = data?.markets.some((m) => m.source === "synthetic");
+  const today = data?.as_of ?? new Date().toLocaleDateString("en-CA");
+  const firstDay = daysBefore(today, PRICE_DAYS - 1);
+  const day = picked && picked >= firstDay && picked < today ? picked : today;
+  const allViews = data?.markets.map((m) => ({ m, view: marketOnDay(m, day, today, data.stale_after_days) })) ?? [];
+  // Only markets with a real record; empty "no information" cards are left out.
+  const views = allViews.filter((v) => v.view.point);
+  // The demo banner only when every market shown is on demo prices.
+  const withData = data?.markets.filter((m) => m.source) ?? [];
+  const demo = withData.length > 0 && withData.every((m) => m.source === "synthetic");
+
+  const openCalendar = () => {
+    const input = dateInput.current;
+    if (!input) return;
+    try {
+      input.showPicker();
+    } catch {
+      input.focus(); // older browsers: focusing the date input opens its picker
+      input.click();
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -56,28 +77,34 @@ export function PricesPage() {
           ))}
         </select>
       </div>
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-0 flex-1">
-          <label className="label" htmlFor="prices-date">
-            {t("prices.pickDate")}
-          </label>
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 text-lg font-semibold" aria-live="polite">
+          {day === today ? t("prices.todayPrices", { date: formatDate(today, lang) }) : t("prices.pricesFor", { date: formatDate(day, lang) })}
+        </p>
+        <div className="relative flex shrink-0 items-center gap-2">
+          {day !== today && (
+            <button type="button" className="text-sm font-medium text-leaf-ink underline-offset-2 hover:underline" onClick={() => setPicked("")}>
+              {t("prices.backToToday")}
+            </button>
+          )}
+          <button type="button" className="btn-ghost w-12 px-0" onClick={openCalendar} aria-label={t("prices.calendar")} title={t("prices.calendar")}>
+            <CalendarIcon />
+          </button>
+          {/* No visible field: the calendar button opens this input's date picker. */}
           <input
-            id="prices-date"
+            ref={dateInput}
             type="date"
-            className="input"
-            max={todayIso}
-            value={asOf}
-            onChange={(e) => setAsOf(e.target.value && e.target.value < todayIso ? e.target.value : "")}
+            tabIndex={-1}
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 right-0 h-px w-px opacity-0"
+            min={firstDay}
+            max={today}
+            value={day}
+            onChange={(e) => setPicked(e.target.value)}
           />
         </div>
-        {asOf && (
-          <button type="button" className="btn-ghost" onClick={() => setAsOf("")}>
-            {t("prices.backToToday")}
-          </button>
-        )}
       </div>
-      {asOf && <p className="text-sm font-medium text-muted">{t("prices.showingDate", { date: formatDate(asOf, lang) })}</p>}
-      {data && data.markets.every((m) => !m.latest) && (
+      {data && views.length === 0 && (
         <p className="rounded-r-lg border-l-[3px] border-turmeric bg-turmeric-soft/70 px-3 py-2.5 text-sm text-turmeric-ink">{t("prices.noData")}</p>
       )}
       {demo && (
@@ -96,39 +123,38 @@ export function PricesPage() {
         </div>
       )}
       <ul className="space-y-3">
-        {data?.markets.map((m) => (
+        {views.map(({ m, view }) => (
           <li key={m.market} className="card overflow-hidden p-0">
             <div className="flex items-start justify-between gap-3 p-4 pb-3">
               <div className="min-w-0">
                 <h3 className="truncate text-lg font-semibold leading-tight">{displayName({ id: m.market, name: m.market_name, names: m.names }, lang)}</h3>
-                <span className={`chip mt-1.5 ${STATUS_STYLE[m.status]}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[m.status]}`} aria-hidden />
-                  {t(`prices.status.${m.status === "sparse" ? "stale" : m.status}`)}
-                  {m.age_days !== null && m.age_days > 0 ? ` · ${t("prices.daysOld", { count: m.age_days })}` : ""}
-                </span>
-              </div>
+                <span className={`chip mt-1.5 ${STATUS_STYLE[view.status]}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[view.status]}`} aria-hidden />
+                  {t(`prices.status.${view.status === "sparse" ? "stale" : view.status}`)}
+                  {view.ageDays !== null && view.ageDays > 0 ? ` · ${t("prices.daysOld", { count: view.ageDays })}` : ""}
+                </span>              </div>
               <Sparkline values={m.history.map((h) => h.modal)} label={t("prices.trend")} />
             </div>
-            {m.latest ? (
+            {view.point ? (
               <dl className="grid grid-cols-[auto_1fr_auto] items-end gap-4 bg-board px-4 py-3 text-sm">
                 <div>
                   <dt className="eyebrow text-white/55">{t("prices.modal")}</dt>
-                  <dd className="num text-2xl font-semibold leading-none text-board-ink">₹{formatRupees(m.latest.modal, lang)}</dd>
+                  <dd className="num text-2xl font-semibold leading-none text-board-ink">₹{formatRupees(view.point.modal, lang)}</dd>
                 </div>
                 <div>
                   <dt className="eyebrow text-white/55">{t("prices.range")}</dt>
                   <dd className="num whitespace-nowrap text-white/85">
-                    {formatRupees(m.latest.min, lang)}–{formatRupees(m.latest.max, lang)}
+                    {formatRupees(view.point.min, lang)}–{formatRupees(view.point.max, lang)}
                   </dd>
                 </div>
                 <div className="text-right">
                   <dt className="eyebrow text-white/55">{t("prices.date")}</dt>
-                  <dd className="num text-white/85">{formatDate(m.latest.date, lang)}</dd>
+                  <dd className="num text-white/85">{formatDate(view.point.date, lang)}</dd>
                 </div>
               </dl>
             ) : null}
-            {m.latest && m.latest.date !== data.as_of && (
-              <p className="border-t border-line px-4 py-2 text-sm text-turmeric-ink">{t("prices.lastAvailable", { date: formatDate(m.latest.date, lang) })}</p>
+            {view.point && view.point.date !== day && (
+              <p className="border-t border-line px-4 py-2 text-sm text-turmeric-ink">{t("prices.lastAvailable", { date: formatDate(view.point.date, lang) })}</p>
             )}
             <PriceRecords market={m} lang={lang} />
           </li>

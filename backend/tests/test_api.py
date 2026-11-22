@@ -112,3 +112,30 @@ def test_prices_last_real_price_and_summary(session):
     finally:
         session.execute(delete(Price).where(Price.source == "agmarknet_csv", Price.price_date >= day))
         session.commit()
+
+
+def test_prices_real_market_shows_only_real_others_keep_demo(session):
+    from datetime import date
+
+    from sqlalchemy import delete
+
+    from app.db.models import Price
+
+    with client() as c:
+        before = c.get("/prices", params={"crop": "onion", "days": 7, "district": "pune", "as_of": "2026-11-08"}).json()
+        assert any(m["source"] == "synthetic" for m in before["markets"])  # only demo prices so far
+    day = date(2026, 11, 6)
+    session.add(Price(crop="onion", market="pune", price_date=day, min_price=4200, modal_price=4700, max_price=5200, source="agmarknet_csv"))
+    session.commit()
+    try:
+        with client() as c:
+            data = c.get("/prices", params={"crop": "onion", "days": 7, "district": "pune", "as_of": "2026-11-08"}).json()
+            pune = next(m for m in data["markets"] if m["market"] == "pune")
+            assert pune["source"] == "agmarknet_csv"
+            assert pune["history"] == [{"date": "2026-11-06", "min": 4200, "modal": 4700, "max": 5200}]
+            others = [m for m in data["markets"] if m["market"] != "pune"]
+            # Markets without a real price still show their (demo) prices instead of nothing.
+            assert others and all(m["source"] == "synthetic" and m["history"] and m["latest"] for m in others)
+    finally:
+        session.execute(delete(Price).where(Price.source == "agmarknet_csv", Price.price_date == day))
+        session.commit()

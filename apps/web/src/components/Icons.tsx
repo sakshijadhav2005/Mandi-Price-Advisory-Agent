@@ -175,3 +175,9 @@ export const TractorIcon = ({ className = "h-6 w-6" }: P) => (
     <circle cx="18" cy="18" r="2" />
   </svg>
 );
+export const CalendarIcon = ({ className = "h-5 w-5" }: P) => (
+  <svg {...base} className={className}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+    <path d="M3.5 10h17M8 3v4M16 3v4" />
+  </svg>
+);
