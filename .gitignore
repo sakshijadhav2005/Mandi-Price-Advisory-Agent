@@ -29,3 +29,6 @@ backend/data/rag-sources/**/*.md
 # Daily job log
 backend/daily.log
 backend/data/rag-sources/**/*.htm
+
+# Built Android packages
+*.apk
