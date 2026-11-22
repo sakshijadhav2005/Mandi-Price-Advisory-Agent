@@ -78,7 +78,11 @@ def scheme_answer(ctx: ToolContext, question: str) -> str | None:
         res, err = run_tool(ctx, "list_schemes", {})
         if err:
             return res["error"]
-        return t(lang, "scheme_list", state=res["state"], names=", ".join(s["name"] for s in res["schemes"]))
+        from app.translation.languages import load_languages
+
+        pack = load_languages().get(lang)
+        state = (pack.glossary.get(res["state"]) or [res["state"]])[0] if pack else res["state"]
+        return t(lang, "scheme_list", state=state, names=", ".join(s["name"] for s in res["schemes"]))
     res, err = run_tool(ctx, "get_scheme", {"scheme": scheme.id})
     if err:
         return res["error"]
