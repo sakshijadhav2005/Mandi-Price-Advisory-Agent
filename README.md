@@ -94,15 +94,19 @@ Storage and post-harvest advice: add official documents (ICAR-DOGR, CPRI, KVK, a
 
 Kisan Call Centre answers: everyday crop questions (varieties, nutrients, water, crop care) are answered from similar questions that KCC experts answered for farmers in the same district (`KCC_DISTRICTS`, default `pune`, last `KCC_YEARS` = 3 years). Load them with `python manage.py import-kcc kcc.csv` (the CSV export of "Kisan Call Centre (KCC) - Transcripts of farmers queries & answers" from data.gov.in) or, with `KCC_RESOURCE_ID` set, `python manage.py fetch-kcc` (also monthly in `daily`). Weather, scheme and market rows are skipped, number-encoded Devanagari in old rows is decoded, duplicates are dropped, and **any answer that names a pesticide or a dose is not stored**: doses come only from the reviewed CIB&RC list. Search is a small built-in BM25 with Marathi/Hindi stemming and glossary-based cross-language expansion; a crop name alone never counts as a match.
 
-Admin page (`/admin`, link at the bottom of Settings; needs `ADMIN_TOKEN`): what the advisory features still need (pesticide rows to review, approved documents, KCC answers, the current IMD bulletin, scheme entries needing attention), and upload / approve / reject storage documents with the reviewer's name recorded.
+Admin page (`/admin` on the web and **Admin** at the bottom of Settings in the mobile app; needs `ADMIN_TOKEN`; uploads are on the web page): what the advisory features still need (pesticide rows to review, approved documents, KCC answers, the current IMD bulletin, scheme entries needing attention), and upload / approve / reject storage documents with the reviewer's name recorded.
 
 Official scheme pages: `python manage.py watch-sources` (every Monday in `daily`) fingerprints each scheme's official page (ignoring scripts, tags and numbers) and sends an ops alert naming the entries to re-check when a page's text changes. The first check only records the pages.
 
 Single-district deployment: `LOCKED_DISTRICT=pune` makes every answer, price list and alert use Pune, and `/meta` lists only Pune, so the web and mobile apps hide their district picker. Empty (default) serves all districts.
 
-Login protection: failed password logins are limited per account (`AUTH_MAX_FAILURES`, 5) and per IP address (`AUTH_IP_MAX_ATTEMPTS`, 30), OTP codes per phone number (`OTP_MAX_REQUESTS`, 5) and signups per IP (`SIGNUP_MAX_PER_IP`, 10), each within `AUTH_WINDOW_MINUTES` (15); over the limit the API answers 429 with Retry-After. Counters are per server process.
+Login protection: failed password logins are limited per account (`AUTH_MAX_FAILURES`, 5) and per IP address (`AUTH_IP_MAX_ATTEMPTS`, 30), OTP codes per phone number (`OTP_MAX_REQUESTS`, 5) and signups per IP (`SIGNUP_MAX_PER_IP`, 10), each within `AUTH_WINDOW_MINUTES` (15); over the limit the API answers 429 with Retry-After. Counters are per server process by default; `RATE_LIMIT_BACKEND=database` shares them through the database across every worker and server.
 
 Advisory evaluation: `python evaluation/scripts/run_advisory_eval.py` asks the labelled questions in `evaluation/test_sets/advisory_questions.jsonl` (English, Hindi, Marathi) against sample content for every feature and reports routing and content accuracy per language and feature (`evaluation/reports/advisory_results.md`); the test suite runs it too, so a routing regression fails the build.
+
+Sarvam AI (one `SARVAM_API_KEY`): `TTS_PROVIDER=sarvam` for spoken answers, `STT_PROVIDER=sarvam` for voice questions (model `SARVAM_STT_MODEL`, default `saaras:v4`; phone m4a and browser webm audio), and machine translation of each new IMD bulletin's crop advice into Marathi and Hindi, made once when it is downloaded (`python manage.py translate-agromet` adds it to bulletins stored earlier). Translated advice is marked as a machine translation; without a key, the template answer writer gives the forecast in the farmer's language and links the English bulletin.
+
+Answer writer naming: answers come from an AI model (`mode: "llm"`) or, when none is configured or an AI answer fails a guardrail, from the **template answer writer** (`mode: "template"`; answers saved before this rename say `"offline"`, which means the same). Both need the server; "template" does not mean without internet.
 
 Real prices: set `DATA_GOV_IN_API_KEY` (free, from your data.gov.in account) and run `python manage.py daily` once a day. On Windows, `.\deploy\install-daily-task.ps1` registers a Task Scheduler job for 18:30 (log in `backend/daily.log`); on Linux use cron, or leave `manage.py schedule` running. Each API call is retried three times with a 20 s pause, because data.gov.in is often slow. It fetches prices, checks price alerts, and posts to `OPS_ALERT_WEBHOOK_URL` (Slack, Discord or Teams) when ingestion fails or returns nothing. Or import Agmarknet CSV exports with `python manage.py import-csv file.csv`.
 
@@ -147,7 +151,7 @@ Latest results on synthetic data (2 districts × 3 crops: 600 decision points pl
 - Its biggest misses are still potato in July–October 2025, the first year of data, when there is no year-before history for the seasonal signal.
 - On simulated feed outages it says "insufficient data" **100%** of the time. All baselines guess.
 - Its confidence levels are meaningful: high-confidence calls are right 93% of the time, medium 71%, low 48%.
-- Per-language checks of the offline pipeline (crop understanding, answer language, number grounding, citation validity) are 100% in English, Hindi and Marathi.
+- Per-language checks of the template-writer pipeline (crop understanding, answer language, number grounding, citation validity) are 100% in English, Hindi and Marathi.
 
 These numbers only show the pipeline works. They say nothing about real-market performance until the test set is rebuilt from Agmarknet history.
 

@@ -252,6 +252,29 @@ def pdf_text(data: bytes) -> str:
 # --- download and store --------------------------------------------------------------
 
 
+TRANSLATE_TO = ("mr", "hi")
+
+
+def translate_bulletin(parsed: ParsedBulletin) -> dict:
+    """Marathi / Hindi machine translations of the crop advice and weather summary (Sarvam),
+    made once per bulletin. Empty when no Sarvam key is set or the service fails: answers
+    then use the English text with the bulletin link, as before."""
+    from app.translation import sarvam
+
+    if not sarvam.available():
+        return {}
+    out: dict = {}
+    for lang in TRANSLATE_TO:
+        try:
+            out[lang] = {
+                "weather_summary": sarvam.translate(parsed.sections.get("weather_summary", ""), lang),
+                "crops": {crop: sarvam.translate(text, lang) for crop, text in parsed.crops.items()},
+            }
+        except sarvam.TranslationUnavailable as exc:
+            log.warning("agromet: no %s translation (%s); answers will link the English bulletin", lang, exc)
+    return out
+
+
 def bulletin_url(district_id: str) -> str:
     district = load_reference().districts[district_id]
     return get_settings().agromet_url_template.format(name=quote(district.name), id=district_id)
@@ -321,7 +344,7 @@ def fetch_bulletin(session: Session, district_id: str) -> dict:
             sha256=sha,
             source_url=url,
             file_path=str(path),
-            data=parsed.as_json(),
+            data=parsed.as_json() | {"translations": translate_bulletin(parsed)},
         )
     )
     session.commit()
@@ -355,6 +378,22 @@ def fetch_all(session: Session, today: date) -> list[dict]:
             results[-1]["stale"] = True
             ops_alert(f"Agromet: no valid IMD bulletin for {district_id} ({results[-1].get('error') or results[-1]['status']}).")
     return results
+
+
+def translate_stored(session: Session) -> int:
+    """Add Marathi / Hindi translations to active bulletins that have none (e.g. stored
+    before SARVAM_API_KEY was set). Returns how many bulletins were translated."""
+    done = 0
+    for b in session.scalars(select(AgrometBulletin).where(AgrometBulletin.status == "active")):
+        if b.data.get("translations"):
+            continue
+        parsed = ParsedBulletin(b.issued_on, b.valid_until, b.data.get("forecast", []), b.data.get("sections", {}), b.data.get("crops", {}))
+        translations = translate_bulletin(parsed)
+        if translations:
+            b.data = {**b.data, "translations": translations}
+            done += 1
+    session.commit()
+    return done
 
 
 def current_bulletin(session: Session, district_id: str, today: date) -> AgrometBulletin | None:

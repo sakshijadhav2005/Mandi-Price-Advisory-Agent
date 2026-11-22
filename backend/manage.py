@@ -5,6 +5,7 @@
     python manage.py import-csv path/to/agmarknet_export.csv [--source pilot_ground_truth]
     python manage.py fetch-data-gov            # needs DATA_GOV_IN_API_KEY
     python manage.py fetch-agromet             # this week's IMD district advice (AGROMET_DISTRICTS)
+    python manage.py translate-agromet         # Marathi/Hindi crop advice for stored bulletins (SARVAM_API_KEY)
     python manage.py import-pesticides [folder]           # CIB&RC lists -> pending rows + review CSV
     python manage.py approve-pesticides review.csv --reviewer "Name"   # make reviewed rows usable
     python manage.py check-pesticide-list      # is a newer CIB&RC list published?
@@ -212,6 +213,16 @@ def cmd_watch_sources(_args) -> dict:
     return out
 
 
+def cmd_translate_agromet(_args) -> int:
+    from app.advisory.agromet import translate_stored
+
+    init_db()
+    with session_scope() as s:
+        n = translate_stored(s)
+    log.info("translated %d stored bulletins", n)
+    return n
+
+
 def cmd_daily(args) -> None:
     """One daily run (for cron / Task Scheduler): fetch prices, check alerts, alert ops on failure."""
     from app.ops import run_daily
@@ -314,6 +325,7 @@ def main() -> None:
     sp.set_defaults(func=cmd_import_csv)
     sub.add_parser("fetch-data-gov").set_defaults(func=cmd_fetch_data_gov)
     sub.add_parser("fetch-agromet").set_defaults(func=cmd_fetch_agromet)
+    sub.add_parser("translate-agromet").set_defaults(func=cmd_translate_agromet)
     sp = sub.add_parser("import-pesticides")
     sp.add_argument("folder", nargs="?", default=str(PESTICIDE_DIR))
     sp.add_argument("--review", default=str(PESTICIDE_REVIEW))

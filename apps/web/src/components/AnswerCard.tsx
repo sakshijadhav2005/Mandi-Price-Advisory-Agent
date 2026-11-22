@@ -168,7 +168,7 @@ export function AnswerCard({
               </ol>
             </>
           )}
-          {answer.mode === "offline" && <p className="text-xs text-muted">{t("answer.offline")}</p>}
+          {answer.mode !== "llm" && <p className="text-xs text-muted">{t("answer.basicAnswer")}</p>}
         </div>
       )}
 

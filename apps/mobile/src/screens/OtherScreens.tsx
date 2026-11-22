@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { useMobile } from "../context";
 import { registerForPush } from "../push";
+import { AdminScreen } from "./AdminScreen";
 import { colors, s } from "../theme";
 
 export function LanguageScreen() {
@@ -68,6 +69,9 @@ export function SettingsScreen() {
   const { api, meta, language, setLanguage, autoSpeak, setAutoSpeak, keepRecordings, setKeepRecordings, apiBase, setApiBase, district, setDistrict, loggedIn, logout, chooseGuest } = useMobile();
   const [server, setServer] = useState(apiBase);
   const [pushOk, setPushOk] = useState<boolean | null>(null);
+  const [admin, setAdmin] = useState(false);
+
+  if (admin) return <AdminScreen onClose={() => setAdmin(false)} />;
 
   return (
     <ScrollView contentContainerStyle={s.pad}>
@@ -129,6 +133,13 @@ export function SettingsScreen() {
           <Text style={s.btnGhostText}>OK</Text>
         </Pressable>
       </View>
+      <Pressable style={[s.card, s.row]} onPress={() => setAdmin(true)} accessibilityRole="button">
+        <View style={{ flex: 1 }}>
+          <Text style={s.h2}>{t("settings.admin")}</Text>
+          <Text style={s.small}>{t("settings.adminHelp")}</Text>
+        </View>
+        <Text style={{ fontSize: 20, color: colors.muted }}>›</Text>
+      </Pressable>
     </ScrollView>
   );
 }

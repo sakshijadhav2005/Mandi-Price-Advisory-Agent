@@ -55,8 +55,11 @@ def agromet_answer(ctx: ToolContext, crop_id: str | None) -> str:
         tmin = [f["tmin_c"] for f in forecast if f.get("tmin_c") is not None]
         if tmax and tmin:
             lines.append(t(lang, "agromet_temp", tmax_lo=f"{min(tmax):g}", tmax_hi=f"{max(tmax):g}", tmin_lo=f"{min(tmin):g}", tmin_hi=f"{max(tmin):g}"))
-    if res["crop_advice"] and lang == "en":  # the bulletin is in English; no machine translation offline
-        lines.append(t(lang, "agromet_crop", crop=load_reference().crops[res["crop"]].display(lang), advice=res["crop_advice"]))
+    crop_name = load_reference().crops[res["crop"]].display(lang) if res["crop"] else ""
+    if res["crop_advice"] and lang == "en":
+        lines.append(t(lang, "agromet_crop", crop=crop_name, advice=res["crop_advice"]))
+    elif res.get("crop_advice_translated"):  # Sarvam translation made when the bulletin was downloaded
+        lines.append(t(lang, "agromet_crop", crop=crop_name, advice=res["crop_advice_translated"]) + " " + t(lang, "machine_translation"))
     lines.append(t(lang, "agromet_more", url=res["url"]))
     return " ".join(lines)
 

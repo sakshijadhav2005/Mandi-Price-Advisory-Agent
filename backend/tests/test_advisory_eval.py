@@ -1,5 +1,5 @@
 """The advisory evaluation set (evaluation/test_sets/advisory_questions.jsonl) must fully pass
-with the offline answer writer: a routing or content regression fails the build."""
+with the template answer writer: a routing or content regression fails the build."""
 
 import importlib.util
 from pathlib import Path

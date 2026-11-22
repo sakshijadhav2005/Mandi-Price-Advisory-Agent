@@ -41,7 +41,7 @@ const answer = {
   },
   sources: [{ id: "price:onion:nashik:2026-11-07", kind: "price", crop: "onion", market: "nashik", market_name: "Nashik", date: "2026-11-07", origin: "synthetic" }],
   disclaimer: "हा फक्त निर्णयासाठी मदत करणारा सल्ला आहे.",
-  mode: "offline",
+  mode: "template",
   trace: [{ tool: "compute_recommendation", args: {}, is_error: false, summary: "sell (high)" }],
   warnings: [],
   latency_ms: 20,

@@ -11,7 +11,7 @@ routing accuracy and content checks per language and per feature.
 
 Usage (from the repo root):
     python evaluation/scripts/run_advisory_eval.py [--llm]
-Without --llm the offline answer writer is evaluated (free, deterministic).
+Without --llm the template answer writer is evaluated (free, deterministic).
 """
 
 from __future__ import annotations
@@ -157,7 +157,7 @@ def evaluate(session, use_llm: bool = False) -> dict:
 
 def write_report(report: dict, use_llm: bool) -> None:
     lines = [
-        f"# Advisory evaluation ({'LLM' if use_llm else 'offline answer writer'})",
+        f"# Advisory evaluation ({'LLM' if use_llm else 'template answer writer'})",
         "",
         f"{report['passed']}/{report['questions']} questions pass; routing accuracy {report['routing_accuracy']:.0%}.",
         "",

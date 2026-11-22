@@ -69,7 +69,7 @@ ui:answer.helpful,App screen text,Was this helpful?,हे उपयोगी �
 ui:answer.yes,App screen text,Yes,हो,ok,,
 ui:answer.no,App screen text,No,नाही,ok,,
 ui:answer.thanks,App screen text,Thank you!,धन्यवाद!,ok,,
-ui:answer.offline,App screen text,Basic answer (AI writer unavailable),साधे उत्तर (AI लेखक उपलब्ध नाही),ok,,
+ui:answer.basicAnswer,App screen text,Basic answer (AI writer unavailable),साधे उत्तर (AI लेखक उपलब्ध नाही),ok,,
 ui:answer.steps,App screen text,Steps the assistant took,सहाय्यकाने घेतलेल्या पायऱ्या,ok,,
 ui:answer.perQtl,App screen text,₹{{value}}/qtl,₹{{value}}/क्विंटल,ok,,
 ui:prices.title,App screen text,Mandi prices,बाजार दर,ok,,

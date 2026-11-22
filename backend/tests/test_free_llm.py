@@ -80,14 +80,14 @@ def test_gemini_tool_loop_answer(session, gemini):
 def test_rate_limit_falls_back_to_templates(session, gemini):
     gemini([{"error": {"message": "quota"}}], status=429)
     ans = answer_query(session, "कांदा विकू का?", language="mr", as_of=AS_OF, use_llm=True)
-    assert ans.mode == "offline" and ans.text
+    assert ans.mode == "template" and ans.text
     assert any("rate limited" in w for w in ans.warnings)
 
 
 def test_invented_number_falls_back(session, gemini):
     gemini([{"choices": [{"finish_reason": "stop", "message": {"content": "Prices will hit ₹7,777 tomorrow."}}]}])
     ans = answer_query(session, "onion?", language="en", as_of=AS_OF, use_llm=True)
-    assert ans.mode == "offline"
+    assert ans.mode == "template"
     assert any(w.startswith("llm_ungrounded_numbers") for w in ans.warnings)
 
 
@@ -114,7 +114,7 @@ def test_slow_llm_falls_back_within_the_deadline(session, gemini, monkeypatch):
     started = time.monotonic()
     ans = answer_query(session, "Should I sell my onion now or wait?", language="en", as_of=AS_OF, use_llm=True)
     assert time.monotonic() - started < 6
-    assert ans.mode == "offline" and ans.decision
+    assert ans.mode == "template" and ans.decision
     assert any("LLM_DEADLINE_S" in w for w in ans.warnings)
     # 0 s: first round (2.5 s). Then 2.5 s are left, less than the 3 s a call needs, so stop.
     assert len(calls) == 1 and timeouts[0] <= 5.0

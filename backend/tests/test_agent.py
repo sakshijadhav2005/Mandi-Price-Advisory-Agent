@@ -1,4 +1,4 @@
-"""Agent service tests: offline writer, and the Claude loop against a fake client."""
+"""Agent service tests: template writer, and the Claude loop against a fake client."""
 
 from datetime import date
 from types import SimpleNamespace
@@ -17,7 +17,7 @@ def test_offline_answer_in_each_language(session):
         ans = answer_query(session, "onion sell or hold?", language=lang, as_of=AS_OF, use_llm=False)
         assert ans.decision in {"sell", "hold"}
         assert marker in ans.text
-        assert ans.mode == "offline"
+        assert ans.mode == "template"
         assert any(s["kind"] == "price" for s in ans.sources)
         assert ans.disclaimer
 
@@ -111,7 +111,7 @@ def test_llm_invented_number_falls_back_to_offline(session, fake):
         ]
     )
     ans = answer_query(session, "Should I sell onion?", language="en", as_of=AS_OF, use_llm=True)
-    assert ans.mode == "offline"
+    assert ans.mode == "template"
     assert any(w.startswith("llm_ungrounded_numbers") for w in ans.warnings)
     assert "9,999" not in ans.text
 
@@ -119,7 +119,7 @@ def test_llm_invented_number_falls_back_to_offline(session, fake):
 def test_llm_wrong_language_falls_back(session, fake):
     fake([[tool_use("compute_recommendation", {"crop": "onion", "quantity_qtl": None, "horizon_days": None}, "t1")], [text("Sell now.")]])
     ans = answer_query(session, "कांदा विकू का?", language="mr", as_of=AS_OF, use_llm=True)
-    assert ans.mode == "offline"
+    assert ans.mode == "template"
     assert "llm_wrong_language" in ans.warnings
     assert "खात्री" in ans.text
 
@@ -146,5 +146,5 @@ def test_refusal_falls_back(session, fake, monkeypatch):
 
     client.beta.messages.create = refusing
     ans = answer_query(session, "onion?", language="en", as_of=AS_OF, use_llm=True)
-    assert ans.mode == "offline"
+    assert ans.mode == "template"
     assert any("declined" in w for w in ans.warnings)

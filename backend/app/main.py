@@ -11,7 +11,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from app.advisory.agromet import purge_old_bulletins
 from app.agent.data import today
 from app.agent.service import resolve_provider
-from app.api import admin, alerts, auth, chat, prices, voice
+from app.api import admin, alerts, auth, chat, prices, ratelimit, voice
 from app.config import get_settings
 from app.db.retention import purge_old_history
 from app.db.session import init_db, session_scope
@@ -38,6 +38,7 @@ def _retention_loop(stop: threading.Event) -> None:
             with session_scope() as s:
                 purge_old_history(s)
                 purge_old_bulletins(s, today())
+                ratelimit.purge_old(s)
         except Exception:  # never let a cleanup error kill the thread
             logging.getLogger(__name__).exception("history retention run failed")
         if stop.wait(3600):

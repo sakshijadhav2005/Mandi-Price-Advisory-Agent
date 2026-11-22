@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * End-to-end tests: the real web app against the real backend (synthetic prices,
- * offline answer writer). Uses the installed Chrome, so no browser download.
+ * template answer writer). Uses the installed Chrome, so no browser download.
  * Run from apps/web:  npx playwright test   (CI: E2E_BROWSER_CHANNEL="" uses bundled Chromium)
  */
 const API_PORT = 8010;

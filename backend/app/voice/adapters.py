@@ -56,9 +56,22 @@ def _whisper_model():
 
 
 def transcribe(audio: bytes, suffix: str = ".webm", language_hint: str | None = None, consent: bool = False) -> Transcript:
-    settings = get_settings()
-    if settings.stt_provider != "whisper":
+    provider = get_settings().stt_provider
+    if provider == "whisper":
+        result = _whisper_stt(audio, suffix, language_hint)
+    elif provider == "sarvam":
+        result = _sarvam_stt(audio, suffix, language_hint)
+    else:
         raise VoiceNotConfigured("No server speech-to-text provider configured (STT_PROVIDER=none)")
+    if storage.should_store(consent):
+        try:
+            storage.store_recording(audio, suffix, language_hint)
+        except Exception as exc:  # storage trouble must not break the farmer's question
+            log.error("could not store consented recording: %s", exc)
+    return result
+
+
+def _whisper_stt(audio: bytes, suffix: str, language_hint: str | None) -> Transcript:
     model = _whisper_model()
     fd, path = tempfile.mkstemp(suffix=suffix)
     try:
@@ -67,17 +80,52 @@ def transcribe(audio: bytes, suffix: str = ".webm", language_hint: str | None = 
         segments, info = model.transcribe(path, language=WHISPER_LANGS.get(language_hint or ""), vad_filter=True)
         segments = list(segments)
     finally:
-        os.unlink(path)  # the temp file is always deleted; consented copies go to storage below
-    if storage.should_store(consent):
-        try:
-            storage.store_recording(audio, suffix, language_hint)
-        except Exception as exc:  # storage trouble must not break the farmer's question
-            log.error("could not store consented recording: %s", exc)
+        os.unlink(path)  # the temp file is always deleted; consented copies go to storage
     text = " ".join(s.text.strip() for s in segments).strip()
     probs = [math.exp(s.avg_logprob) for s in segments] or [0.0]
     confidence = sum(probs) / len(probs)
     lang = info.language if info.language in WHISPER_LANGS else (language_hint or "en")
     return Transcript(text=text, language=lang, confidence=round(confidence, 3), needs_confirmation=confidence < 0.6 or not text)
+
+
+SARVAM_STT_URL = "https://api.sarvam.ai/speech-to-text"
+SARVAM_STT_LANGS = {"en": "en-IN", "hi": "hi-IN", "mr": "mr-IN"}
+_SARVAM_BACK = {v: k for k, v in SARVAM_STT_LANGS.items()}
+_AUDIO_TYPES = {".webm": "audio/webm", ".m4a": "audio/mp4", ".mp4": "audio/mp4", ".ogg": "audio/ogg", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".aac": "audio/aac"}
+
+
+def _sarvam_stt(audio: bytes, suffix: str, language_hint: str | None) -> Transcript:
+    """Sarvam AI speech-to-text (saaras): strong on Marathi and Hindi farm speech.
+
+    Sarvam returns no transcript confidence, only a language probability when it detects
+    the language itself, so the farmer is asked to confirm when the text is empty or the
+    detected language is uncertain."""
+    s = get_settings()
+    if not s.sarvam_api_key:
+        raise VoiceNotConfigured("SARVAM_API_KEY is not set")
+    data = {"model": s.sarvam_stt_model, "language_code": SARVAM_STT_LANGS.get(language_hint or "", "unknown")}
+    try:
+        resp = httpx.post(
+            SARVAM_STT_URL,
+            headers={"api-subscription-key": s.sarvam_api_key},
+            data=data,
+            files={"file": (f"question{suffix}", audio, _AUDIO_TYPES.get(suffix, "application/octet-stream"))},
+            timeout=60,
+        )
+        resp.raise_for_status()
+        body = resp.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise VoiceProviderError(f"sarvam STT failed: {exc}") from exc
+    text = (body.get("transcript") or "").strip()
+    lang = _SARVAM_BACK.get(body.get("language_code") or "", language_hint or "en")
+    probability = body.get("language_probability")
+    unsure = probability is not None and probability < 0.6
+    return Transcript(
+        text=text,
+        language=lang,
+        confidence=round(float(probability), 3) if probability is not None else 1.0,
+        needs_confirmation=not text or unsure,
+    )
 
 
 # Neural voices per language. Marathi and Hindi are both available on Google and Azure.

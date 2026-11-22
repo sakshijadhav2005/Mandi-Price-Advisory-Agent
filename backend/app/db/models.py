@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -309,4 +310,16 @@ class SourceWatch(Base):
     checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+
+class AuthEvent(Base):
+    """One counted login failure / OTP request / signup, when RATE_LIMIT_BACKEND=database."""
+
+    __tablename__ = "auth_events"
+    __table_args__ = (Index("ix_auth_events_kind_key_at", "kind", "key", "at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(32))
+    key: Mapped[str] = mapped_column(String(254))
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 

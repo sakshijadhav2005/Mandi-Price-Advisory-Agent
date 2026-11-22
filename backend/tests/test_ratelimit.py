@@ -1,11 +1,21 @@
-"""Brute-force limits on password login, OTP requests and signups."""
+"""Brute-force limits on password login, OTP requests and signups (memory and database backends)."""
 
 import uuid
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.config import get_settings
+from app.api import ratelimit
 from app.main import app
+
+
+@pytest.fixture(params=["memory", "database"], autouse=True)
+def backend(request, monkeypatch):
+    monkeypatch.setattr(get_settings(), "rate_limit_backend", request.param)
+    ratelimit.reset()
+    yield request.param
+    ratelimit.reset()
 
 
 def _email() -> str:
@@ -59,3 +69,20 @@ def test_signups_per_ip_are_limited(monkeypatch):
         for _ in range(2):
             assert c.post("/auth/signup", json={"name": "A", "email": _email(), "password": "secret1"}).status_code == 201
         assert c.post("/auth/signup", json={"name": "A", "email": _email(), "password": "secret1"}).status_code == 429
+
+
+def test_database_counters_are_shared_and_purged(monkeypatch, session):
+    from datetime import datetime, timedelta, timezone
+
+    from app.db.models import AuthEvent
+
+    monkeypatch.setattr(get_settings(), "rate_limit_backend", "database")
+    ratelimit.reset()
+    for _ in range(3):
+        ratelimit.hit("login-account", "shared@example.com")  # e.g. three different worker processes
+    with pytest.raises(Exception) as exc:
+        ratelimit.check("login-account", "shared@example.com", 3)
+    assert exc.value.status_code == 429
+    session.add(AuthEvent(kind="login-ip", key="1.2.3.4", at=datetime.now(timezone.utc) - timedelta(hours=2)))
+    session.commit()
+    assert ratelimit.purge_old(session) == 1

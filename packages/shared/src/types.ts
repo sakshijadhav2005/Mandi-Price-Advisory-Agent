@@ -128,7 +128,8 @@ export interface ChatAnswer {
   recommendation: Recommendation | null;
   sources: Source[];
   disclaimer: string;
-  mode: "llm" | "offline";
+  /** "template": the template answer writer (no AI model). "offline" is the same, in answers saved before it was renamed. */
+  mode: "llm" | "template" | "offline";
   trace: TraceStep[];
   warnings: string[];
   latency_ms: number;

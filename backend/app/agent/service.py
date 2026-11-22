@@ -38,7 +38,7 @@ class AgentAnswer:
     recommendation: dict | None
     sources: list[dict]
     disclaimer: str
-    mode: str  # llm | offline
+    mode: str  # llm | template (the template answer writer; no AI model used)
     trace: list[dict] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     latency_ms: int = 0
@@ -132,7 +132,7 @@ def answer_query(
     ctx = new_context()
     warnings: list[str] = []
     usage: dict = {}
-    mode = "offline"
+    mode = "template"
     text = ""
     llm_text = None
 
@@ -157,11 +157,11 @@ def answer_query(
             else:
                 text, mode = res.text, "llm"
         except LLMUnavailable as exc:
-            log.warning("LLM unavailable, using offline answer writer: %s", exc)
+            log.warning("LLM unavailable, using template answer writer: %s", exc)
             warnings.append(f"llm_unavailable:{exc}"[:300])
 
-    if mode == "offline":
-        # Fresh context so the offline writer's trace and sources are not mixed with a rejected LLM attempt.
+    if mode == "template":
+        # Fresh context so the template writer's trace and sources are not mixed with a rejected LLM attempt.
         llm_trace = ctx.trace
         ctx = new_context()
         text = fallback.write_answer(ctx, crop, quantity_qtl, question=question)
@@ -195,7 +195,7 @@ def answer_query(
             "district": district,
             "decision": rec["decision"] if rec else None,
             "reason_codes": rec["reason_codes"] if rec else [],
-            "rejected_llm_answer": llm_text if mode == "offline" and llm_text else None,
+            "rejected_llm_answer": llm_text if mode == "template" and llm_text else None,
         },
     )
 

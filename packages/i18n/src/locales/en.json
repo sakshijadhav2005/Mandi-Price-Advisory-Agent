@@ -118,7 +118,7 @@
     "yes": "Yes",
     "no": "No",
     "thanks": "Thank you!",
-    "offline": "Basic answer (AI writer unavailable)",
+    "basicAnswer": "Basic answer (AI writer unavailable)",
     "steps": "Steps the assistant took",
     "perQtl": "₹{{value}}/qtl",
     "agrometSource": "IMD district advisory, {{date}} (valid till {{until}})",

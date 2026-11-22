@@ -68,7 +68,7 @@ def test_ollama_tool_call_then_answer(session, ollama):
 def test_ollama_invented_number_falls_back(session, ollama):
     ollama([{"message": {"role": "assistant", "content": "Prices will hit ₹7,777 tomorrow."}}])
     ans = answer_query(session, "onion?", language="en", as_of=AS_OF, use_llm=True)
-    assert ans.mode == "offline"
+    assert ans.mode == "template"
     assert any(w.startswith("llm_ungrounded_numbers") for w in ans.warnings)
 
 
@@ -80,7 +80,7 @@ def test_ollama_down_falls_back(session, monkeypatch):
 
     monkeypatch.setattr(ollama_agent.httpx, "post", boom)
     ans = answer_query(session, "onion?", language="hi", as_of=AS_OF, use_llm=True)
-    assert ans.mode == "offline" and "भरोसा" in ans.text
+    assert ans.mode == "template" and "भरोसा" in ans.text
 
 
 def test_auto_provider_resolution(monkeypatch):
@@ -118,13 +118,13 @@ def test_contradicting_answer_falls_back(session, ollama):
     ollama([{"message": {"role": "assistant", "content": "You can wait and store your onion for a week."}}])
     ans = answer_query(session, "onion?", language="en", as_of=AS_OF, use_llm=True)
     assert ans.decision == "sell"
-    assert ans.mode == "offline" and "llm_decision_mismatch" in ans.warnings
+    assert ans.mode == "template" and "llm_decision_mismatch" in ans.warnings
 
 
 def test_ollama_skipped_for_languages_not_enabled(session, ollama):
     calls = ollama([])
     ans = answer_query(session, "कांदा विकू का?", language="mr", as_of=AS_OF, use_llm=True)
-    assert ans.mode == "offline" and calls == [] and ans.warnings == []
+    assert ans.mode == "template" and calls == [] and ans.warnings == []
 
 
 def test_offline_storage_questions_point_to_kvk(session):

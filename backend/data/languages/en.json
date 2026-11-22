@@ -63,7 +63,8 @@
     "scheme_list": "Schemes I can explain for {state}: {names}. Ask about one by name.",
     "document_answer": "From \"{title}\" ({publisher}): {text}",
     "kcc_answer": "Kisan Call Centre experts answered a similar question from {district} ({date}): \"{question}\" Answer: {answer}",
-    "kcc_note": "Check with your KVK before acting on it."
+    "kcc_note": "Check with your KVK before acting on it.",
+    "machine_translation": "(machine translation)"
   },
   "glossary": {
     "onion": [

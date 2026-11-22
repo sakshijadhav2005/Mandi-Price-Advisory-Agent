@@ -58,3 +58,47 @@ def test_missing_key(monkeypatch):
     adapters._tts_cache.clear()
     with pytest.raises(adapters.VoiceNotConfigured):
         adapters.synthesize("नमस्कार", "mr")
+
+
+# --- Sarvam speech-to-text --------------------------------------------------------------------
+
+
+def test_sarvam_stt(monkeypatch):
+    s = get_settings()
+    monkeypatch.setattr(s, "stt_provider", "sarvam")
+    monkeypatch.setattr(s, "sarvam_api_key", "key-1")
+    monkeypatch.setattr(s, "store_voice_recordings", False)
+    seen = {}
+
+    def fake_post(url, **kw):
+        seen.update(url=url, **kw)
+        return httpx.Response(200, json={"transcript": "मी कांदा आता विकू की थांबू?", "language_code": "mr-IN"}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(adapters.httpx, "post", fake_post)
+    out = adapters.transcribe(b"audio", ".m4a", language_hint="mr")
+    assert (out.text, out.language, out.needs_confirmation) == ("मी कांदा आता विकू की थांबू?", "mr", False)
+    assert seen["url"] == "https://api.sarvam.ai/speech-to-text" and seen["headers"] == {"api-subscription-key": "key-1"}
+    assert seen["data"] == {"model": "saaras:v4", "language_code": "mr-IN"}
+    assert seen["files"]["file"][2] == "audio/mp4"
+
+    # Language detected by Sarvam with low probability, or nothing heard: ask the farmer to confirm.
+    monkeypatch.setattr(
+        adapters.httpx, "post",
+        lambda url, **kw: httpx.Response(200, json={"transcript": "kanda", "language_code": "hi-IN", "language_probability": 0.4}, request=httpx.Request("POST", url)),
+    )
+    unsure = adapters.transcribe(b"audio", ".webm")
+    assert unsure.language == "hi" and unsure.needs_confirmation and unsure.confidence == 0.4
+    monkeypatch.setattr(adapters.httpx, "post", lambda url, **kw: httpx.Response(200, json={"transcript": ""}, request=httpx.Request("POST", url)))
+    assert adapters.transcribe(b"audio", ".webm", "mr").needs_confirmation
+
+
+def test_sarvam_stt_errors(monkeypatch):
+    s = get_settings()
+    monkeypatch.setattr(s, "stt_provider", "sarvam")
+    monkeypatch.setattr(s, "sarvam_api_key", "")
+    with pytest.raises(adapters.VoiceNotConfigured):
+        adapters.transcribe(b"a", ".webm")
+    monkeypatch.setattr(s, "sarvam_api_key", "k")
+    monkeypatch.setattr(adapters.httpx, "post", lambda url, **kw: httpx.Response(503, request=httpx.Request("POST", url)))
+    with pytest.raises(adapters.VoiceProviderError):
+        adapters.transcribe(b"a", ".webm")

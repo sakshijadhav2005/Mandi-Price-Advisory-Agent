@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # LLM. With no Anthropic credentials the agent falls back to a deterministic,
     # template-based answer writer, so the app and evaluation work offline.
     llm_enabled: bool = True
-    # auto: Claude if ANTHROPIC_API_KEY is set, else the offline template writer.
+    # auto: Claude if ANTHROPIC_API_KEY is set, else the template answer writer.
     # A free local model is opt-in with LLM_PROVIDER=ollama. Or force anthropic | none.
     # Values: auto | anthropic | gemini | groq | openrouter | ollama | none.
     # auto order: Claude, then the first free hosted key set (Gemini, Groq, OpenRouter), else templates.
@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     llm_effort: str = "low"  # low | medium | high | xhigh | max
     llm_max_tokens: int = 4000
     # Total time a hosted LLM (Claude, Gemini, Groq, OpenRouter) gets to write one answer,
-    # across all its tool rounds. Past it the offline writer answers from the same
+    # across all its tool rounds. Past it the template writer answers from the same
     # prices and decision, so a slow connection never leaves the farmer waiting.
     llm_deadline_s: float = 15.0
 
@@ -65,6 +65,7 @@ class Settings(BaseSettings):
     jwt_ttl_hours: int = 24 * 30
     auth_required: bool = False  # dev default: guests may chat without OTP login
     # Brute-force limits (per server process; see app/api/ratelimit.py)
+    rate_limit_backend: str = "memory"  # memory (one process) | database (shared by all processes)
     auth_window_minutes: int = 15
     auth_max_failures: int = 5  # failed password logins per account in the window
     auth_ip_max_attempts: int = 30  # failed logins / OTP requests per IP address in the window
@@ -82,7 +83,8 @@ class Settings(BaseSettings):
         return [i.strip() for i in ids if i.strip()]
 
     # Voice (server-side providers are optional; the web app can use browser speech)
-    stt_provider: str = "none"  # none | whisper
+    stt_provider: str = "none"  # none | sarvam | whisper
+    sarvam_stt_model: str = "saaras:v4"  # Sarvam speech-to-text model (needs SARVAM_API_KEY)
     whisper_model: str = "small"
     tts_provider: str = "none"  # none | sarvam | google | azure
     # Sarvam AI (Bulbul): natural Indian-language voices, the clearest Marathi of the three.
@@ -90,6 +92,7 @@ class Settings(BaseSettings):
     sarvam_tts_model: str = "bulbul:v3"
     sarvam_tts_speaker: str = ""  # empty = the model's default voice; e.g. "ritu", "priya", "shubh" for bulbul:v3
     sarvam_tts_pace: float = 0.95  # 0.5-2.0; slightly slower than normal reads more clearly to farmers
+    sarvam_translate_model: str = "sarvam-translate:v1"  # translates the IMD crop advice into hi / mr (needs SARVAM_API_KEY)
     google_tts_api_key: str = ""
     azure_speech_key: str = ""
     azure_speech_region: str = "centralindia"

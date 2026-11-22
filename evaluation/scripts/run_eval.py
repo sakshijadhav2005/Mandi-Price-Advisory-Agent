@@ -11,7 +11,7 @@ Two parts:
    farmer-style questions in English, Hindi and Marathi. Checks crop
    understanding, decision consistency, answer language, number grounding,
    citation validity and latency. Add --llm to use Claude (costs money;
-   needs credentials); without it the offline answer writer is evaluated.
+   needs credentials); without it the template answer writer is evaluated.
 
 Usage (from the repo root):
     python evaluation/scripts/run_eval.py --pipeline 10 [--llm]
@@ -240,7 +240,7 @@ def write_report(dec: dict, pipe: dict | None, use_llm: bool) -> Path:
     if pipe:
         lines += [
             "",
-            f"## Full pipeline per language ({'Claude' if use_llm else 'offline answer writer'})",
+            f"## Full pipeline per language ({'Claude' if use_llm else 'template answer writer'})",
             "",
             "| Language | n | Crop understood | Decision matches engine | Answer language OK | Numbers grounded | Valid citations | LLM answer used | Mean latency ms | p95 latency ms | Mean tokens in/out |",
             "|---|---|---|---|---|---|---|---|---|---|---|",

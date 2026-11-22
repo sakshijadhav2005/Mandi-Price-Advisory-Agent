@@ -1,7 +1,7 @@
 """Agent tools. Each tool returns a JSON-serialisable dict and records its sources.
 
 The same functions back both the Claude tool-use loop (llm_agent.py) and the
-offline answer writer (fallback.py), so the two paths see identical data.
+template answer writer (fallback.py), so the two paths see identical data.
 """
 
 from __future__ import annotations
@@ -171,6 +171,8 @@ def get_district_advisory(ctx: ToolContext, crop: str | None = None) -> dict:
         "extended_range": data.get("sections", {}).get("extended_range", ""),
         "crop": crop_id,
         "crop_advice": data.get("crops", {}).get(crop_id) if crop_id else None,
+        # Machine translation (Sarvam) of the crop advice into the farmer's language, if made.
+        "crop_advice_translated": data.get("translations", {}).get(ctx.language, {}).get("crops", {}).get(crop_id) if crop_id else None,
         "general_advisory": data.get("sections", {}).get("general", "")[:1500],
     }
 
