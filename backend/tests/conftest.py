@@ -9,6 +9,23 @@ os.environ["AS_OF_OVERRIDE"] = "2026-11-08"
 os.environ["LLM_ENABLED"] = "false"
 os.environ["LLM_PROVIDER"] = "anthropic"  # tests that enable the LLM use a fake Claude client
 os.environ["AUTH_REQUIRED"] = "false"
+# Tests start from the defaults, whatever the developer's backend/.env switches on
+# (environment variables take precedence over .env).
+for _name, _value in {
+    "LOCKED_DISTRICT": "",
+    "ADMIN_TOKEN": "",
+    "RATE_LIMIT_BACKEND": "memory",
+    "TTS_PROVIDER": "none",
+    "STT_PROVIDER": "none",
+    "SARVAM_API_KEY": "",
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_EXTRA_CLIENT_IDS": "",
+    "AGROMET_DISTRICTS": "pune",
+    "KCC_DISTRICTS": "pune",
+    "KCC_RESOURCE_ID": "",
+    "OTP_DEV_MODE": "true",
+}.items():
+    os.environ[_name] = _value
 
 import pytest  # noqa: E402
 
