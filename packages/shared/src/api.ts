@@ -106,9 +106,10 @@ export class ApiClient {
     return this.request<ChatAnswer>("/chat", { method: "POST", body: JSON.stringify(body) });
   }
 
-  prices(crop: string, days = 30, district?: string | null) {
+  prices(crop: string, days = 30, district?: string | null, asOf?: string | null) {
     const d = district ? `&district=${encodeURIComponent(district)}` : "";
-    return this.request<PricesResponse>(`/prices?crop=${encodeURIComponent(crop)}&days=${days}${d}`);
+    const a = asOf ? `&as_of=${encodeURIComponent(asOf)}` : "";
+    return this.request<PricesResponse>(`/prices?crop=${encodeURIComponent(crop)}&days=${days}${d}${a}`);
   }
 
   conversations() {

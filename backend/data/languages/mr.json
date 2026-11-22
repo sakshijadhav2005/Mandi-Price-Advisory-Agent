@@ -64,7 +64,8 @@
     "document_answer": "\"{title}\" ({publisher}) नुसार: {text}",
     "kcc_answer": "किसान कॉल सेंटरच्या तज्ज्ञांनी {district} मधील अशाच प्रश्नाचे उत्तर दिले होते ({date}): \"{question}\" उत्तर: {answer}",
     "kcc_note": "त्यानुसार करण्यापूर्वी आपल्या KVK कडून खात्री करा.",
-    "machine_translation": "(यंत्र अनुवाद; मूळ इंग्रजी बुलेटिनमध्ये)"
+    "machine_translation": "(यंत्र अनुवाद; मूळ इंग्रजी बुलेटिनमध्ये)",
+    "last_known": "उपलब्ध शेवटचा दर: {crop}, {market} येथे ₹{modal}/क्विंटल ({date} चा अहवाल). हा जुना दर आहे, आजचा नाही."
   },
   "glossary": {
     "onion": [

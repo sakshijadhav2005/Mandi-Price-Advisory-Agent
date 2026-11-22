@@ -222,7 +222,18 @@ export interface MarketPrices {
   history: PricePointDto[];
 }
 
+export interface PriceSummary {
+  from: string;
+  to: string;
+  days_with_prices: number;
+  lowest: { modal: number; date: string; market: string };
+  highest: { modal: number; date: string; market: string };
+  average: number;
+  change_pct: number | null;
+}
+
 export interface PricesResponse {
+  summary: PriceSummary | null;
   crop: string;
   district?: string;
   unit: string;

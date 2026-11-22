@@ -143,7 +143,20 @@
     "today": "today",
     "unit": "₹ per quintal",
     "demo": "These are demo (synthetic) prices, not real market reports.",
-    "trend": "Last 30 days"
+    "trend": "Last 30 days",
+    "lastAvailable": "Latest available price is from {{date}}",
+    "pickDate": "See prices on an earlier date",
+    "showingDate": "Prices up to {{date}}",
+    "backToToday": "Back to today",
+    "records": "Price records",
+    "hideRecords": "Hide records",
+    "summaryTitle": "Price summary",
+    "lowest": "Lowest",
+    "highest": "Highest",
+    "average": "Average",
+    "change": "Change",
+    "daysWithPrices": "{{count}} days with prices",
+    "noData": "No real market price for this period yet. Prices are added automatically every day."
   },
   "history": {
     "title": "Your questions",

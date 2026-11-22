@@ -84,3 +84,31 @@ def test_websocket_chat():
         assert ws.receive_json()["type"] == "status"
         msg = ws.receive_json()
         assert msg["type"] == "answer" and msg["data"]["recommendation"]["crop"] == "tomato"
+
+
+def test_prices_last_real_price_and_summary(session):
+    from datetime import date
+
+    from sqlalchemy import delete
+
+    from app.db.models import Price
+
+    day = date(2029, 12, 1)
+    session.add(Price(crop="onion", market="pune", price_date=day, min_price=4200, modal_price=4700, max_price=5200, source="agmarknet_csv"))
+    session.add(Price(crop="onion", market="pune", price_date=date(2029, 12, 3), min_price=4400, modal_price=5170, max_price=5600, source="agmarknet_csv"))
+    session.commit()
+    try:
+        with client() as c:
+            # A week with no prices at all: the last real price is shown with its own date.
+            data = c.get("/prices", params={"crop": "onion", "days": 7, "district": "pune", "as_of": "2030-01-01"}).json()
+            pune = next(m for m in data["markets"] if m["market"] == "pune")
+            assert pune["latest"]["date"] == "2029-12-03" and pune["status"] == "stale" and pune["history"] == []
+            assert data["summary"] is None
+            # A window with the records: history, and a summary over it.
+            data = c.get("/prices", params={"crop": "onion", "days": 10, "district": "pune", "as_of": "2029-12-05"}).json()
+            s = data["summary"]
+            assert s["lowest"]["modal"] == 4700 and s["highest"]["modal"] == 5170 and s["highest"]["date"] == "2029-12-03"
+            assert s["days_with_prices"] == 2 and s["change_pct"] == 10.0 and s["average"] == 4935
+    finally:
+        session.execute(delete(Price).where(Price.source == "agmarknet_csv", Price.price_date >= day))
+        session.commit()

@@ -64,7 +64,8 @@
     "document_answer": "From \"{title}\" ({publisher}): {text}",
     "kcc_answer": "Kisan Call Centre experts answered a similar question from {district} ({date}): \"{question}\" Answer: {answer}",
     "kcc_note": "Check with your KVK before acting on it.",
-    "machine_translation": "(machine translation)"
+    "machine_translation": "(machine translation)",
+    "last_known": "Last available price: {crop} at {market}, ₹{modal}/quintal (reported {date}). This is an older price, not today's."
   },
   "glossary": {
     "onion": [

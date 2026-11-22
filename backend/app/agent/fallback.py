@@ -288,6 +288,12 @@ def write_answer(
     if rec["decision"] == "insufficient_data":
         lines.append(t(lang, "decision.insufficient_data") + t(lang, "eos"))
         lines.append(t(lang, "insufficient", crop=crop_name, days=rec["assumptions"]["stale_after_days"]))
+        known = [m for m in rec["markets"] if m.get("latest_date") and m.get("modal_latest") is not None]
+        if known:  # the last real price, with its date, so the farmer still has a reference
+            last = max(known, key=lambda m: m["latest_date"])
+            lines.append(
+                t(lang, "last_known", crop=crop_name, market=ref.markets[last["market"]].display(lang), modal=inr(last["modal_latest"]), date=last["latest_date"])
+            )
         return "\n\n".join(lines)
 
     markets = {m["market"]: m for m in rec["markets"]}
