@@ -57,6 +57,7 @@ def load_languages() -> dict[str, LanguagePack]:
 
 
 _WORD_START = r"\b"  # a Latin keyword must start a word
+_DEVA_START = "(?<![ऀ-ॿ])"  # not preceded by a Devanagari letter or vowel sign
 _DEVANAGARI_DIGITS = str.maketrans("०१२३४५६७८९", "0123456789")
 _DAYS_AGO = re.compile(r"(\d{1,3})\s*(?:days?|din|दिवस|दिवसां|दिन)", re.I)
 
@@ -64,8 +65,9 @@ _DAYS_AGO = re.compile(r"(\d{1,3})\s*(?:days?|din|दिवस|दिवसा�
 def _mentions(text: str, words: list[str]) -> bool:
     lowered = text.lower()
     for word in (w.lower() for w in words):
-        # Latin words must start a word ("rain" but not "grain", "heat" but not "wheat").
-        if re.search(_WORD_START + re.escape(word), lowered) if word.isascii() else word in lowered:
+        # Words must start a word: "rain" but not "grain", "heat" but not "wheat", and Hindi
+        # "पाला" (frost) but not "भाजीपाला" (vegetables). Endings may follow ("पावसाचा").
+        if re.search(_WORD_START + re.escape(word), lowered) if word.isascii() else re.search(_DEVA_START + re.escape(word), lowered):
             return True
     return False
 

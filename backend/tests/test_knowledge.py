@@ -186,3 +186,32 @@ def test_kcc_api_fetch(clean, session, monkeypatch):
 def test_tools_offered_to_the_llm():
     names = {t["name"] for t in tool_schemas()}
     assert {"search_storage_advice", "search_farmer_questions"} <= names
+
+
+def test_search_fixes_found_by_the_storage_preview(clean, session, tmp_path):
+    # English stems: cure / curing / cured, store / storing all meet.
+    assert stem("cure") == stem("curing") == stem("cured")
+    assert stem("store") == stem("storing") == stem("stored")
+    # Devanagari words must start a word: "भाजीपाला" (vegetables) is not "पाला" (frost).
+    from app.translation.languages import is_advisory_question, is_weather_question
+
+    assert not is_weather_question("भाजीपाला जास्त दिवस ताजा कसा ठेवायचा?")
+    assert is_weather_question("पाला पडेल का?") and is_advisory_question("भाजीपाला जास्त दिवस ताजा कसा ठेवायचा?")
+    # A crop-specific document beats a general one, and the farmer's language comes first.
+    general = tmp_path / "general.md"
+    general.write_text("# शीतकक्ष\n\nकांदा व भाजीपाल्याची साठवण शीतकक्षात करावी, दिवसातून दोन वेळा पाणी शिंपडावे आणि भाजीपाला ताजा राहतो.\n" * 3, encoding="utf-8")
+    onion = tmp_path / "onion.md"
+    onion.write_text(
+        "# कांदा साठवण\n\nसुकलेला कांदा 0 °से. साठवण तापमान आणि 65-70% सापेक्ष आर्द्रतेत साठवावा; तो सुमारे 30-240 दिवस टिकतो. "
+        "साठवणीपूर्वी कांदा शेतातच तीन ते पाच दिवस सुकवावा आणि मान पूर्ण वाळल्यावरच चाळीत भरावा. खराब, जोड आणि कोंब आलेले कांदे बाजूला काढावेत.\n",
+        encoding="utf-8",
+    )
+    english = tmp_path / "onion-en.md"
+    english.write_text(ONION_EN, encoding="utf-8")
+    for path, crop, lang in ((general, "all", "mr"), (onion, "onion", "mr"), (english, "onion", "en")):
+        doc = add_document(session, path, title=path.stem, crop=crop, language=lang, publisher="p")
+        review_document(session, doc.id, "r")
+    hits = search_documents(session, "कांद्याची साठवण किती दिवस टिकते?", "onion", language="mr")
+    assert hits[0]["title"] == "onion"
+    en = search_documents(session, "How do I cure onions before storage?", "onion", language="en")
+    assert en[0]["language"] == "en"

@@ -313,7 +313,7 @@ def search_storage_advice(ctx: ToolContext, query: str, crop: str | None = None)
     from app.advisory.documents import search
 
     crop_id = _crop(ctx, crop).id if (crop or ctx.default_crop) else None
-    hits = search(ctx.session, query, crop_id)
+    hits = search(ctx.session, query, crop_id, language=ctx.language)
     for h in hits:
         h["source_id"] = ctx.add_source(
             f"document:{h['document_id']}",

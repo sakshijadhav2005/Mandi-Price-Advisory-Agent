@@ -132,8 +132,13 @@ def review_document(session: Session, doc_id: int, reviewer: str, approve: bool 
     return doc
 
 
-def search(session: Session, question: str, crop_id: str | None, k: int = 3) -> list[dict]:
-    """Best passages from approved documents for the crop (or crop-independent documents)."""
+CROP_BOOST = 3.0  # a document about the crop asked beats a general ("all") one of similar relevance
+LANGUAGE_BOOST = 2.0  # passages in the farmer's language first; others only when nothing in it matches
+
+
+def search(session: Session, question: str, crop_id: str | None, k: int = 3, language: str | None = None) -> list[dict]:
+    """Best passages from approved documents for the crop (or crop-independent documents),
+    preferring crop-specific documents and the farmer's language."""
     q = (
         select(AdvisoryChunk, AdvisoryDocument)
         .join(AdvisoryDocument, AdvisoryChunk.document_id == AdvisoryDocument.id)
@@ -145,8 +150,18 @@ def search(session: Session, question: str, crop_id: str | None, k: int = 3) -> 
     if not rows:
         return []
     index = BM25([(i, f"{doc.title} {chunk.heading} {chunk.text}") for i, (chunk, doc) in enumerate(rows)])
+    def weight(hit) -> float:
+        doc = rows[hit.key][1]
+        w = hit.score
+        if crop_id and doc.crop_id == crop_id:
+            w *= CROP_BOOST
+        if language and doc.language == language:
+            w *= LANGUAGE_BOOST
+        return w
+
+    ranked = sorted(index.search(question, k=max(k * 10, 30)), key=lambda h: -weight(h))
     out = []
-    for hit in index.search(question, k=k):
+    for hit in ranked[:k]:
         chunk, doc = rows[hit.key]
         out.append(
             {

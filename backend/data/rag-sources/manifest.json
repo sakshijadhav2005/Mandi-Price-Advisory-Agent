@@ -81,6 +81,26 @@
       "bytes": 102815120,
       "sha256": "40457d633bff02ab5e35212e6166f72d71b9938631d623d48a0902793829f8b3",
       "fetched_at": "2026-11-22"
+    },
+    {
+      "feature": "storage",
+      "path": "4-storage/fao-bulletin151-y4893e04.htm",
+      "url": "https://www.fao.org/4/y4893e/y4893e04.htm",
+      "publisher": "FAO (UN), Agricultural Services Bulletin 151 (A. F. Lopez Camelo, 2004)",
+      "note": "chapter 1, harvest and curing. Licence: non-commercial / educational use with acknowledgement; commercial use needs FAO's written permission. Turned into onion / potato / tomato documents (en, plus mr / hi machine translations with hand-written storage-condition sentences), added as pending documents.",
+      "bytes": 29200,
+      "sha256": "a7838c7a3316a4637d342bc33bab52d572e57fee34bb95664297d409aa145223",
+      "fetched_at": "2026-11-22"
+    },
+    {
+      "feature": "storage",
+      "path": "4-storage/fao-bulletin151-y4893e06.htm",
+      "url": "https://www.fao.org/4/y4893e/y4893e06.htm",
+      "publisher": "FAO (UN), Agricultural Services Bulletin 151 (A. F. Lopez Camelo, 2004)",
+      "note": "chapter 3, storage. Licence: non-commercial / educational use with acknowledgement; commercial use needs FAO's written permission. Turned into onion / potato / tomato documents (en, plus mr / hi machine translations with hand-written storage-condition sentences), added as pending documents.",
+      "bytes": 127299,
+      "sha256": "b8e6714dfd2b6fe0d81ae91798fb6f17bd332557b9dbcfda3a74ec400bc17f4c",
+      "fetched_at": "2026-11-22"
     }
   ],
   "pending": [
@@ -97,7 +117,7 @@
     {
       "feature": "storage",
       "what": "ICAR-DOGR onion storage publications (English, Marathi newsletter)",
-      "why": "dogr.icar.gov.in did not resolve (DNS) and krishi.icar.gov.in refused connections on 2026-11-21 Partly covered on 2026-11-22 by MPKV Krishidarshani 2026 (general cold-chamber storage + onion storage-house recommendation); onion/potato/tomato storage detail still needed from DOGR / CPRI."
+      "why": "Onion / potato / tomato storage now covered by FAO Bulletin 151 and MPKV Krishidarshani 2026 (pending review). India-specific guides (ICAR-DOGR onion storage structures, CPRI potato cold storage) still wanted; their sites refuse connections from this network."
     },
     {
       "feature": "pesticides",
