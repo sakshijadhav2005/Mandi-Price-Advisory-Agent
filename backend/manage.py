@@ -178,6 +178,7 @@ def cmd_list_documents(_args) -> None:
     from app.db.models import AdvisoryChunk, AdvisoryDocument
 
     init_db()
+    sys.stdout.reconfigure(encoding="utf-8")  # Marathi / Hindi titles on a Windows console
     with session_scope() as s:
         for doc in s.scalars(select(AdvisoryDocument).order_by(AdvisoryDocument.id)):
             n = s.scalar(select(func.count()).select_from(AdvisoryChunk).where(AdvisoryChunk.document_id == doc.id))

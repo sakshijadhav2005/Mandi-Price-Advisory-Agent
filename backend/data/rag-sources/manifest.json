@@ -71,6 +71,16 @@
       "bytes": 497050,
       "sha256": "0d89307acdea8ea0b59f6e0451ec2c764aece9f1df828852b3a865225900713c",
       "fetched_at": "2026-11-21T17:40:35+00:00"
+    },
+    {
+      "feature": "storage",
+      "path": "4-storage/mpkv-krishidarshani-2026.pdf",
+      "url": "https://mpkv.ac.in/Uploads/Publication/20260725_120158_8d696de12b98586f94302f37cb1884b2.pdf",
+      "publisher": "Mahatma Phule Krishi Vidyapeeth (MPKV), Rahuri",
+      "note": "Krishidarshani 2026 (Marathi, 526 pages, legacy font: text only via OCR). Storage material: book pages 211-212 (PDF 230-231) cold-chamber storage; recommendation 40 (PDF 25) onion storage house. OCR text added as pending document (manage.py add-document); needs review against the PDF.",
+      "bytes": 102815120,
+      "sha256": "40457d633bff02ab5e35212e6166f72d71b9938631d623d48a0902793829f8b3",
+      "fetched_at": "2026-11-22"
     }
   ],
   "pending": [
@@ -87,7 +97,7 @@
     {
       "feature": "storage",
       "what": "ICAR-DOGR onion storage publications (English, Marathi newsletter)",
-      "why": "dogr.icar.gov.in did not resolve (DNS) and krishi.icar.gov.in refused connections on 2026-11-21"
+      "why": "dogr.icar.gov.in did not resolve (DNS) and krishi.icar.gov.in refused connections on 2026-11-21 Partly covered on 2026-11-22 by MPKV Krishidarshani 2026 (general cold-chamber storage + onion storage-house recommendation); onion/potato/tomato storage detail still needed from DOGR / CPRI."
     },
     {
       "feature": "pesticides",
