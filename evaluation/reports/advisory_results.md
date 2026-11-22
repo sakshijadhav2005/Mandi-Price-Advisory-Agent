@@ -10,9 +10,9 @@
 
 | Feature | Passed |
 |---|---|
-| decision | 6/6 |
+| decision | 5/5 |
 | kcc | 3/3 |
-| out_of_scope | 1/1 |
+| out_of_scope | 2/2 |
 | pesticide | 5/5 |
 | scheme | 12/12 |
 | storage | 2/2 |
